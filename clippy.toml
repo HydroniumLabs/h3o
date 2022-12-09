@@ -1,0 +1,6 @@
+# Furthermore, Rust types that are larger than 128 bytes are copied with memcpy
+# rather than inline code. [...] Shrinking these types to 128 bytes or less can
+# make the code faster by avoiding memcpy calls and reducing memory traffic.
+#
+# See https://nnethercote.github.io/perf-book/type-sizes.html
+enum-variant-size-threshold = 128

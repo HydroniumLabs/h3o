@@ -1,0 +1,7 @@
+Cargo.lock
+/coverage
+/target
+lcov.info
+lcov_correct.info
+*.swp
+.DS_Store

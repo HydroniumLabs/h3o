@@ -1,0 +1,25 @@
+[package]
+name = "h3o"
+version = "0.1.0"
+authors = ["Sylvain Laperche <sylvain.laperche@gmail.com>"]
+edition = "2021"
+description = "A Rust implementation of the H3 geospatial indexing system."
+documentation = "https://docs.rs/h3o/"
+readme = "README.md"
+homepage = "https://docs.rs/h3o"
+repository = "https://github.com/HydroniumLabs/h3o"
+license = "BSD-3-Clause"
+keywords = ["geography", "geospatial", "gis", "h3", "spatial-index"]
+categories = ["science"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+
+[dev-dependencies]
+
+[lib]
+# doctests are good for docs, but unfortunately they are slow.
+# Cf. https://matklad.github.io/2021/02/27/delete-cargo-integration-tests.html
+doctest = false
