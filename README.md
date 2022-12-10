@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/h3o.svg)](https://crates.io/crates/h3o)
 [![Docs.rs](https://docs.rs/h3o/badge.svg)](https://docs.rs/h3o)
-[![Build Status](https://img.shields.io/github/workflow/status/HydroniumLabs/h3o/Build)](https://github.com/HydroniumLabs/h3o/actions)
+[![CI Status](https://github.com/HydroniumLabs/h3o/actions/workflows/ci.yml/badge.svg)](https://github.com/HydroniumLabs/h3o/actions)
 [![License](https://img.shields.io/badge/license-BSD-green)](https://opensource.org/licenses/BSD-3-Clause)
 
 [Rust](https://rustlang.org) implementation of the [H3](https://h3geo.org)
