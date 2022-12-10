@@ -16,10 +16,17 @@ categories = ["science"]
 all-features = true
 
 [dependencies]
+float_eq = { version = "1.0", default-features = false }
 
 [dev-dependencies]
+criterion = { version = "0.4", default-features = false, features = ["plotters", "cargo_bench_support", "html_reports"] }
+h3ron-h3-sys = { version = "0.15", default-features = false }
 
 [lib]
 # doctests are good for docs, but unfortunately they are slow.
 # Cf. https://matklad.github.io/2021/02/27/delete-cargo-integration-tests.html
 doctest = false
+
+[[bench]]
+harness = false
+name = "h3"

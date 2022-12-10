@@ -107,14 +107,34 @@
     clippy::verbose_file_reads
 )]
 #![allow(
-    // The 90’s called and wanted their charset back :p
+    // The 90’s called and wanted their charset back.
     clippy::non_ascii_literal,
     // "It requires the user to type the module name twice."
     // => not true here since internal modules are hidden from the users.
     clippy::module_name_repetitions,
-    // External visibility is controlled through mod reexport.
-    // Sprinkling `pub(crate)` and friends everywhere is noisy and a pain for refactoring...
-    unreachable_pub,
+    // Usually yes, but not really applicable for most literals in this crate.
+    clippy::unreadable_literal,
 )]
 
 // }}}
+
+mod base_cell;
+mod direction;
+pub mod error;
+mod index;
+mod resolution;
+
+pub use base_cell::BaseCell;
+pub use direction::Direction;
+pub use index::{
+    CellIndex, DirectedEdgeIndex, Edge, IndexMode, Vertex, VertexIndex,
+};
+pub use resolution::Resolution;
+
+// -----------------------------------------------------------------------------
+
+/// Size, in bits, of a direction (range [0; 6].
+const DIRECTION_BITSIZE: usize = 3;
+
+/// Number of pentagon per resolution.
+const NUM_PENTAGONS: u8 = 12;
