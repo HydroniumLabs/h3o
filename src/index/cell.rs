@@ -233,6 +233,10 @@ impl CellIndex {
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
+    // In this case, `mut-let-if` is faster than the idiomatic `let-if-else`.
+    // Actually 12.5% faster for hexagons and 3.5% slower for pentagons.
+    // Given that hexagons are way more common than pentagons, worth it.
+    #[allow(clippy::useless_let_if_seq)]
     pub fn children_count(self, resolution: Resolution) -> u64 {
         let resolution = usize::from(resolution);
         let curr_resolution = usize::from(bits::get_resolution(self.0.get()));
@@ -244,11 +248,11 @@ impl CellIndex {
         }
 
         let n = resolution - curr_resolution;
+        let mut res = HEXAGON_CHILDREN_COUNTS[n];
         if self.is_pentagon() {
-            PENTAGON_CHILDREN_COUNTS[n]
-        } else {
-            HEXAGON_CHILDREN_COUNTS[n]
+            res = PENTAGON_CHILDREN_COUNTS[n];
         }
+        res
     }
 
     /// Returns all the base cell indexes.
