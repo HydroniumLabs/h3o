@@ -49,7 +49,6 @@
     clippy::get_unwrap,
     clippy::if_then_some_else_none,
     clippy::imprecise_flops,
-    clippy::integer_division,
     clippy::iter_on_empty_collections,
     clippy::iter_on_single_items,
     clippy::iter_with_drain,
@@ -119,22 +118,51 @@
 // }}}
 
 mod base_cell;
+mod boundary;
+mod coord;
 mod direction;
 pub mod error;
+mod face;
 mod index;
 mod resolution;
 
 pub use base_cell::BaseCell;
+pub use boundary::Boundary;
+pub use coord::LatLng;
 pub use direction::Direction;
+pub use face::{Face, FaceSet};
 pub use index::{
     CellIndex, DirectedEdgeIndex, Edge, IndexMode, Vertex, VertexIndex,
 };
 pub use resolution::Resolution;
+
+use resolution::ExtendedResolution;
 
 // -----------------------------------------------------------------------------
 
 /// Size, in bits, of a direction (range [0; 6].
 const DIRECTION_BITSIZE: usize = 3;
 
+/// An icosahedron has 20 faces.
+const NUM_ICOSA_FACES: usize = 20;
+// The number of vertices in a hexagon.
+const NUM_HEX_VERTS: u8 = 6;
+// The number of vertices in a pentagon.
+const NUM_PENT_VERTS: u8 = 5;
+
+/// Direction: counterclockwise
+const CCW: bool = true;
+/// Direction: clockwise
+const CW: bool = false;
+
+/// Earth radius in kilometers using WGS84 authalic radius.
+const EARTH_RADIUS_KM: f64 = 6371.007180918475_f64;
+
 /// Number of pentagon per resolution.
 const NUM_PENTAGONS: u8 = 12;
+
+/// Default cell index (resolution 0, base cell 0).
+const DEFAULT_CELL_INDEX: u64 = 0x0800_1fff_ffff_ffff;
+
+// 2π
+const TWO_PI: f64 = 2. * std::f64::consts::PI;

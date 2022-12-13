@@ -415,3 +415,36 @@ impl fmt::Display for Resolution {
         write!(f, "{}", u8::from(*self))
     }
 }
+
+// -----------------------------------------------------------------------------
+
+/// Same as an H3 index resolution, but can goes up to 16.
+///
+/// This extented range is required for some intermediate calculation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct ExtendedResolution(u8);
+
+impl ExtendedResolution {
+    /// Returns true if the resolution is a Class III resolution.
+    pub const fn is_class3(self) -> bool {
+        self.0 % 2 == 1
+    }
+
+    /// Move to the next finer resolution, below `current`.
+    pub fn down(current: Resolution) -> Self {
+        // Max value of `Resolution` is 15: we're always in bound (max 16).
+        Self(u8::from(current) + 1)
+    }
+}
+
+impl From<ExtendedResolution> for usize {
+    fn from(value: ExtendedResolution) -> Self {
+        value.0.into()
+    }
+}
+
+impl From<Resolution> for ExtendedResolution {
+    fn from(value: Resolution) -> Self {
+        Self(value.into())
+    }
+}

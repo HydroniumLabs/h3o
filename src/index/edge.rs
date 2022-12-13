@@ -1,5 +1,7 @@
 use super::{bits, IndexMode};
-use crate::{error, CellIndex};
+use crate::{
+    coord::FaceIJK, error, Boundary, CellIndex, Direction, EARTH_RADIUS_KM,
+};
 use std::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
 
 /// Minimum value for a cell edge.
@@ -123,6 +125,83 @@ impl DirectedEdgeIndex {
     pub fn origin(self) -> CellIndex {
         let bits = bits::set_mode(self.0.get(), IndexMode::Cell);
         CellIndex::new_unchecked(bits::clr_edge(bits))
+    }
+
+    /// Returns the coordinates defining the directed edge.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// let boundary = index.boundary();
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn boundary(self) -> Boundary {
+        // Get the origin and neighbor direction from the edge.
+        let direction = Direction::from(self.edge());
+        let origin = self.origin();
+
+        // Get the start vertex for the edge.
+        let start_vertex = direction.vertex(origin);
+
+        // Get the geo boundary for the appropriate vertexes of the origin. Note
+        // that while there are always 2 topological vertexes per edge, the
+        // resulting edge boundary may have an additional distortion vertex if
+        // it crosses an edge of the icosahedron.
+        let fijk = FaceIJK::from(origin);
+        let resolution = origin.resolution();
+        if origin.is_pentagon() {
+            fijk.pentagon_boundary(resolution, start_vertex, 2)
+        } else {
+            fijk.hexagon_boundary(resolution, start_vertex, 2)
+        }
+    }
+
+    /// Computes the length of this directed edge, in radians.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// assert_eq!(index.length_rads(), 1.1795418098325597e-5);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn length_rads(self) -> f64 {
+        let boundary = self.boundary();
+
+        (0..boundary.len() - 1)
+            .map(|i| boundary[i].distance_rads(boundary[i + 1]))
+            .sum()
+    }
+
+    /// Computes the length of this directed edge, in kilometers.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// assert_eq!(index.length_km(), 0.07514869340636812);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn length_km(self) -> f64 {
+        self.length_rads() * EARTH_RADIUS_KM
+    }
+
+    /// Computes the length of this directed edge, in meters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// assert_eq!(index.length_m(), 75.14869340636812);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn length_m(self) -> f64 {
+        self.length_km() * 1000.
     }
 
     /// Initializes a new edge index a value that may be invalid.

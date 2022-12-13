@@ -1,7 +1,9 @@
 use criterion::{criterion_group, criterion_main};
 
+mod cell_to_boundary;
 mod cell_to_center_child;
 mod cell_to_children_size;
+mod cell_to_latlng;
 mod cell_to_parent;
 mod constants;
 mod degs_to_rads;
@@ -13,11 +15,14 @@ mod get_num_cells;
 mod get_pentagons;
 mod get_res0_cells;
 mod get_resolution;
+mod great_circle_distance;
 mod h3_to_string;
 mod is_pentagon;
 mod is_res_class3;
 mod is_valid_cell;
 mod is_valid_directed_edge;
+mod latlng_to_cell;
+mod max_face_count;
 mod pentagon_count;
 mod rads_to_degs;
 mod res0_cell_count;
@@ -25,8 +30,10 @@ mod string_to_h3;
 
 criterion_group!(
     benches,
+    cell_to_boundary::bench,
     cell_to_center_child::bench,
     cell_to_children_size::bench,
+    cell_to_latlng::bench,
     cell_to_parent::bench,
     degs_to_rads::bench,
     get_base_cell_number::bench,
@@ -39,12 +46,17 @@ criterion_group!(
     get_pentagons::bench,
     get_res0_cells::bench,
     get_resolution::bench,
+    great_circle_distance::bench_km,
+    great_circle_distance::bench_m,
+    great_circle_distance::bench_rads,
     h3_to_string::bench,
     is_pentagon::bench_hexagons,
     is_pentagon::bench_pentagons,
     is_res_class3::bench,
     is_valid_cell::bench,
     is_valid_directed_edge::bench,
+    latlng_to_cell::bench,
+    max_face_count::bench,
     pentagon_count::bench,
     rads_to_degs::bench,
     res0_cell_count::bench,

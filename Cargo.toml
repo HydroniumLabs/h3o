@@ -16,6 +16,7 @@ categories = ["science"]
 all-features = true
 
 [dependencies]
+auto_ops = { version = "0.3", default-features = false }
 float_eq = { version = "1.0", default-features = false }
 
 [dev-dependencies]

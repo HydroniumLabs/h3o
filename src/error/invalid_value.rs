@@ -48,7 +48,9 @@ invalid_value_error!(
     InvalidDirectedEdgeIndex,
     Option<u64>
 );
+invalid_value_error!("latitude/longitude", InvalidLatLng, f64);
 invalid_value_error!("cell edge", InvalidEdge, u8);
 invalid_value_error!("cell vertex", InvalidVertex, u8);
+invalid_value_error!("icosahedron face", InvalidFace, u8);
 invalid_value_error!("base cell", InvalidBaseCell, u8);
 invalid_value_error!("direction", InvalidDirection, u8);

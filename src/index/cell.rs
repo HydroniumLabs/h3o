@@ -1,7 +1,11 @@
+use super::Triangle;
 use crate::{
+    coord::{FaceIJK, Overage},
     error::InvalidCellIndex,
     index::{bits, IndexMode},
-    resolution, BaseCell, Direction, Resolution, DIRECTION_BITSIZE,
+    resolution, BaseCell, Boundary, Direction, ExtendedResolution, FaceSet,
+    LatLng, Resolution, Vertex, CW, DEFAULT_CELL_INDEX, DIRECTION_BITSIZE,
+    EARTH_RADIUS_KM, NUM_HEX_VERTS, NUM_PENT_VERTS,
 };
 use std::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
 
@@ -106,6 +110,126 @@ impl CellIndex {
         let value = bits::get_base_cell(self.0.get());
         // SAFETY: `CellIndex` only contains valid base cell (invariant).
         BaseCell::new_unchecked(value)
+    }
+
+    /// Computes the area of this H3 cell, in radians².
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// assert_eq!(index.area_rads2(), 3.3032558516982826e-10);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn area_rads2(self) -> f64 {
+        let center = LatLng::from(self);
+        let boundary = self.boundary();
+
+        (0..boundary.len())
+            .map(|i| {
+                let j = (i + 1) % boundary.len();
+                Triangle::new(boundary[i], boundary[j], center).area()
+            })
+            .sum()
+    }
+
+    /// Computes the area of this H3 cell, in km².
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// assert_eq!(index.area_km2(), 0.013407827139722947);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn area_km2(self) -> f64 {
+        self.area_rads2() * EARTH_RADIUS_KM * EARTH_RADIUS_KM
+    }
+
+    /// Computes the area of this H3 cell, in m².
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// assert_eq!(index.area_m2(), 13407.827139722947);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn area_m2(self) -> f64 {
+        self.area_km2() * 1000. * 1000.
+    }
+
+    /// Finds all icosahedron faces intersected this cell index
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let faces = index.icosahedron_faces().iter().collect::<Vec<_>>();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn icosahedron_faces(self) -> FaceSet {
+        let resolution = self.resolution();
+        let is_pentagon = self.is_pentagon();
+
+        // We can't use the vertex-based approach here for class II pentagons,
+        // because all their vertices are on the icosahedron edges. Their direct
+        // child pentagons cross the same faces, so use those instead.
+        if is_pentagon && !resolution.is_class3() {
+            // We are working on Class II pentagons here (`resolution`
+            // up to 14), hence we can always get a finer resolution.
+            let child_resolution = resolution.succ().expect("child resolution");
+            let bits = bits::set_resolution(self.0.get(), child_resolution);
+            return Self::new_unchecked(bits::set_direction(
+                bits,
+                0,
+                child_resolution,
+            ))
+            .icosahedron_faces();
+        }
+
+        // Convert to FaceIJK.
+        let mut fijk = FaceIJK::from(self);
+
+        // Get all vertices as FaceIJK addresses. For simplicity, always
+        // initialize the array with 6 verts, ignoring the last one for
+        // pentagons.
+        let mut vertices = [FaceIJK::default(); NUM_HEX_VERTS as usize];
+        let (vertex_count, resolution) = if is_pentagon {
+            (
+                usize::from(NUM_PENT_VERTS),
+                fijk.vertices(
+                    resolution,
+                    &mut vertices[..usize::from(NUM_PENT_VERTS)],
+                ),
+            )
+        } else {
+            (
+                usize::from(NUM_HEX_VERTS),
+                fijk.vertices(resolution, &mut vertices),
+            )
+        };
+
+        let mut faces = FaceSet::new();
+
+        // Add each vertex face.
+        for vertex in &mut vertices[..vertex_count] {
+            // Adjust overage, determining whether this vertex is on another
+            // face.
+            if is_pentagon {
+                vertex.adjust_pentagon_vertex_overage(resolution);
+            } else {
+                vertex.adjust_overage_class2::<true>(resolution, false);
+            }
+
+            faces.insert(vertex.face);
+        }
+
+        faces
     }
 
     /// Returns true if this index represents a pentagonal cell.
@@ -255,6 +379,27 @@ impl CellIndex {
         res
     }
 
+    /// Computes the cell boundary, in spherical coordinates, of this index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let boundary = index.boundary().iter().collect::<Vec<_>>();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn boundary(self) -> Boundary {
+        let fijk = FaceIJK::from(self);
+        // SAFETY: 0 is always a valid vertex.
+        let start = Vertex::new_unchecked(0);
+        if self.is_pentagon() {
+            fijk.pentagon_boundary(self.resolution(), start, NUM_PENT_VERTS)
+        } else {
+            fijk.hexagon_boundary(self.resolution(), start, NUM_HEX_VERTS)
+        }
+    }
+
     /// Returns all the base cell indexes.
     ///
     /// # Example
@@ -263,18 +408,61 @@ impl CellIndex {
     /// let cells = h3o::CellIndex::base_cells().collect::<Vec<_>>();
     /// ```
     pub fn base_cells() -> impl Iterator<Item = Self> {
-        // Template for a resolution 0 index
-        // mode = CELL, resolution = 0, all children unset.
-        const TEMPLATE: u64 = 0x0800_1fff_ffff_ffff;
-
         (0..BaseCell::count()).map(|base_cell| {
-            Self::new_unchecked(bits::set_base_cell(TEMPLATE, base_cell))
+            Self::new_unchecked(bits::set_base_cell(
+                DEFAULT_CELL_INDEX,
+                base_cell,
+            ))
         })
     }
 
     pub(crate) fn new_unchecked(value: u64) -> Self {
         debug_assert!(Self::try_from(value).is_ok(), "invalid cell index");
         Self(NonZeroU64::new(value).expect("valid cell index"))
+    }
+
+    /// Get the number of CCW rotations of the cell's vertex numbers compared to
+    /// the directional layout of its neighbors.
+    pub(crate) fn vertex_rotations(self) -> u8 {
+        // Get the face and other info for the origin.
+        let fijk = FaceIJK::from(self);
+        let base_cell = self.base_cell();
+        let leading_dir = bits::first_axe(self.into());
+
+        // Get the base cell face.
+        let base_fijk = FaceIJK::from(base_cell);
+        let mut ccw_rot60 = base_cell.rotation_count(fijk.face);
+
+        if base_cell.is_pentagon() {
+            let jk = Direction::JK.axe().expect("JK");
+            let ik = Direction::IK.axe().expect("IK");
+
+            // Find the appropriate direction-to-face mapping
+            let dir_faces = base_cell.pentagon_direction_faces();
+
+            // Additional CCW rotation for polar neighbors or IK neighbors.
+            if fijk.face != base_fijk.face
+                && (base_cell.is_polar_pentagon()
+                    || fijk.face == dir_faces[usize::from(ik.get()) - 2])
+            {
+                ccw_rot60 = (ccw_rot60 + 1) % 6;
+            }
+
+            // Check whether the cell crosses a deleted pentagon subsequence.
+            if leading_dir == Some(jk)
+                && fijk.face == dir_faces[usize::from(ik.get()) - 2]
+            {
+                // Crosses from JK to IK => Rotate CW.
+                ccw_rot60 = (ccw_rot60 + 5) % 6;
+            } else if leading_dir == Some(ik)
+                && fijk.face == dir_faces[usize::from(jk.get()) - 2]
+            {
+                // Crosses from IK to JK => Rotate CCW.
+                ccw_rot60 = (ccw_rot60 + 1) % 6;
+            }
+        }
+
+        ccw_rot60
     }
 }
 
@@ -306,6 +494,78 @@ impl PartialOrd for CellIndex {
 impl From<CellIndex> for u64 {
     fn from(value: CellIndex) -> Self {
         value.0.get()
+    }
+}
+
+impl From<CellIndex> for LatLng {
+    /// Determines the spherical coordinates of the center point of an H3 index.
+    fn from(value: CellIndex) -> Self {
+        FaceIJK::from(value).to_latlng(value.resolution())
+    }
+}
+
+impl From<CellIndex> for FaceIJK {
+    /// Converts an `H3Index` to a `FaceIJK` address.
+    fn from(value: CellIndex) -> Self {
+        let mut bits = value.0.get();
+        let base_cell = value.base_cell();
+        let resolution = value.resolution();
+
+        // Adjust for the pentagonal missing sequence; all of sub-sequence 5
+        // needs to be adjusted (and some of sub-sequence 4 below).
+        if base_cell.is_pentagon()
+            && bits::first_axe(bits) == Direction::IK.axe()
+        {
+            bits = bits::rotate60::<{ CW }>(bits, 1);
+        }
+
+        // Start with the "home" face and `IJK` coordinates for the base cell.
+        //
+        // XXX: Because of the adjustment above, cell may have become an invalid
+        // pentagon, so we need to works on the raw bits here.
+        let (mut fijk, overage) = Self::from_bits(bits, resolution, base_cell);
+        if !overage {
+            return fijk;
+        }
+
+        // If we're here we have the potential for an "overage"; i.e., it is
+        // possible that the index lies on an adjacent face.
+
+        let original_coord = fijk.coord;
+
+        // If we're in Class III, drop into the next finer Class II grid.
+        let class2_res = if resolution.is_class3() {
+            fijk.coord = fijk.coord.down_aperture7::<{ CW }>();
+            ExtendedResolution::down(resolution)
+        } else {
+            resolution.into()
+        };
+
+        // Adjust for overage if needed.
+        // A pentagon base cell with a leading 4 digit requires special
+        // handling.
+        let is_pent4 = base_cell.is_pentagon()
+            && bits::first_axe(bits) == Direction::I.axe();
+
+        if fijk.adjust_overage_class2::<{ CW }>(class2_res, is_pent4)
+            != Overage::None
+        {
+            // If the base cell is a pentagon we have the potential for
+            // secondary overages.
+            if base_cell.is_pentagon() {
+                while fijk.adjust_overage_class2::<{ CW }>(class2_res, false)
+                    != Overage::None
+                {}
+            }
+
+            if class2_res != resolution.into() {
+                fijk.coord = fijk.coord.up_aperture7::<{ CW }>();
+            }
+        } else if class2_res != resolution.into() {
+            fijk.coord = original_coord;
+        }
+
+        fijk
     }
 }
 

@@ -1,8 +1,48 @@
 //! Expose some H3 functions to allow testing against the reference
 //! implementation.
 
-use h3o::{BaseCell, CellIndex, DirectedEdgeIndex, Resolution};
+use h3o::{
+    BaseCell, Boundary, CellIndex, DirectedEdgeIndex, LatLng, Resolution,
+};
 use std::{ffi::CString, fmt::Debug, os::raw::c_int};
+
+/// Expose `cellToBoundary`.
+pub fn cell_to_boundary(index: CellIndex) -> Boundary {
+    let mut result = h3ron_h3_sys::CellBoundary {
+        numVerts: 0,
+        verts: [h3ron_h3_sys::LatLng { lat: 0., lng: 0. }; 10],
+    };
+    unsafe {
+        h3ron_h3_sys::cellToBoundary(index.into(), &mut result);
+    }
+
+    let mut boundary = Boundary::new();
+    for i in 0..(result.numVerts as usize) {
+        boundary.push(
+            LatLng::new(result.verts[i].lat, result.verts[i].lng)
+                .expect("vertex coordinate"),
+        );
+    }
+
+    boundary
+}
+
+/// Expose `cellToCenterChild`.
+pub fn cell_to_center_child(
+    cell: CellIndex,
+    resolution: Resolution,
+) -> Option<CellIndex> {
+    let resolution = u8::from(resolution);
+    let mut out: u64 = 0;
+    let res = unsafe {
+        h3ron_h3_sys::cellToCenterChild(
+            cell.into(),
+            resolution.into(),
+            &mut out,
+        )
+    };
+    (res == 0).then(|| CellIndex::try_from(out).expect("cell index"))
+}
 
 /// Expose `cellToChildrenSize`.
 pub fn cell_to_children_size(index: CellIndex, resolution: Resolution) -> u64 {
@@ -21,6 +61,15 @@ pub fn cell_to_children_size(index: CellIndex, resolution: Resolution) -> u64 {
             _ => panic!("cellToChildrenSize"),
         }
     }
+}
+
+/// Expose `cellToLatLng`.
+pub fn cell_to_latlng(index: CellIndex) -> LatLng {
+    let mut ll = h3ron_h3_sys::LatLng { lat: 0., lng: 0. };
+    unsafe {
+        h3ron_h3_sys::cellToLatLng(index.into(), &mut ll);
+    }
+    LatLng::new(ll.lat, ll.lng).expect("coordinate")
 }
 
 /// Expose `cellToParent`.
@@ -150,6 +199,45 @@ pub fn get_resolution(index: CellIndex) -> Resolution {
     }
 }
 
+/// Expose `greatCircleDistanceKm`.
+pub fn great_circle_distance_km(src: &LatLng, dst: &LatLng) -> f64 {
+    let src = h3ron_h3_sys::LatLng {
+        lat: src.lat(),
+        lng: src.lng(),
+    };
+    let dst = h3ron_h3_sys::LatLng {
+        lat: dst.lat(),
+        lng: dst.lng(),
+    };
+    unsafe { h3ron_h3_sys::greatCircleDistanceKm(&src, &dst) }
+}
+
+/// Expose `greatCircleDistanceM`.
+pub fn great_circle_distance_m(src: &LatLng, dst: &LatLng) -> f64 {
+    let src = h3ron_h3_sys::LatLng {
+        lat: src.lat(),
+        lng: src.lng(),
+    };
+    let dst = h3ron_h3_sys::LatLng {
+        lat: dst.lat(),
+        lng: dst.lng(),
+    };
+    unsafe { h3ron_h3_sys::greatCircleDistanceM(&src, &dst) }
+}
+
+/// Expose `greatCircleDistanceRads`.
+pub fn great_circle_distance_rads(src: &LatLng, dst: &LatLng) -> f64 {
+    let src = h3ron_h3_sys::LatLng {
+        lat: src.lat(),
+        lng: src.lng(),
+    };
+    let dst = h3ron_h3_sys::LatLng {
+        lat: dst.lat(),
+        lng: dst.lng(),
+    };
+    unsafe { h3ron_h3_sys::greatCircleDistanceRads(&src, &dst) }
+}
+
 /// Expose `h3ToString`.
 pub fn h3_to_string(index: impl Into<u64>) -> String {
     let buf = CString::new(vec![1u8; 16]).expect("valid CString");
@@ -183,6 +271,19 @@ pub fn is_valid_cell(index: u64) -> bool {
 /// Expose `isValidDirectedEdge`.
 pub fn is_valid_directed_edge(index: u64) -> bool {
     unsafe { h3ron_h3_sys::isValidDirectedEdge(index) == 1 }
+}
+
+/// Expose `latLngToCell`.
+pub fn latlng_to_cell(ll: &LatLng, resolution: Resolution) -> CellIndex {
+    let mut out: u64 = 0;
+    let ll = h3ron_h3_sys::LatLng {
+        lat: ll.lat(),
+        lng: ll.lng(),
+    };
+    unsafe {
+        h3ron_h3_sys::latLngToCell(&ll, u8::from(resolution).into(), &mut out);
+    }
+    CellIndex::try_from(out).expect("cell index")
 }
 
 /// Expose `maxFaceCount`.
