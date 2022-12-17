@@ -1,9 +1,31 @@
 use super::{bits, IndexMode};
-use crate::{error, CellIndex};
-use std::{cmp::Ordering, fmt, num::NonZeroU64};
+use crate::{
+    coord::FaceIJK, error, CellIndex, Direction, LatLng, NUM_HEX_VERTS,
+    NUM_PENT_VERTS,
+};
+use std::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
 
 /// Maximum value for a cell vertex.
 const MAX: u8 = 5;
+
+/// Vertex number to hexagon direction relationships (same face).
+const TO_DIRECTION_HEXAGON: [Direction; NUM_HEX_VERTS as usize] = [
+    Direction::IJ,
+    Direction::J,
+    Direction::JK,
+    Direction::K,
+    Direction::IK,
+    Direction::I,
+];
+
+/// Vertex number to pentagon direction relationships (same face).
+const TO_DIRECTION_PENTAGON: [Direction; NUM_PENT_VERTS as usize] = [
+    Direction::IJ,
+    Direction::J,
+    Direction::JK,
+    Direction::IK,
+    Direction::I,
+];
 
 // -----------------------------------------------------------------------------
 
@@ -20,6 +42,32 @@ impl Vertex {
     pub(crate) const fn new_unchecked(value: u8) -> Self {
         debug_assert!(value <= MAX, "cell vertex out of range");
         Self(value)
+    }
+
+    pub(crate) fn to_direction(self, origin: CellIndex) -> Direction {
+        let is_pentagon = origin.is_pentagon();
+        let vertex_count = if is_pentagon {
+            NUM_PENT_VERTS
+        } else {
+            NUM_HEX_VERTS
+        };
+
+        // Invalid vertex are filtered out by the caller.
+        assert!(self.0 < vertex_count);
+
+        // Determine the vertex rotations for this cell.
+        let rotations = origin.vertex_rotations();
+
+        // Find the appropriate direction, rotating CW if necessary
+        if is_pentagon {
+            let index = (self.0 + rotations) % NUM_PENT_VERTS;
+
+            TO_DIRECTION_PENTAGON[usize::from(index)]
+        } else {
+            let index = (self.0 + rotations) % NUM_HEX_VERTS;
+
+            TO_DIRECTION_HEXAGON[usize::from(index)]
+        }
     }
 }
 
@@ -121,7 +169,6 @@ impl VertexIndex {
     /// # Safety
     ///
     /// The value must be a valid vertex index.
-    #[cfg(test)]
     pub(crate) fn new_unchecked(value: u64) -> Self {
         // XXX: cannot `debug_assert!` a `Self::try_from` here.
         // `try_from` relies on `CellIndex::vertex` for canonical check,
@@ -150,6 +197,70 @@ impl PartialOrd for VertexIndex {
 impl From<VertexIndex> for u64 {
     fn from(value: VertexIndex) -> Self {
         value.0.get()
+    }
+}
+
+impl TryFrom<u64> for VertexIndex {
+    type Error = error::InvalidVertexIndex;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        if bits::get_mode(value) != u8::from(IndexMode::Vertex) {
+            return Err(Self::Error::new(Some(value), "invalid index mode"));
+        }
+
+        // Clear the highest byte and validate the owner part.
+        let bits = bits::set_mode(value, IndexMode::Cell);
+        let bits = bits::clr_vertex(bits);
+        let owner = CellIndex::try_from(bits)
+            .map_err(|err| Self::Error::new(Some(value), err.reason))?;
+
+        // The easiest way to ensure that the owner + vertex number is valid,
+        // and that the vertex is canonical, is to recreate and compare.
+        let vertex =
+            Vertex::try_from(bits::get_vertex(value)).map_err(|_| {
+                Self::Error::new(Some(value), "invalid vertex number")
+            })?;
+        let canonical = owner.vertex(vertex).map(u64::from);
+
+        if canonical != Some(value) {
+            return Err(Self::Error::new(Some(value), "non-canonical vertex"));
+        }
+
+        // XXX: 0 is rejected by the mode check (mode cannot be 0).
+        Ok(Self(NonZeroU64::new(value).expect("non-zero vertex index")))
+    }
+}
+
+impl From<VertexIndex> for LatLng {
+    // Get the geocoordinates of an H3 vertex.
+    fn from(value: VertexIndex) -> Self {
+        // SAFETY: VertexIndex always contains a valid vertex value.
+        let vertex = Vertex::new_unchecked(bits::get_vertex(value.0.get()));
+        let owner = value.owner();
+
+        // Get the single vertex from the boundary.
+        let fijk = FaceIJK::from(owner);
+        let resolution = owner.resolution();
+        let boundary = if owner.is_pentagon() {
+            fijk.pentagon_boundary(resolution, vertex, 1)
+        } else {
+            fijk.hexagon_boundary(resolution, vertex, 1)
+        };
+
+        boundary[0]
+    }
+}
+
+impl FromStr for VertexIndex {
+    type Err = error::InvalidVertexIndex;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        u64::from_str_radix(s, 16)
+            .map_err(|_| Self::Err {
+                value: None,
+                reason: "invalid 64-bit hex number",
+            })
+            .and_then(Self::try_from)
     }
 }
 

@@ -1,6 +1,7 @@
 use super::{bits, IndexMode};
 use crate::{
-    coord::FaceIJK, error, Boundary, CellIndex, Direction, EARTH_RADIUS_KM,
+    coord::FaceIJK, error, grid, Boundary, CellIndex, Direction,
+    EARTH_RADIUS_KM,
 };
 use std::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
 
@@ -127,6 +128,42 @@ impl DirectedEdgeIndex {
         CellIndex::new_unchecked(bits::clr_edge(bits))
     }
 
+    /// Returns the destination hexagon from the directed edge index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff)?;
+    /// assert_eq!(index.destination(), h3o::CellIndex::try_from(0x8a194e699a97fff)?);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn destination(self) -> CellIndex {
+        let direction = Direction::from(self.edge());
+        let origin = self.origin();
+        // Every edge has a destination.
+        grid::neighbor_rotations(origin, direction, 0)
+            .expect("destination cell index")
+            .0
+    }
+
+    /// Returns the `(origin, destination)` pair of cell index for this edge.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff)?;
+    /// assert_eq!(index.cells(), (
+    ///     h3o::CellIndex::try_from(0x8a194e699ab7fff)?,
+    ///     h3o::CellIndex::try_from(0x8a194e699a97fff)?,
+    /// ));
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn cells(self) -> (CellIndex, CellIndex) {
+        (self.origin(), self.destination())
+    }
+
     /// Returns the coordinates defining the directed edge.
     ///
     /// # Example
@@ -209,7 +246,6 @@ impl DirectedEdgeIndex {
     /// # Safety
     ///
     /// The value must be a valid edge index.
-    #[cfg(test)]
     pub(crate) fn new_unchecked(value: u64) -> Self {
         debug_assert!(Self::try_from(value).is_ok(), "invalid edge index");
         Self(NonZeroU64::new(value).expect("valid edge index"))

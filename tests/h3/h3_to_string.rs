@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::{CellIndex, DirectedEdgeIndex};
+use h3o::{CellIndex, DirectedEdgeIndex, VertexIndex};
 
 macro_rules! test {
     ($name:ident, $index:expr) => {
@@ -28,4 +28,13 @@ test!(
 test!(
     edge_index_res15,
     DirectedEdgeIndex::try_from(0x15f2834782b9c2ab)
+);
+test!(vertex_index_res0, VertexIndex::try_from(0x2302bfffffffffff));
+test!(
+    vertex_index_res12,
+    VertexIndex::try_from(0x23f2834782b9c2a8)
+);
+test!(
+    vertex_index_res15,
+    VertexIndex::try_from(0x21c2bae305330dff)
 );

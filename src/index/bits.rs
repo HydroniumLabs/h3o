@@ -2,7 +2,8 @@
 
 use super::IndexMode;
 use crate::{
-    coord::CoordIJK, Direction, Resolution, CCW, CW, DIRECTION_BITSIZE,
+    coord::CoordIJK, Direction, Edge, Resolution, Vertex, CCW, CW,
+    DIRECTION_BITSIZE,
 };
 use std::{cmp, num::NonZeroU8};
 
@@ -57,6 +58,12 @@ pub const fn get_edge(bits: u64) -> u8 {
     ((bits & EDGE_MASK) >> EDGE_OFFSET) as u8
 }
 
+/// Sets the H3 index mode bits.
+#[must_use]
+pub fn set_edge(bits: u64, edge: Edge) -> u64 {
+    clr_edge(bits) | (u64::from(edge) << EDGE_OFFSET)
+}
+
 /// Clears the H3 index cell edge bits.
 #[must_use]
 pub const fn clr_edge(bits: u64) -> u64 {
@@ -68,6 +75,12 @@ pub const fn clr_edge(bits: u64) -> u64 {
 #[must_use]
 pub const fn get_vertex(bits: u64) -> u8 {
     ((bits & VERTEX_MASK) >> VERTEX_OFFSET) as u8
+}
+
+/// Sets the H3 index mode bits.
+#[must_use]
+pub fn set_vertex(bits: u64, vertex: Vertex) -> u64 {
+    clr_vertex(bits) | (u64::from(vertex) << VERTEX_OFFSET)
 }
 
 /// Clears the H3 index cell vertex bits.
@@ -117,6 +130,12 @@ pub fn set_base_cell(bits: u64, cell: u8) -> u64 {
 pub fn get_direction(bits: u64, resolution: Resolution) -> u8 {
     ((bits & resolution.direction_mask()) >> resolution.direction_offset())
         as u8
+}
+
+/// Clears the H3 index direction at the given resolution.
+#[must_use]
+pub fn clr_direction(bits: u64, resolution: Resolution) -> u64 {
+    bits & !resolution.direction_mask()
 }
 
 /// Set the H3 index direction bits at the given resolution.
@@ -266,3 +285,7 @@ pub fn directions_bits_from_ijk(
 
     ijk
 }
+
+#[cfg(test)]
+#[path = "./bits_tests.rs"]
+mod tests;

@@ -1,13 +1,24 @@
-use super::Triangle;
+use super::{Children, Compact, GridPathCells, Triangle};
 use crate::{
-    coord::{FaceIJK, Overage},
-    error::InvalidCellIndex,
+    coord::{CoordIJ, CoordIJK, FaceIJK, LocalIJK, Overage},
+    error::{
+        CompactionError, HexGridError, InvalidCellIndex, LocalIjError,
+        ResolutionMismatch,
+    },
+    grid,
     index::{bits, IndexMode},
-    resolution, BaseCell, Boundary, Direction, ExtendedResolution, FaceSet,
-    LatLng, Resolution, Vertex, CW, DEFAULT_CELL_INDEX, DIRECTION_BITSIZE,
+    resolution, BaseCell, Boundary, DirectedEdgeIndex, Direction, Edge,
+    ExtendedResolution, FaceSet, LatLng, LocalIJ, Resolution, Vertex,
+    VertexIndex, CCW, CW, DEFAULT_CELL_INDEX, DIRECTION_BITSIZE,
     EARTH_RADIUS_KM, NUM_HEX_VERTS, NUM_PENT_VERTS,
 };
-use std::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
+use either::Either;
+use std::{
+    cmp::Ordering,
+    fmt, iter,
+    num::{NonZeroU64, NonZeroU8},
+    str::FromStr,
+};
 
 /// Lookup table for number of children for hexagonal cells.
 // 7.pow(resolution_delta)
@@ -50,6 +61,89 @@ const PENTAGON_CHILDREN_COUNTS: [u64; 16] = [
     565_185_894_041,
     3_956_301_258_286,
 ];
+
+/// Reverse direction from neighbor in each direction given as an index into
+/// `DIRECTIONS` to facilitate rotation.
+const REV_NEIGHBOR_DIRECTIONS_HEX: [u8; 6] = [5, 3, 4, 1, 0, 2];
+
+// These sets are the relevant neighbors in the clockwise and counter-clockwise.
+const NEIGHBOR_SET_CW: [Direction; 7] = [
+    Direction::Center,
+    Direction::JK,
+    Direction::IJ,
+    Direction::J,
+    Direction::IK,
+    Direction::K,
+    Direction::I,
+];
+const NEIGHBOR_SET_CCW: [Direction; 7] = [
+    Direction::Center,
+    Direction::IK,
+    Direction::JK,
+    Direction::K,
+    Direction::IJ,
+    Direction::I,
+    Direction::J,
+];
+
+/// Origin leading digit -> index leading digit -> rotations 60 CW.
+///
+/// Either being 1 (K axis) is invalid.
+/// No good default at 0.
+#[rustfmt::skip]
+const PENTAGON_ROTATIONS: [[u8; 7]; 7] = [
+    [ 0,    0xff, 0,    0,    0,    0,    0],    // 0
+    [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff], // 1
+    [ 0,    0xff, 0,    0,    0,    1,    0],    // 2
+    [ 0,    0xff, 0,    0,    1,    1,    0],    // 3
+    [ 0,    0xff, 0,    5,    0,    0,    0],    // 4
+    [ 0,    0xff, 5,    5,    0,    0,    0],    // 5
+    [ 0,    0xff, 0,    0,    0,    0,    0],    // 6
+];
+
+/// Prohibited directions when unfolding a pentagon.
+///
+/// Indexes by two directions, both relative to the pentagon base cell. The
+/// first is the direction of the origin index and the second is the direction
+/// of the index to unfold. Direction refers to the direction from base cell to
+/// base cell if the indexes are on different base cells, or the leading digit
+/// if within the pentagon base cell.
+///
+/// This previously included a Class II/Class III check but these were removed
+/// due to failure cases. It's possible this could be restricted to a narrower
+/// set of a failure cases. Currently, the logic is any unfolding across more
+/// than one icosahedron face is not permitted.
+#[allow(clippy::unusual_byte_groupings)] // Grouping by 7 is more explicit here.
+const FAILED_DIRECTIONS: u64 =
+    //   6       5       4       3       2       1       0
+    0b0101000_1000100_0001100_1010000_0110000_0000000_0000000;
+
+const fn validate_direction(
+    origin_dir: u8,
+    index_dir: u8,
+) -> Result<(), LocalIjError> {
+    let offset = origin_dir * 7 + index_dir;
+    if (FAILED_DIRECTIONS & (1 << offset)) != 0 {
+        // TODO: We may be unfolding the pentagon incorrectly in
+        // this case; return an error code until this is guaranteed
+        // to be correct.
+        return Err(LocalIjError::Pentagon);
+    }
+    Ok(())
+}
+
+/// Directions in CCW order.
+pub const DIRECTIONS: [Direction; NUM_HEX_VERTS as usize] = [
+    Direction::J,
+    Direction::JK,
+    Direction::K,
+    Direction::IK,
+    Direction::I,
+    Direction::IJ,
+];
+
+/// This base cell map to IJK {0, 0, 0}, which is needed in `to_local_ijk`.
+const BASE_CELL: BaseCell = BaseCell::new_unchecked(2);
 
 // -----------------------------------------------------------------------------
 
@@ -379,6 +473,105 @@ impl CellIndex {
         res
     }
 
+    /// Return the children, at the specified resolution, of the cell index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Resolution};
+    ///
+    /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let children = index.children(Resolution::Eleven).collect::<Vec<_>>();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn children(
+        self,
+        resolution: Resolution,
+    ) -> impl Iterator<Item = Self> {
+        Children::new(self, resolution)
+    }
+
+    /// Compresses a set of unique cell indexes all at the same resolution.
+    ///
+    /// The indexes are compressed by pruning full child branches to the parent
+    /// level. This is also done for all parents recursively to get the minimum
+    /// number of hex addresses that perfectly cover the defined space.
+    ///
+    /// # Errors
+    ///
+    /// All cell indexes must be unique and have the same resolution, otherwise
+    /// an [`CompactionError`] is returned.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let cells = [
+    ///     0x081003ffffffffff,
+    ///     0x081023ffffffffff,
+    ///     0x081043ffffffffff,
+    ///     0x081063ffffffffff,
+    ///     0x081083ffffffffff,
+    ///     0x0810a3ffffffffff,
+    ///     0x0810c3ffffffffff,
+    /// ]
+    /// .into_iter()
+    /// .map(|hex| CellIndex::try_from(hex))
+    /// .collect::<Result<Vec<_>, _>>()?;
+    /// let compacted_cells = CellIndex::compact(cells)?.collect::<Vec<_>>();
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn compact(
+        indexes: impl IntoIterator<Item = Self>,
+    ) -> Result<impl Iterator<Item = Self>, CompactionError> {
+        Compact::new(indexes)
+    }
+
+    /// Computes the exact size of the uncompacted set of cells.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Resolution};
+    ///
+    /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let size = CellIndex::uncompact_size(std::iter::once(index), Resolution::Eleven);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn uncompact_size(
+        compacted: impl IntoIterator<Item = Self>,
+        resolution: Resolution,
+    ) -> u64 {
+        compacted
+            .into_iter()
+            .map(move |index| index.children_count(resolution))
+            .sum()
+    }
+
+    /// Expands a compressed set of cells into a set of cells of the specified
+    /// resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Resolution};
+    ///
+    /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells = CellIndex::uncompact(
+    ///     std::iter::once(index), Resolution::Eleven
+    /// ).collect::<Vec<_>>();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn uncompact(
+        compacted: impl IntoIterator<Item = Self>,
+        resolution: Resolution,
+    ) -> impl Iterator<Item = Self> {
+        compacted
+            .into_iter()
+            .flat_map(move |index| index.children(resolution))
+    }
+
     /// Computes the cell boundary, in spherical coordinates, of this index.
     ///
     /// # Example
@@ -414,6 +607,621 @@ impl CellIndex {
                 base_cell,
             ))
         })
+    }
+
+    /// Returns the edge between the current cell and the specified destination.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Direction, DirectedEdgeIndex};
+    ///
+    /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
+    /// assert_eq!(src.edge(dst), DirectedEdgeIndex::try_from(0x16a1fb46622dffff).ok());
+    ///
+    /// // Not a neighbor, thus no shared edge.
+    /// let dst = CellIndex::try_from(0x8a1fb4644937fff)?;
+    /// assert!(src.edge(dst).is_none());
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn edge(self, destination: Self) -> Option<DirectedEdgeIndex> {
+        // Determine the IJK direction from the origin to the destination
+        grid::direction_for_neighbor(self, destination).map(|direction| {
+            let bits = bits::set_mode(u64::from(self), IndexMode::DirectedEdge);
+            // SAFETY: `direction_for_neighbor` always return valid edge value.
+            DirectedEdgeIndex::new_unchecked(bits::set_edge(
+                bits,
+                Edge::new_unchecked(direction.into()),
+            ))
+        })
+    }
+
+    /// Returns all of the directed edges from the current index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let edges = index.edges().collect::<Vec<_>>();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn edges(self) -> impl Iterator<Item = DirectedEdgeIndex> {
+        let template = bits::set_mode(self.0.get(), IndexMode::DirectedEdge);
+        let deleted_edge = self.is_pentagon().then_some(1);
+
+        Edge::iter().filter_map(move |edge| {
+            (Some(u8::from(edge)) != deleted_edge).then(|| {
+                // SAFETY: loop bound ensure valid edge value.
+                DirectedEdgeIndex::new_unchecked(bits::set_edge(template, edge))
+            })
+        })
+    }
+
+    /// Get the specified vertex of this cell.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Vertex, VertexIndex};
+    ///
+    /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// assert_eq!(
+    ///     index.vertex(Vertex::try_from(3)?),
+    ///     VertexIndex::try_from(0x25a1fb464492ffff).ok()
+    /// );
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn vertex(self, vertex: Vertex) -> Option<VertexIndex> {
+        let vertex_count = self.vertex_count();
+        let resolution = self.resolution();
+
+        // Check for invalid vertexes.
+        if u8::from(vertex) >= vertex_count {
+            return None;
+        }
+
+        // Default the owner and vertex number to current cell.
+        let mut owner = self;
+        let mut owner_vertex = vertex;
+
+        // Determine the owner, looking at the three cells that share the
+        // vertex.
+        // By convention, the owner is the cell with the lowest numerical index.
+
+        // If the cell is the center child of its parent, it will always have
+        // the lowest index of any neighbor, so we can skip determining the
+        // owner.
+        if resolution == Resolution::Zero
+            || bits::get_direction(self.into(), resolution)
+                != u8::from(Direction::Center)
+        {
+            // Get the left neighbor of the vertex, with its rotations.
+            let left = vertex.to_direction(self);
+            let (left_cell, left_rotation) =
+                grid::neighbor_rotations(self, left, 0).expect("left neighbor");
+            // Set to owner if lowest index.
+            if left_cell < owner {
+                owner = left_cell;
+            }
+
+            // As above, skip the right neighbor if the left is known lowest
+            if resolution == Resolution::Zero
+                || bits::get_direction(left_cell.into(), resolution)
+                    != u8::from(Direction::Center)
+            {
+                // Get the right neighbor of the vertex, with its rotations.
+                // Note that vertex - 1 is the right side, as vertex numbers are
+                // CCW.
+                let right_vertex = Vertex::new_unchecked(
+                    (u8::from(vertex) + vertex_count - 1) % vertex_count,
+                );
+                let right = right_vertex.to_direction(self);
+                let (right_cell, right_rotation) =
+                    grid::neighbor_rotations(self, right, 0)
+                        .expect("right neighbor");
+
+                // Set to owner if lowest index.
+                if right_cell < owner {
+                    owner = right_cell;
+                    let direction = if owner.is_pentagon() {
+                        grid::direction_for_neighbor(owner, self)
+                            .expect("direction to the right")
+                    } else {
+                        debug_assert_ne!(right, Direction::Center);
+                        let offset = (REV_NEIGHBOR_DIRECTIONS_HEX
+                            [usize::from(right) - 1]
+                            + right_rotation)
+                            % NUM_HEX_VERTS;
+                        DIRECTIONS[usize::from(offset)]
+                    };
+
+                    owner_vertex = direction.vertex(owner);
+                }
+            }
+
+            // Determine the vertex number for the left neighbor.
+            if owner == left_cell {
+                let direction = if owner.is_pentagon() {
+                    grid::direction_for_neighbor(owner, self)
+                        .expect("direction to the left")
+                } else {
+                    debug_assert_ne!(left, Direction::Center);
+                    let offset = (REV_NEIGHBOR_DIRECTIONS_HEX
+                        [usize::from(left) - 1]
+                        + left_rotation)
+                        % NUM_HEX_VERTS;
+                    DIRECTIONS[usize::from(offset)]
+                };
+
+                // For the left neighbor, we need the second vertex of the
+                // edge, which may involve looping around the vertex nums.
+                owner_vertex = Vertex::new_unchecked(
+                    (u8::from(direction.vertex(owner)) + 1)
+                        % owner.vertex_count(),
+                );
+            }
+        }
+
+        // Create the vertex index
+        let bits = bits::set_mode(owner.into(), IndexMode::Vertex);
+        Some(VertexIndex::new_unchecked(bits::set_vertex(
+            bits,
+            owner_vertex,
+        )))
+    }
+
+    /// Returns all vertexes for the current cell.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let vertexes = index.vertexes().collect::<Vec<_>>();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn vertexes(self) -> impl Iterator<Item = VertexIndex> {
+        (0..self.vertex_count()).map(move |vertex| {
+            // SAFETY: loop bound ensure valid vertex value.
+            let vertex = Vertex::new_unchecked(vertex);
+            // We've already filtered out invalid vertex.
+            self.vertex(vertex).expect("cell vertex")
+        })
+    }
+
+    /// Produce cells within grid distance `k` of the cell.
+    ///
+    /// This function is a convenience helper that tries
+    /// [`Self::grid_disk_fast`] first and then fallback on
+    /// [`Self::grid_disk_safe`] if the former fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells = index.grid_disk::<Vec<_>>(2);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn grid_disk<T>(self, k: u32) -> T
+    where
+        T: FromIterator<Self>,
+    {
+        self.grid_disk_fast(k)
+            .collect::<Option<T>>()
+            .unwrap_or_else(|| self.grid_disk_safe(k).collect())
+    }
+
+    /// Safe but slow version of [`Self::grid_disk_fast`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells = index.grid_disk_safe(2).collect::<Vec<_>>();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn grid_disk_safe(self, k: u32) -> impl Iterator<Item = Self> {
+        if k == 0 {
+            return Either::Right(iter::once(self));
+        }
+        Either::Left(
+            grid::DiskDistancesSafe::new(self, k).map(|(cell, _)| cell),
+        )
+    }
+
+    /// Produces indexes within grid distance `k` of the cell.
+    ///
+    /// `0-ring` is defined as the current cell, `1-ring` is defined as
+    /// `0-ring` and all neighboring indexes, and so on.
+    ///
+    /// This function fails (i.e. returns a None item) when a pentagon (or a
+    /// pentagon distortion) is encountered.
+    /// When this happen, the previously returned cells should be treated as
+    /// invalid and discarded.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells = index.grid_disk_fast(2).collect::<Option<Vec<_>>>()
+    ///     .unwrap_or_default();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn grid_disk_fast(self, k: u32) -> impl Iterator<Item = Option<Self>> {
+        if k == 0 {
+            return Either::Right(if self.is_pentagon() {
+                Either::Right(iter::once(None))
+            } else {
+                Either::Left(iter::once(Some(self)))
+            });
+        }
+        Either::Left(
+            grid::DiskDistancesUnsafe::new(self, k)
+                .map(|value| value.map(|(cell, _)| cell)),
+        )
+    }
+
+    /// Produce cells and their distances from the current cell, up to distance
+    /// `k`.
+    ///
+    /// This function is a convenience helper that tries
+    /// [`Self::grid_disk_distances_fast`] first and then fallback on
+    /// [`Self::grid_disk_distances_safe`] if the former fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells_and_dists = index.grid_disk_distances::<Vec<_>>(2);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn grid_disk_distances<T>(self, k: u32) -> T
+    where
+        T: FromIterator<(Self, u32)>,
+    {
+        // Optimistically try the faster faillible algorithm first.
+        // If it fails, fall back to the slower always correct one.
+        self.grid_disk_distances_fast(k)
+            .collect::<Option<T>>()
+            .unwrap_or_else(|| self.grid_disk_distances_safe(k).collect())
+    }
+
+    /// Safe but slow version of [`Self::grid_disk_distances_fast`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells_and_dists = index.grid_disk_distances_safe(2).collect::<Vec<_>>();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn grid_disk_distances_safe(
+        self,
+        k: u32,
+    ) -> impl Iterator<Item = (Self, u32)> {
+        if k == 0 {
+            return Either::Right(iter::once((self, 0)));
+        }
+        Either::Left(grid::DiskDistancesSafe::new(self, k))
+    }
+
+    /// Produce cells and their distances from the current cell, up to distance
+    /// `k`.
+    ///
+    /// `0-ring` is defined as the current cell, `1-ring` is defined as `0-ring`
+    /// and all neighboring indexes, and so on.
+    ///
+    /// This function fails (i.e. returns a None item) when a pentagon (or a
+    /// pentagon distortion) is encountered.
+    /// When this happen, the previously returned items should be treated as
+    /// invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells_and_dists = index.grid_disk_distances_fast(2)
+    ///     .collect::<Option<Vec<_>>>()
+    ///     .unwrap_or_default();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn grid_disk_distances_fast(
+        self,
+        k: u32,
+    ) -> impl Iterator<Item = Option<(Self, u32)>> {
+        if k == 0 {
+            return Either::Right(if self.is_pentagon() {
+                Either::Right(iter::once(None))
+            } else {
+                Either::Left(iter::once(Some((self, 0))))
+            });
+        }
+        Either::Left(grid::DiskDistancesUnsafe::new(self, k))
+    }
+
+    /// Takes an list of cell indexes and a max `k-ring` and returns a stream of
+    /// cell indexes sorted first by the original cell index and then by the
+    /// grid `k-ring` (0 to max).
+    ///
+    ///
+    /// This function fails (i.e. returns a None item) when a pentagon (or a
+    /// pentagon distortion) is encountered.
+    /// When this happen, the previously returned cells should be treated as
+    /// invalid and discarded.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let indexes = vec![
+    ///     CellIndex::try_from(0x8a1fb46622dffff)?,
+    ///     CellIndex::try_from(0x8a1fb46622d7fff)?,
+    /// ];
+    /// let cells = CellIndex::grid_disks_fast(indexes, 2)
+    ///     .collect::<Option<Vec<_>>>()
+    ///     .unwrap_or_default();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    pub fn grid_disks_fast(
+        indexes: impl IntoIterator<Item = Self>,
+        k: u32,
+    ) -> impl Iterator<Item = Option<Self>> {
+        indexes
+            .into_iter()
+            .flat_map(move |index| index.grid_disk_fast(k))
+    }
+
+    /// Returns the "hollow" ring of hexagons at exactly grid distance `k` from
+    /// the current cell.
+    ///
+    /// In particular, k=0 returns just the current hexagon.
+    ///
+    /// This function fails (i.e. returns a None item) when a pentagon (or a
+    /// pentagon distortion) is encountered.
+    /// When this happen, the previously returned cells should be treated as
+    /// invalid and discarded.
+    ///
+    /// Failure cases may be fixed in future versions.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells = index.grid_ring_fast(2).collect::<Option<Vec<_>>>()
+    ///     .unwrap_or_default();
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn grid_ring_fast(self, k: u32) -> impl Iterator<Item = Option<Self>> {
+        if k == 0 {
+            return Either::Right(iter::once(Some(self)));
+        }
+        Either::Left(
+            grid::RingUnsafe::new(self, k)
+                .map_or_else(|| Either::Left(iter::once(None)), Either::Right),
+        )
+    }
+
+    /// Produces the grid distance between the two indexes.
+    ///
+    /// # Errors
+    ///
+    /// This function may fail to find the distance between two indexes, for
+    /// example if they are very far apart. It may also fail when finding
+    /// distances for indexes on opposite sides of a pentagon.
+    /// In such case, [`LocalIjError::Pentagon`] or [`LocalIjError::HexGrid`] is
+    /// returned.
+    ///
+    /// [`LocalIjError::ResolutionMismatch`] if the source and destination
+    /// indexes don't have the same resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
+    /// assert_eq!(src.grid_distance(dst)?, 1);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn grid_distance(self, to: Self) -> Result<i32, LocalIjError> {
+        let src = self.to_local_ijk(self)?;
+        let dst = to.to_local_ijk(self)?;
+
+        Ok(src.coord().distance(dst.coord()))
+    }
+
+    /// Computes the number of indexes in a line from the current index to the
+    /// end one.
+    ///
+    /// To be used for pre-allocating memory for `CellIndex::grid_path_cells`.
+    ///
+    /// # Errors
+    ///
+    /// See [`Self::grid_distance`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
+    /// assert_eq!(src.grid_path_cells_size(dst)?, 2);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn grid_path_cells_size(self, to: Self) -> Result<i32, LocalIjError> {
+        self.grid_distance(to).map(|distance| distance + 1)
+    }
+
+    /// Given two H3 indexes, return the line of indexes between them
+    /// (inclusive).
+    ///
+    /// # Notes
+    ///
+    ///  - The specific output of this function should not be considered stable
+    ///    across library versions. The only guarantees the library provides are
+    ///    that the line length will be `start.grid_distance(end) + 1` and that
+    ///    every index in the line will be a neighbor of the preceding index.
+    ///  - Lines are drawn in grid space, and may not correspond exactly to
+    ///    either Cartesian lines or great arcs.
+    ///
+    /// # Errors
+    ///
+    /// This function may fail to find the distance between two indexes, for
+    /// example if they are very far apart. It may also fail when finding
+    /// distances for indexes on opposite sides of a pentagon.
+    /// In such case, [`LocalIjError::Pentagon`] or [`LocalIjError::HexGrid`] is
+    /// returned.
+    ///
+    /// [`LocalIjError::ResolutionMismatch`] if the source and destination
+    /// indexes don't have the same resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
+    /// let cells = src.grid_path_cells(dst)?.collect::<Result<Vec<_>, _>>()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn grid_path_cells(
+        self,
+        to: Self,
+    ) -> Result<impl Iterator<Item = Result<Self, LocalIjError>>, LocalIjError>
+    {
+        GridPathCells::new(self, to)
+    }
+
+    /// Returns whether or not the provided cell index is a neighbor of the
+    /// current one.
+    ///
+    /// # Errors
+    ///
+    /// [`ResolutionMismatch`] if the two indexes don't have the
+    /// same resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
+    /// assert!(src.is_neighbor_with(dst)?);
+    ///
+    /// let dst = CellIndex::try_from(0x8a1fb4644937fff)?;
+    /// assert!(!src.is_neighbor_with(dst)?);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn is_neighbor_with(
+        self,
+        index: Self,
+    ) -> Result<bool, ResolutionMismatch> {
+        // A cell cannot be neighbors with itself.
+        if self == index {
+            return Ok(false);
+        }
+
+        // Only indexes in the same resolution can be neighbors.
+        let cur_res = self.resolution();
+        let idx_res = index.resolution();
+        if cur_res != idx_res {
+            return Err(ResolutionMismatch);
+        }
+
+        // Cell indexes that share the same parent are very likely to be
+        // neighbors
+        //
+        // Child 0 is neighbor with all of its parent's 'offspring', the other
+        // children are neighbors with 3 of the 7 children. So a simple
+        // comparison of origin and destination parents and then a lookup table
+        // of the children is a super-cheap way to possibly determine if they
+        // are neighbors.
+        if cur_res > Resolution::Zero {
+            // `cur_res` cannot be 0, thus we can always get the parent
+            // resolution.
+            let parent_res = cur_res.pred().expect("parent resolution");
+            let cur_parent = self.parent(parent_res).expect("current's parent");
+            let idx_parent = index.parent(parent_res).expect("index's parent");
+            if cur_parent == idx_parent {
+                let cur_res_digit = bits::get_direction(self.into(), cur_res);
+                let idx_res_digit = bits::get_direction(index.into(), idx_res);
+                if cur_res_digit == u8::from(Direction::Center)
+                    || idx_res_digit == u8::from(Direction::Center)
+                {
+                    return Ok(true);
+                }
+
+                if u8::from(NEIGHBOR_SET_CW[usize::from(cur_res_digit)])
+                    == idx_res_digit
+                    || u8::from(NEIGHBOR_SET_CCW[usize::from(cur_res_digit)])
+                        == idx_res_digit
+                {
+                    return Ok(true);
+                }
+            }
+        }
+
+        // Otherwise, we have to determine the neighbor relationship the "hard"
+        // way.
+        Ok(self
+            .grid_disk_fast(1)
+            .fold(Some(false), |acc, item| {
+                item.map(|neighbor| {
+                    acc.unwrap_or_default() || index == neighbor
+                })
+            })
+            .unwrap_or_else(|| {
+                self.grid_disk_safe(1).any(|neighbor| index == neighbor)
+            }))
+    }
+
+    /// Produces `IJ` coordinates for an index anchored by an origin.
+    ///
+    /// The coordinate space used by this function may have deleted regions or
+    /// warping due to pentagonal distortion.
+    ///
+    /// Coordinates are only comparable if they come from the same origin index.
+    ///
+    /// This function's output is not guaranteed to be compatible across
+    /// different versions of H3.
+    ///
+    /// # Arguments
+    ///
+    /// * `origin` - An anchoring index for the `IJ` coordinate system.
+    /// * `index` - Index to find the coordinates of.
+    ///
+    /// # Errors
+    ///
+    /// [`LocalIjError::ResolutionMismatch`] if the index and the origin don't
+    /// have the same resolution.
+    ///
+    /// Failure may occur if the index is too far away from the origin or if the
+    /// index is on the other side of a pentagon.
+    /// In such case, [`LocalIjError::Pentagon`] or [`LocalIjError::HexGrid`] is
+    /// returned.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let anchor = CellIndex::try_from(0x823147fffffffff)?;
+    /// let index = CellIndex::try_from(0x8230e7fffffffff)?;
+    /// let localij = index.to_local_ij(anchor)?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn to_local_ij(self, origin: Self) -> Result<LocalIJ, LocalIjError> {
+        let lijk = self.to_local_ijk(origin)?;
+        let coord = CoordIJ::from(&lijk.coord);
+        Ok(LocalIJ::new_unchecked(lijk.anchor, coord.i, coord.j))
     }
 
     pub(crate) fn new_unchecked(value: u64) -> Self {
@@ -463,6 +1271,167 @@ impl CellIndex {
         }
 
         ccw_rot60
+    }
+
+    /// Produces `IJK` coordinates for an index anchored by an `origin`.
+    ///
+    /// The coordinate space used by this function may have deleted regions or
+    /// warping due to pentagonal distortion.
+    ///
+    /// # Arguments
+    ///
+    /// * `origin` - An anchoring index for the `IJK` coordinate system.
+    /// * `index` - Index to find the coordinates of.
+    ///
+    /// # Errors
+    ///
+    /// `LocalIJError::ResolutionMismatch` if the index and the origin don't
+    /// have the same resolution.
+    ///
+    /// Failure may occur if the index is too far away from the origin or if the
+    /// index is on the other side of a pentagon.
+    /// In such case, [`LocalIjError::Pentagon`] or [`LocalIjError::HexGrid`] is
+    /// returned.
+    pub(super) fn to_local_ijk(
+        mut self,
+        origin: Self,
+    ) -> Result<LocalIJK, LocalIjError> {
+        let origin_res = origin.resolution();
+        let index_res = self.resolution();
+
+        if origin_res != index_res {
+            return Err(LocalIjError::ResolutionMismatch);
+        }
+        let origin_base_cell = origin.base_cell();
+        let base_cell = self.base_cell();
+
+        // Direction from origin base cell to index base cell.
+        let mut dir = Direction::Center;
+        let mut rev_dir = if origin_base_cell == base_cell {
+            Direction::Center
+        } else {
+            dir = origin_base_cell.direction(base_cell).ok_or_else(|| {
+                HexGridError::new(
+                    "cannot unfold (base cells are not neighnors)",
+                )
+            })?;
+            base_cell
+                .direction(origin_base_cell)
+                .expect("reverse direction")
+        };
+
+        let origin_on_pent = origin_base_cell.is_pentagon();
+        let index_on_pent = base_cell.is_pentagon();
+
+        if dir != Direction::Center {
+            // Rotate index into the orientation of the origin base cell.
+            // CW because we are undoing the rotation into that base cell.
+            let base_cell_rotations =
+                origin_base_cell.neighbor_rotation(dir).into();
+            self = Self::new_unchecked(if index_on_pent {
+                (0..base_cell_rotations).fold(self.into(), |acc, _| {
+                    // If the rotation will fall on the K axe, rotate twice to
+                    // skip it.
+                    rev_dir = if rev_dir == Direction::IK {
+                        rev_dir.rotate60::<CW>(2)
+                    } else {
+                        rev_dir.rotate60_once::<CW>()
+                    };
+
+                    bits::pentagon_rotate60::<CW>(acc)
+                })
+            } else {
+                rev_dir = rev_dir.rotate60::<CW>(base_cell_rotations);
+                bits::rotate60::<CW>(self.into(), base_cell_rotations)
+            });
+        }
+
+        // This produces coordinates in base cell coordinate space (face is
+        // unused).
+        let mut ijk = FaceIJK::from_bits(self.into(), index_res, BASE_CELL)
+            .0
+            .coord;
+
+        if dir != Direction::Center {
+            debug_assert_ne!(base_cell, origin_base_cell);
+            debug_assert!(!(origin_on_pent && index_on_pent));
+
+            let (pentagon_rotations, direction_rotations) = if origin_on_pent {
+                let leading_dir = bits::first_axe(origin.into())
+                    .map_or_else(|| 0, NonZeroU8::get);
+                validate_direction(leading_dir, dir.into())?;
+
+                let rotations = PENTAGON_ROTATIONS[usize::from(leading_dir)]
+                    [usize::from(dir)];
+                (rotations, rotations)
+            } else if index_on_pent {
+                let leading_dir = bits::first_axe(self.into())
+                    .map_or_else(|| 0, NonZeroU8::get);
+                validate_direction(leading_dir, rev_dir.into())?;
+
+                (
+                    PENTAGON_ROTATIONS[usize::from(rev_dir)]
+                        [usize::from(leading_dir)],
+                    0,
+                )
+            } else {
+                (0, 0)
+            };
+            // No check on `direction_rotations`, it's either 0 or
+            // `pentagon_rotations`.
+            debug_assert!(pentagon_rotations != 0xff);
+
+            ijk = (0..pentagon_rotations)
+                .fold(ijk, |acc, _| acc.rotate60::<CW>());
+
+            let mut offset = CoordIJK::new(0, 0, 0).neighbor(dir);
+            // Scale offset based on resolution
+            for res in Resolution::range(Resolution::One, origin_res).rev() {
+                // SAFETY: `res` always is range thanks to loop bound.
+                offset = if res.is_class3() {
+                    // rotate CCW.
+                    offset.down_aperture7::<CCW>()
+                } else {
+                    // rotate CW.
+                    offset.down_aperture7::<CW>()
+                };
+            }
+
+            offset = (0..direction_rotations)
+                .fold(offset, |acc, _| acc.rotate60::<CW>());
+
+            // Perform necessary translation
+            ijk = (ijk + offset).normalize();
+        } else if origin_on_pent && index_on_pent {
+            // If the origin and index are on pentagon, and we checked that the
+            // base cells are the same or neighboring, then they must be the
+            // same base cell.
+            debug_assert_eq!(base_cell, origin_base_cell);
+
+            let origin_leading_dir = bits::first_axe(origin.into())
+                .map_or_else(|| 0, NonZeroU8::get);
+            let index_leading_dir =
+                bits::first_axe(self.into()).map_or_else(|| 0, NonZeroU8::get);
+            validate_direction(origin_leading_dir, index_leading_dir)?;
+
+            let rotations = PENTAGON_ROTATIONS[usize::from(origin_leading_dir)]
+                [usize::from(index_leading_dir)];
+
+            ijk = (0..rotations).fold(ijk, |acc, _| acc.rotate60::<CW>());
+        }
+
+        Ok(LocalIJK {
+            anchor: origin,
+            coord: ijk,
+        })
+    }
+
+    fn vertex_count(self) -> u8 {
+        if self.is_pentagon() {
+            NUM_PENT_VERTS
+        } else {
+            NUM_HEX_VERTS
+        }
     }
 }
 

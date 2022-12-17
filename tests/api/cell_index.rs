@@ -1,4 +1,35 @@
-use h3o::CellIndex;
+use h3o::{error, CellIndex, Resolution};
+
+#[test]
+fn is_neighbor_with() {
+    let src = CellIndex::try_from(0x8a1fb46622dffff).expect("src");
+    let dst = CellIndex::try_from(0x8a1fb46622d7fff).expect("dst");
+    assert_eq!(src.is_neighbor_with(dst), Ok(true));
+
+    assert_eq!(
+        src.is_neighbor_with(dst.parent(Resolution::Six).expect("parent")),
+        Err(error::ResolutionMismatch)
+    );
+
+    let dst = CellIndex::try_from(0x8a1fb4644937fff).expect("dst2");
+    assert_eq!(src.is_neighbor_with(dst), Ok(false));
+}
+
+#[test]
+fn to_local_ij() {
+    let anchor = CellIndex::try_from(0x823147fffffffff).expect("anchor");
+    let index = CellIndex::try_from(0x8230e7fffffffff).expect("index");
+    let result = index.to_local_ij(anchor).expect("localij");
+
+    assert_eq!(result.anchor(), anchor);
+    assert_eq!(result.i(), -1);
+    assert_eq!(result.j(), -2);
+
+    let result =
+        index.to_local_ij(anchor.parent(Resolution::One).expect("parent"));
+
+    assert!(result.is_err());
+}
 
 #[test]
 fn try_from_str() {

@@ -6,6 +6,7 @@ mod cube;
 mod faceijk;
 mod ijk;
 mod latlng;
+mod localij;
 mod vec2d;
 mod vec3d;
 
@@ -13,6 +14,7 @@ pub use cube::CoordCube;
 pub use faceijk::{FaceIJK, Overage};
 pub use ijk::{CoordIJ, CoordIJK};
 pub use latlng::LatLng;
+pub use localij::{LocalIJ, LocalIJK};
 pub use vec3d::Vec3d;
 
 use vec2d::Vec2d;

@@ -43,6 +43,7 @@ macro_rules! invalid_value_error {
 
 invalid_value_error!("resolution", InvalidResolution, u8);
 invalid_value_error!("cell index", InvalidCellIndex, Option<u64>);
+invalid_value_error!("vertex index", InvalidVertexIndex, Option<u64>);
 invalid_value_error!(
     "directed edge index",
     InvalidDirectedEdgeIndex,

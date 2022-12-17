@@ -123,12 +123,13 @@ mod coord;
 mod direction;
 pub mod error;
 mod face;
+mod grid;
 mod index;
 mod resolution;
 
 pub use base_cell::BaseCell;
 pub use boundary::Boundary;
-pub use coord::LatLng;
+pub use coord::{LatLng, LocalIJ};
 pub use direction::Direction;
 pub use face::{Face, FaceSet};
 pub use index::{
@@ -166,3 +167,28 @@ const DEFAULT_CELL_INDEX: u64 = 0x0800_1fff_ffff_ffff;
 
 // 2π
 const TWO_PI: f64 = 2. * std::f64::consts::PI;
+
+// -----------------------------------------------------------------------------
+
+/// Maximum number of indices produced by the grid disk algorithm with the given
+/// `k`.
+///
+/// # Example
+///
+/// ```
+/// let count = h3o::max_grid_disk_size(3);
+/// ```
+#[must_use]
+pub const fn max_grid_disk_size(k: u32) -> u64 {
+    // k value which will encompass all cells at resolution 15.
+    // This is the largest possible k in the H3 grid system.
+    const K_MAX: u32 = 13_780_510;
+
+    if k >= K_MAX {
+        return Resolution::Fifteen.cell_count();
+    }
+
+    let k = k as u64;
+    // Formula source and proof: https://oeis.org/A003215
+    3 * k * (k + 1) + 1
+}

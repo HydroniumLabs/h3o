@@ -2,9 +2,46 @@
 //! implementation.
 
 use h3o::{
-    BaseCell, Boundary, CellIndex, DirectedEdgeIndex, LatLng, Resolution,
+    BaseCell, Boundary, CellIndex, DirectedEdgeIndex, Face, LatLng, LocalIJ,
+    Resolution, Vertex, VertexIndex,
 };
 use std::{ffi::CString, fmt::Debug, os::raw::c_int};
+
+/// Expose `areNeighborCells`.
+pub fn are_neighbor_cells(origin: CellIndex, index: CellIndex) -> Option<bool> {
+    let mut out: c_int = 0;
+    let res = unsafe {
+        h3ron_h3_sys::areNeighborCells(origin.into(), index.into(), &mut out)
+    };
+    (res == 0).then_some(out == 1)
+}
+
+/// Expose `cellAreaKm2`.
+pub fn cell_area_km2(index: CellIndex) -> f64 {
+    let mut area: f64 = 0.;
+    unsafe {
+        h3ron_h3_sys::cellAreaKm2(index.into(), &mut area);
+    }
+    area
+}
+
+/// Expose `cellAreaM2`.
+pub fn cell_area_m2(index: CellIndex) -> f64 {
+    let mut area: f64 = 0.;
+    unsafe {
+        h3ron_h3_sys::cellAreaM2(index.into(), &mut area);
+    }
+    area
+}
+
+/// Expose `cellAreaRads2`.
+pub fn cell_area_rads2(index: CellIndex) -> f64 {
+    let mut area: f64 = 0.;
+    unsafe {
+        h3ron_h3_sys::cellAreaRads2(index.into(), &mut area);
+    }
+    area
+}
 
 /// Expose `cellToBoundary`.
 pub fn cell_to_boundary(index: CellIndex) -> Boundary {
@@ -63,6 +100,26 @@ pub fn cell_to_children_size(index: CellIndex, resolution: Resolution) -> u64 {
     }
 }
 
+/// Expose `cellToChildren`.
+pub fn cell_to_children(
+    cell: CellIndex,
+    resolution: Resolution,
+) -> Vec<CellIndex> {
+    let size = cell_to_children_size(cell, resolution);
+    let mut out = vec![0; usize::try_from(size).expect("too many children")];
+    unsafe {
+        let res = h3ron_h3_sys::cellToChildren(
+            cell.into(),
+            u8::from(resolution).into(),
+            out.as_mut_ptr(),
+        );
+        assert_eq!(res, 0, "cellToChildren");
+    }
+    out.into_iter()
+        .map(|index| CellIndex::try_from(index).expect("cell index"))
+        .collect()
+}
+
 /// Expose `cellToLatLng`.
 pub fn cell_to_latlng(index: CellIndex) -> LatLng {
     let mut ll = h3ron_h3_sys::LatLng { lat: 0., lng: 0. };
@@ -70,6 +127,18 @@ pub fn cell_to_latlng(index: CellIndex) -> LatLng {
         h3ron_h3_sys::cellToLatLng(index.into(), &mut ll);
     }
     LatLng::new(ll.lat, ll.lng).expect("coordinate")
+}
+
+/// Expose `cellToLocalIj`.
+pub fn cell_to_local_ij(
+    origin: CellIndex,
+    index: CellIndex,
+) -> Option<LocalIJ> {
+    let mut out = h3ron_h3_sys::CoordIJ { i: 0, j: 0 };
+    let res = unsafe {
+        h3ron_h3_sys::cellToLocalIj(origin.into(), index.into(), 0, &mut out)
+    };
+    (res == 0).then(|| LocalIJ::new_unchecked(origin, out.i, out.j))
 }
 
 /// Expose `cellToParent`.
@@ -85,9 +154,139 @@ pub fn cell_to_parent(
     (res == 0).then(|| CellIndex::try_from(out).expect("cell index"))
 }
 
+/// Expose `cellToVertex`.
+pub fn cell_to_vertex(cell: CellIndex, vertex: Vertex) -> Option<VertexIndex> {
+    let mut out: u64 = 0;
+    let res = unsafe {
+        h3ron_h3_sys::cellToVertex(
+            cell.into(),
+            u8::from(vertex).into(),
+            &mut out,
+        )
+    };
+    (res == 0).then(|| VertexIndex::try_from(out).expect("vertex index"))
+}
+
+/// Expose `cellToVertexes`
+pub fn cell_to_vertexes(cell: CellIndex) -> Vec<VertexIndex> {
+    let mut out = [0; 6];
+
+    unsafe {
+        h3ron_h3_sys::cellToVertexes(cell.into(), out.as_mut_ptr());
+    }
+
+    out.into_iter()
+        .filter_map(|index| {
+            (index != 0)
+                .then(|| VertexIndex::try_from(index).expect("vertex index"))
+        })
+        .collect()
+}
+
+/// Expose `cellsToDirectedEdge`
+pub fn cells_to_directed_edge(
+    origin: CellIndex,
+    destination: CellIndex,
+) -> Option<DirectedEdgeIndex> {
+    let mut out: u64 = 0;
+    let res = unsafe {
+        h3ron_h3_sys::cellsToDirectedEdge(
+            origin.into(),
+            destination.into(),
+            &mut out,
+        )
+    };
+    (res == 0).then(|| DirectedEdgeIndex::try_from(out).expect("edge index"))
+}
+
+/// Expose `compactCells`.
+pub fn compact_cells(cells: &[CellIndex]) -> Option<Vec<CellIndex>> {
+    let mut out = vec![0; cells.len()];
+    let res = unsafe {
+        // SAFETY: `CellIndex` is `repr(transparent)`
+        let cells = &*(cells as *const [CellIndex] as *const [u64]);
+        h3ron_h3_sys::compactCells(
+            cells.as_ptr(),
+            out.as_mut_ptr(),
+            cells.len() as i64,
+        )
+    };
+    (res == 0).then(|| {
+        out.into_iter()
+            .filter_map(|index| {
+                (index != 0)
+                    .then(|| CellIndex::try_from(index).expect("cell index"))
+            })
+            .collect()
+    })
+}
+
 /// Expose `degsToRads`.
 pub fn degs_to_rads(angle: f64) -> f64 {
     unsafe { h3ron_h3_sys::degsToRads(angle) }
+}
+
+/// Expose `directedEdgeToBoundary`.
+pub fn directed_edge_to_boundary(index: DirectedEdgeIndex) -> Boundary {
+    let mut result = h3ron_h3_sys::CellBoundary {
+        numVerts: 0,
+        verts: [h3ron_h3_sys::LatLng { lat: 0., lng: 0. }; 10],
+    };
+    unsafe {
+        h3ron_h3_sys::directedEdgeToBoundary(index.into(), &mut result);
+    }
+
+    let mut boundary = Boundary::new();
+    for i in 0..(result.numVerts as usize) {
+        boundary.push(
+            LatLng::new(result.verts[i].lat, result.verts[i].lng)
+                .expect("vertex coordinate"),
+        );
+    }
+
+    boundary
+}
+
+/// Expose `directedEdgeToCells`.
+pub fn directed_edge_to_cells(
+    index: DirectedEdgeIndex,
+) -> (CellIndex, CellIndex) {
+    let mut out = [0; 2];
+    unsafe {
+        h3ron_h3_sys::directedEdgeToCells(index.into(), out.as_mut_ptr());
+    }
+
+    (
+        CellIndex::try_from(out[0]).expect("edge origin"),
+        CellIndex::try_from(out[1]).expect("edge destination"),
+    )
+}
+
+/// Expose `edgeLengthKm`.
+pub fn edge_length_km(index: DirectedEdgeIndex) -> f64 {
+    let mut length: f64 = 0.;
+    unsafe {
+        h3ron_h3_sys::edgeLengthKm(index.into(), &mut length);
+    }
+    length
+}
+
+/// Expose `edgeLengthM`.
+pub fn edge_length_m(index: DirectedEdgeIndex) -> f64 {
+    let mut length: f64 = 0.;
+    unsafe {
+        h3ron_h3_sys::edgeLengthM(index.into(), &mut length);
+    }
+    length
+}
+
+/// Expose `edgeLengthRads`.
+pub fn edge_length_rads(index: DirectedEdgeIndex) -> f64 {
+    let mut length: f64 = 0.;
+    unsafe {
+        h3ron_h3_sys::edgeLengthRads(index.into(), &mut length);
+    }
+    length
 }
 
 /// Expose `getBaseCellNumber`.
@@ -96,6 +295,15 @@ pub fn get_base_cell_number(index: CellIndex) -> BaseCell {
         BaseCell::try_from(h3ron_h3_sys::getBaseCellNumber(index.into()) as u8)
             .expect("base cell")
     }
+}
+
+/// Expose `getDirectedEdgeDestination`.
+pub fn get_directed_edge_destination(index: DirectedEdgeIndex) -> CellIndex {
+    let mut out: u64 = 0;
+    unsafe {
+        h3ron_h3_sys::getDirectedEdgeDestination(index.into(), &mut out);
+    }
+    CellIndex::try_from(out).expect("cell index")
 }
 
 /// Expose `getDirectedEdgeOrigin`.
@@ -155,6 +363,26 @@ pub fn get_hexagon_edge_length_avg_m(resolution: Resolution) -> f64 {
         assert_eq!(res, 0, "getHexagonEdgeLengthAvgM");
     }
     out
+}
+
+/// Expose `getIcosahedronFaces`.
+pub fn get_icosahedron_faces(index: CellIndex) -> Vec<Face> {
+    let max_count = max_face_count(index);
+
+    let mut out = vec![0; max_count];
+    unsafe {
+        h3ron_h3_sys::getIcosahedronFaces(index.into(), out.as_mut_ptr());
+    }
+
+    let mut res = out
+        .into_iter()
+        .filter_map(|value| {
+            (value != -1)
+                .then(|| Face::try_from(value as u8).expect("icosahedron face"))
+        })
+        .collect::<Vec<_>>();
+    res.sort();
+    res
 }
 
 /// Expose `getNumCells`.
@@ -238,6 +466,241 @@ pub fn great_circle_distance_rads(src: &LatLng, dst: &LatLng) -> f64 {
     unsafe { h3ron_h3_sys::greatCircleDistanceRads(&src, &dst) }
 }
 
+/// Expose `gridDisk`.
+pub fn grid_disk(origin: CellIndex, k: u32) -> Vec<CellIndex> {
+    let size = usize::try_from(max_grid_disk_size(k)).expect("grid too large");
+    let mut cells = vec![0; size];
+
+    unsafe {
+        let res = h3ron_h3_sys::gridDisk(
+            origin.into(),
+            k as c_int,
+            cells.as_mut_ptr(),
+        );
+        assert_eq!(res, 0, "gridDiskDistances");
+    }
+
+    cells
+        .into_iter()
+        .filter_map(|cell| {
+            (cell != 0).then(|| CellIndex::try_from(cell).expect("cell index"))
+        })
+        .collect()
+}
+
+/// Expose `gridDiskDistances`.
+pub fn grid_disk_distances(origin: CellIndex, k: u32) -> Vec<(CellIndex, u32)> {
+    let size = usize::try_from(max_grid_disk_size(k)).expect("grid too large");
+    let mut cells = vec![0; size];
+    let mut distances: Vec<c_int> = vec![0; size];
+
+    unsafe {
+        let res = h3ron_h3_sys::gridDiskDistances(
+            origin.into(),
+            k as c_int,
+            cells.as_mut_ptr(),
+            distances.as_mut_ptr(),
+        );
+        assert_eq!(res, 0, "gridDiskDistances");
+    }
+
+    cells
+        .into_iter()
+        .zip(distances.into_iter())
+        .filter_map(|(cell, distance)| {
+            (cell != 0).then(|| {
+                (
+                    CellIndex::try_from(cell).expect("cell index"),
+                    distance as u32,
+                )
+            })
+        })
+        .collect()
+}
+
+/// Expose `gridDiskDistancesSafe`.
+pub fn grid_disk_distances_safe(
+    origin: CellIndex,
+    k: u32,
+) -> Vec<(CellIndex, u32)> {
+    let size = usize::try_from(max_grid_disk_size(k)).expect("grid too large");
+    let mut cells = vec![0; size];
+    let mut distances: Vec<c_int> = vec![0; size];
+
+    unsafe {
+        let res = h3ron_h3_sys::gridDiskDistancesSafe(
+            origin.into(),
+            k as c_int,
+            cells.as_mut_ptr(),
+            distances.as_mut_ptr(),
+        );
+        assert_eq!(res, 0, "gridDiskDistancesSafe");
+    }
+
+    cells
+        .into_iter()
+        .zip(distances.into_iter())
+        .filter_map(|(cell, distance)| {
+            (cell != 0).then(|| {
+                (
+                    CellIndex::try_from(cell).expect("cell index"),
+                    distance as u32,
+                )
+            })
+        })
+        .collect()
+}
+
+/// Expose `gridDiskDistancesUnsafe`.
+pub fn grid_disk_distances_unsafe(
+    origin: CellIndex,
+    k: u32,
+) -> Option<Vec<(CellIndex, u32)>> {
+    let size = usize::try_from(max_grid_disk_size(k)).expect("grid too large");
+    let mut cells = vec![0; size];
+    let mut distances: Vec<c_int> = vec![0; size];
+
+    let res = unsafe {
+        h3ron_h3_sys::gridDiskDistancesUnsafe(
+            origin.into(),
+            k as c_int,
+            cells.as_mut_ptr(),
+            distances.as_mut_ptr(),
+        )
+    };
+
+    (res == 0).then(|| {
+        cells
+            .into_iter()
+            .zip(distances.into_iter())
+            .filter_map(|(cell, distance)| {
+                (cell != 0).then(|| {
+                    (
+                        CellIndex::try_from(cell).expect("cell index"),
+                        distance as u32,
+                    )
+                })
+            })
+            .collect()
+    })
+}
+
+/// Expose `gridDiskUnsafe`.
+pub fn grid_disk_unsafe(origin: CellIndex, k: u32) -> Option<Vec<CellIndex>> {
+    let size = usize::try_from(max_grid_disk_size(k)).expect("grid too large");
+    let mut cells = vec![0; size];
+
+    let res = unsafe {
+        h3ron_h3_sys::gridDiskUnsafe(
+            origin.into(),
+            k as c_int,
+            cells.as_mut_ptr(),
+        )
+    };
+
+    (res == 0).then(|| {
+        cells
+            .into_iter()
+            .filter_map(|cell| {
+                (cell != 0)
+                    .then(|| CellIndex::try_from(cell).expect("cell index"))
+            })
+            .collect()
+    })
+}
+
+/// Expose `gridDisksUnsafe`.
+pub fn grid_disks_unsafe(
+    origins: impl IntoIterator<Item = CellIndex>,
+    k: u32,
+) -> Option<Vec<CellIndex>> {
+    let mut origins = origins.into_iter().map(u64::from).collect::<Vec<_>>();
+    let size = origins.len()
+        * usize::try_from(max_grid_disk_size(k)).expect("grid too large");
+    let mut cells = vec![0; size];
+
+    let res = unsafe {
+        h3ron_h3_sys::gridDisksUnsafe(
+            origins.as_mut_ptr(),
+            origins.len() as c_int,
+            k as c_int,
+            cells.as_mut_ptr(),
+        )
+    };
+
+    (res == 0).then(|| {
+        cells
+            .into_iter()
+            .filter_map(|cell| {
+                (cell != 0)
+                    .then(|| CellIndex::try_from(cell).expect("cell index"))
+            })
+            .collect()
+    })
+}
+
+/// Expose `gridDistance`.
+pub fn grid_distance(src: CellIndex, dst: CellIndex) -> Option<i32> {
+    let mut out = 0;
+    let res =
+        unsafe { h3ron_h3_sys::gridDistance(src.into(), dst.into(), &mut out) };
+    (res == 0).then(|| i32::try_from(out).expect("distance overflow"))
+}
+
+/// Expose `gridPathCells`.
+pub fn grid_path_cells(
+    src: CellIndex,
+    dst: CellIndex,
+) -> Option<Vec<CellIndex>> {
+    let size = usize::try_from(grid_path_cells_size(src, dst)?)
+        .expect("path too long");
+    let mut out = vec![0; size];
+
+    let res = unsafe {
+        h3ron_h3_sys::gridPathCells(src.into(), dst.into(), out.as_mut_ptr())
+    };
+
+    (res == 0).then(|| {
+        out.into_iter()
+            .map(|cell| CellIndex::try_from(cell).expect("cell index"))
+            .collect()
+    })
+}
+
+/// Expose `gridPathCellsSize`.
+pub fn grid_path_cells_size(src: CellIndex, dst: CellIndex) -> Option<i32> {
+    let mut out = 0;
+    let res = unsafe {
+        h3ron_h3_sys::gridPathCellsSize(src.into(), dst.into(), &mut out)
+    };
+    (res == 0).then(|| i32::try_from(out).expect("distance overflow"))
+}
+
+/// Expose `gridRingUnsafe`.
+pub fn grid_ring_unsafe(origin: CellIndex, k: u32) -> Option<Vec<CellIndex>> {
+    let size = usize::try_from(if k == 0 { 1 } else { 6 * k })
+        .expect("grid too large");
+    let mut cells = vec![0; size];
+
+    let res = unsafe {
+        h3ron_h3_sys::gridRingUnsafe(
+            origin.into(),
+            k as c_int,
+            cells.as_mut_ptr(),
+        )
+    };
+
+    (res == 0).then(|| {
+        cells
+            .into_iter()
+            .filter_map(|cell| {
+                (cell != 0)
+                    .then(|| CellIndex::try_from(cell).expect("cell index"))
+            })
+            .collect()
+    })
+}
+
 /// Expose `h3ToString`.
 pub fn h3_to_string(index: impl Into<u64>) -> String {
     let buf = CString::new(vec![1u8; 16]).expect("valid CString");
@@ -273,6 +736,11 @@ pub fn is_valid_directed_edge(index: u64) -> bool {
     unsafe { h3ron_h3_sys::isValidDirectedEdge(index) == 1 }
 }
 
+/// Expose `isValidVertex`.
+pub fn is_valid_vertex(index: u64) -> bool {
+    unsafe { h3ron_h3_sys::isValidVertex(index) == 1 }
+}
+
 /// Expose `latLngToCell`.
 pub fn latlng_to_cell(ll: &LatLng, resolution: Resolution) -> CellIndex {
     let mut out: u64 = 0;
@@ -286,6 +754,20 @@ pub fn latlng_to_cell(ll: &LatLng, resolution: Resolution) -> CellIndex {
     CellIndex::try_from(out).expect("cell index")
 }
 
+/// Expose `localIjToCell`.
+pub fn local_ij_to_cell(local_ij: LocalIJ) -> Option<CellIndex> {
+    let mut out: u64 = 0;
+    let ij = h3ron_h3_sys::CoordIJ {
+        i: local_ij.i(),
+        j: local_ij.j(),
+    };
+    let res = unsafe {
+        h3ron_h3_sys::localIjToCell(local_ij.anchor().into(), &ij, 0, &mut out)
+    };
+
+    (res == 0).then(|| CellIndex::try_from(out).expect("H3 index"))
+}
+
 /// Expose `maxFaceCount`.
 pub fn max_face_count(index: CellIndex) -> usize {
     let mut out: c_int = 0;
@@ -294,6 +776,33 @@ pub fn max_face_count(index: CellIndex) -> usize {
         assert_eq!(res, 0, "maxFaceCount");
     }
     out as usize
+}
+
+/// Expose `maxGridDiskSize`.
+pub fn max_grid_disk_size(k: u32) -> u64 {
+    let mut out: i64 = 0;
+    unsafe {
+        let res = h3ron_h3_sys::maxGridDiskSize(k as c_int, &mut out);
+        assert_eq!(res, 0, "maxGridDiskSize");
+    }
+    out as u64
+}
+
+/// Expose `originToDirectedEdges`.
+pub fn origin_to_directed_edges(index: CellIndex) -> Vec<DirectedEdgeIndex> {
+    let mut out = [0; 6];
+
+    unsafe {
+        h3ron_h3_sys::originToDirectedEdges(index.into(), out.as_mut_ptr());
+    }
+
+    out.into_iter()
+        .filter_map(|index| {
+            (index != 0).then(|| {
+                DirectedEdgeIndex::try_from(index).expect("edge index")
+            })
+        })
+        .collect()
 }
 
 /// Expose `pentagonCount`.
@@ -306,7 +815,7 @@ pub fn rads_to_degs(angle: f64) -> f64 {
     unsafe { h3ron_h3_sys::radsToDegs(angle) }
 }
 
-/// Expose `res0CellCount​`.
+/// Expose `res0CellCount`.
 pub fn res0_cell_count() -> u8 {
     unsafe { h3ron_h3_sys::res0CellCount() as u8 }
 }
@@ -325,4 +834,62 @@ where
         res
     };
     (res == 0).then(|| T::try_from(out).expect("H3 index"))
+}
+
+/// Expose `uncompactCellsSize`.
+pub fn uncompact_cells_size(
+    cells: &[CellIndex],
+    resolution: Resolution,
+) -> u64 {
+    let mut out: i64 = 0;
+
+    unsafe {
+        // SAFETY: `CellIndex` is `repr(transparent)`
+        let cells = &*(cells as *const [CellIndex] as *const [u64]);
+        let res = h3ron_h3_sys::uncompactCellsSize(
+            cells.as_ptr(),
+            cells.len() as i64,
+            u8::from(resolution).into(),
+            &mut out,
+        );
+        assert_eq!(res, 0, "uncompactCellsSize");
+    }
+
+    u64::try_from(out).expect("too many expanded cells")
+}
+
+/// Expose `uncompactCells`.
+pub fn uncompact_cells(
+    cells: &[CellIndex],
+    resolution: Resolution,
+) -> Vec<CellIndex> {
+    let size = uncompact_cells_size(cells, resolution);
+    let mut out =
+        vec![0; usize::try_from(size).expect("too many expanded cells")];
+
+    unsafe {
+        // SAFETY: `CellIndex` is `repr(transparent)`
+        let cells = &*(cells as *const [CellIndex] as *const [u64]);
+        let res = h3ron_h3_sys::uncompactCells(
+            cells.as_ptr(),
+            cells.len() as i64,
+            out.as_mut_ptr(),
+            size as i64,
+            u8::from(resolution).into(),
+        );
+        assert_eq!(res, 0, "uncompactCells");
+    }
+
+    out.into_iter()
+        .map(|index| CellIndex::try_from(index).expect("cell index"))
+        .collect()
+}
+
+/// Expose `vertexToLatLng`.
+pub fn vertex_to_latlng(index: VertexIndex) -> LatLng {
+    let mut ll = h3ron_h3_sys::LatLng { lat: 0., lng: 0. };
+    unsafe {
+        h3ron_h3_sys::vertexToLatLng(index.into(), &mut ll);
+    }
+    LatLng::new(ll.lat, ll.lng).expect("coordinate")
 }

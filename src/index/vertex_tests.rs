@@ -1,6 +1,11 @@
 use super::*;
 
 #[test]
+fn zero_is_invalid() {
+    assert!(VertexIndex::try_from(0).is_err());
+}
+
+#[test]
 fn vertex() {
     assert!(Vertex::try_from(0).is_ok()); // Lower bound.
     assert!(Vertex::try_from(3).is_ok()); // Valid value.
