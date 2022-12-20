@@ -457,6 +457,18 @@ impl TryFrom<geo::Coord> for LatLng {
     }
 }
 
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for LatLng {
+    fn arbitrary(
+        data: &mut arbitrary::Unstructured<'a>,
+    ) -> arbitrary::Result<Self> {
+        let lat = f64::arbitrary(data)?;
+        let lng = f64::arbitrary(data)?;
+
+        Self::new(lat, lng).map_err(|_| arbitrary::Error::IncorrectFormat)
+    }
+}
+
 #[cfg(test)]
 #[path = "./latlng_tests.rs"]
 mod tests;

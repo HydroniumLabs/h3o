@@ -1661,6 +1661,17 @@ impl fmt::UpperHex for CellIndex {
     }
 }
 
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for CellIndex {
+    fn arbitrary(
+        data: &mut arbitrary::Unstructured<'a>,
+    ) -> arbitrary::Result<Self> {
+        u64::arbitrary(data).and_then(|byte| {
+            Self::try_from(byte).map_err(|_| arbitrary::Error::IncorrectFormat)
+        })
+    }
+}
+
 // -----------------------------------------------------------------------------
 
 /// Checks if there is at least one unused direction in the given directions.

@@ -101,6 +101,17 @@ impl fmt::Display for Vertex {
     }
 }
 
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for Vertex {
+    fn arbitrary(
+        data: &mut arbitrary::Unstructured<'a>,
+    ) -> arbitrary::Result<Self> {
+        u8::arbitrary(data).and_then(|byte| {
+            Self::try_from(byte).map_err(|_| arbitrary::Error::IncorrectFormat)
+        })
+    }
+}
+
 // -----------------------------------------------------------------------------
 
 /// Represents a single topological vertex in H3 grid system, shared by three
@@ -306,6 +317,17 @@ impl fmt::LowerHex for VertexIndex {
 impl fmt::UpperHex for VertexIndex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
+    }
+}
+
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for VertexIndex {
+    fn arbitrary(
+        data: &mut arbitrary::Unstructured<'a>,
+    ) -> arbitrary::Result<Self> {
+        u64::arbitrary(data).and_then(|byte| {
+            Self::try_from(byte).map_err(|_| arbitrary::Error::IncorrectFormat)
+        })
     }
 }
 

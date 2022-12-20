@@ -1,0 +1,117 @@
+[package]
+name = "h3o-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+arbitrary = { version = "1.0", default-features = false, features = ["derive"] }
+float_eq = { version = "1.0", default-features = false }
+geo-types = { version = "0.7", default-features = false }
+h3ron-h3-sys = { version = "0.15", default-features = false }
+libfuzzer-sys = { version = "0.4", default-features = false }
+
+[dependencies.h3o]
+path = ".."
+features = ["arbitrary", "geo"]
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "cell_index"
+path = "fuzz_targets/cell_index.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "cell_index_hierarchy"
+path = "fuzz_targets/cell_index_hierarchy.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "cell_index_pair"
+path = "fuzz_targets/cell_index_pair.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "cell_to_vertex"
+path = "fuzz_targets/cell_to_vertex.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "cells_to_geom"
+path = "fuzz_targets/cells_to_geom.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "compact"
+path = "fuzz_targets/compact.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "directed_edge_index"
+path = "fuzz_targets/directed_edge_index.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "grid"
+path = "fuzz_targets/grid.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "index_io"
+path = "fuzz_targets/index_io.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "is_valid"
+path = "fuzz_targets/is_valid.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "latltng_to_cell"
+path = "fuzz_targets/latltng_to_cell.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "polygon_to_cells"
+path = "fuzz_targets/polygon_to_cells.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "polygon_with_holes_to_cells"
+path = "fuzz_targets/polygon_with_holes_to_cells.rs"
+test = false
+doc = false
+
+
+[[bin]]
+name = "uncompact"
+path = "fuzz_targets/uncompact.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "vertex_index"
+path = "fuzz_targets/vertex_index.rs"
+test = false
+doc = false

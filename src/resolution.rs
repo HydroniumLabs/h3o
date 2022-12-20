@@ -420,6 +420,17 @@ impl fmt::Display for Resolution {
     }
 }
 
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for Resolution {
+    fn arbitrary(
+        data: &mut arbitrary::Unstructured<'a>,
+    ) -> arbitrary::Result<Self> {
+        u8::arbitrary(data).and_then(|byte| {
+            Self::try_from(byte).map_err(|_| arbitrary::Error::IncorrectFormat)
+        })
+    }
+}
+
 // -----------------------------------------------------------------------------
 
 /// Same as an H3 index resolution, but can goes up to 16.

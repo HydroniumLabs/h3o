@@ -359,6 +359,17 @@ impl fmt::UpperHex for DirectedEdgeIndex {
     }
 }
 
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for DirectedEdgeIndex {
+    fn arbitrary(
+        data: &mut arbitrary::Unstructured<'a>,
+    ) -> arbitrary::Result<Self> {
+        u64::arbitrary(data).and_then(|byte| {
+            Self::try_from(byte).map_err(|_| arbitrary::Error::IncorrectFormat)
+        })
+    }
+}
+
 #[cfg(test)]
 #[path = "./edge_tests.rs"]
 mod tests;
