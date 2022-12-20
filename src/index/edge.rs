@@ -15,6 +15,7 @@ const MAX: u8 = 6;
 
 /// Edge of an H3 cell.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Edge(u8);
 
 impl Edge {
@@ -95,6 +96,7 @@ impl fmt::Display for Edge {
 /// - [H3 Index Bit Layout](https://observablehq.com/@nrabinowitz/h3-index-bit-layout?collection=@nrabinowitz/h3)
 /// - [H3 Index Inspector](https://observablehq.com/@nrabinowitz/h3-index-inspector?collection=@nrabinowitz/h3)
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DirectedEdgeIndex(NonZeroU64);
 
 impl DirectedEdgeIndex {

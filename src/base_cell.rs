@@ -15,6 +15,7 @@ const BASE_PENTAGONS: u128 = 0x0020_0802_0008_0100_8402_0040_0100_4010;
 /// One of the 122 base cells.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(transparent)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BaseCell(u8);
 
 impl BaseCell {

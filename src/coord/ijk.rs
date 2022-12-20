@@ -22,6 +22,7 @@ use std::{cmp, fmt};
 ///
 /// Each axis is spaced 120 degrees apart.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CoordIJ {
     /// `i` component.
     pub i: i32,

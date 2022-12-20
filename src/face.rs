@@ -11,6 +11,7 @@ use std::fmt;
 /// An icosahedron face.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd, Default)]
 #[repr(transparent)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Face(u8);
 
 impl Face {

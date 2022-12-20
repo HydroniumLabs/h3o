@@ -21,6 +21,7 @@ const EPSILON_RAD: f64 = EPSILON_DEG * PI / 180.0;
 
 /// Latitude/longitude, in radians.
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LatLng {
     /// Latitude, in radians.
     lat: f64,

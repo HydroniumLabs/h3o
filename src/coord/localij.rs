@@ -185,6 +185,7 @@ impl TryFrom<LocalIJK> for CellIndex {
 
 /// `IJ` coordinates anchored by an origin.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LocalIJ {
     /// Anchor cell.
     anchor: CellIndex,

@@ -31,6 +31,7 @@ const TO_DIRECTION_PENTAGON: [Direction; NUM_PENT_VERTS as usize] = [
 
 /// Vertex of an H3 cell.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Vertex(u8);
 
 impl Vertex {
@@ -131,6 +132,7 @@ impl fmt::Display for Vertex {
 /// - [H3 Index Bit Layout](https://observablehq.com/@nrabinowitz/h3-index-bit-layout?collection=@nrabinowitz/h3)
 /// - [H3 Index Inspector](https://observablehq.com/@nrabinowitz/h3-index-inspector?collection=@nrabinowitz/h3)
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VertexIndex(NonZeroU64);
 
 impl VertexIndex {

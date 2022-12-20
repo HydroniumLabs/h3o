@@ -4,6 +4,10 @@ use std::fmt;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u8)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
+)]
 pub enum IndexMode {
     /// An H3 Cell (Hexagon/Pentagon) index.
     Cell = 1,

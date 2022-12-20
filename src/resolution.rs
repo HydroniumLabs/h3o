@@ -10,6 +10,10 @@ pub const MAX: u8 = 15;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u8)]
 #[allow(clippy::exhaustive_enums)] // Not gonna change any time soon.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
+)]
 pub enum Resolution {
     /// Resolution 0.
     Zero = 0,
