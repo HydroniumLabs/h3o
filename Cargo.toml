@@ -23,6 +23,7 @@ serde = ["dep:serde", "dep:serde_repr"]
 [dependencies]
 ahash = { version = "0.8", default-features = false, features = ["std", "runtime-rng"] }
 auto_ops = { version = "0.3", default-features = false }
+konst = { version = "0.3", default-features = false, features = ["parsing"] }
 either = { version = "1.0", default-features = false }
 float_eq = { version = "1.0", default-features = false }
 geo = { version = "0.23", optional = true, default-features = false }
