@@ -6,6 +6,8 @@ mod direction;
 mod edge;
 mod face;
 mod face_set;
+#[cfg(feature = "geo")]
+mod geom;
 mod index_mode;
 mod latlng;
 mod localij;

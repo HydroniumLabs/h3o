@@ -52,3 +52,10 @@ impl fmt::Display for Boundary {
         )
     }
 }
+
+#[cfg(feature = "geo")]
+impl From<Boundary> for geo::LineString {
+    fn from(value: Boundary) -> Self {
+        Self::new(value.iter().copied().map(geo::Coord::from).collect())
+    }
+}

@@ -4,6 +4,8 @@ use crate::error::{
     InvalidLatLng, InvalidResolution, InvalidVertex, InvalidVertexIndex,
     LocalIjError, ResolutionMismatch,
 };
+#[cfg(feature = "geo")]
+use crate::error::{InvalidGeometry, OutlinerError};
 use std::error::Error;
 
 // All error must have a non-empty display.
@@ -40,6 +42,16 @@ fn display() {
     assert!(!LocalIjError::HexGrid(hex_grid_error).to_string().is_empty());
 
     assert!(!ResolutionMismatch.to_string().is_empty());
+
+    #[cfg(feature = "geo")]
+    assert!(!InvalidGeometry::new("error").to_string().is_empty());
+
+    #[cfg(feature = "geo")]
+    assert!(!OutlinerError::HeterogeneousResolution
+        .to_string()
+        .is_empty());
+    #[cfg(feature = "geo")]
+    assert!(!OutlinerError::DuplicateInput.to_string().is_empty());
 }
 
 // All errors are root errors.
@@ -70,4 +82,12 @@ fn source() {
     assert!(LocalIjError::HexGrid(hex_grid_error).source().is_some());
 
     assert!(ResolutionMismatch.source().is_none());
+
+    #[cfg(feature = "geo")]
+    assert!(InvalidGeometry::new("error").source().is_none());
+
+    #[cfg(feature = "geo")]
+    assert!(OutlinerError::HeterogeneousResolution.source().is_none());
+    #[cfg(feature = "geo")]
+    assert!(OutlinerError::DuplicateInput.source().is_none());
 }

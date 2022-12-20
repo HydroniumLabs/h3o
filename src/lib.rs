@@ -123,6 +123,8 @@ mod coord;
 mod direction;
 pub mod error;
 mod face;
+#[cfg(feature = "geo")]
+pub mod geom;
 mod grid;
 mod index;
 mod resolution;

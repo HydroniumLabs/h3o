@@ -5,6 +5,12 @@ mod hex_grid;
 mod invalid_value;
 mod localij;
 mod resolution_mismatch;
+
+#[cfg(feature = "geo")]
+mod geometry;
+#[cfg(feature = "geo")]
+mod outliner;
+
 #[cfg(test)]
 mod tests;
 
@@ -17,3 +23,8 @@ pub use invalid_value::{
 };
 pub use localij::LocalIjError;
 pub use resolution_mismatch::ResolutionMismatch;
+
+#[cfg(feature = "geo")]
+pub use geometry::InvalidGeometry;
+#[cfg(feature = "geo")]
+pub use outliner::OutlinerError;

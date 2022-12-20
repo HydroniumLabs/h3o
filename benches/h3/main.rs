@@ -56,7 +56,15 @@ mod res0_cell_count;
 mod string_to_h3;
 mod uncompact_cells;
 mod uncompact_cells_size;
+mod utils;
 mod vertex_to_latlng;
+
+#[cfg(feature = "geo")]
+mod h3_set_lo_linked_geo;
+#[cfg(feature = "geo")]
+mod max_polygon_to_cells_size;
+#[cfg(feature = "geo")]
+mod polygon_to_cells;
 
 criterion_group!(
     benches,
@@ -129,4 +137,19 @@ criterion_group!(
     vertex_to_latlng::bench,
 );
 
+#[cfg(not(feature = "geo"))]
 criterion_main!(benches);
+
+#[cfg(feature = "geo")]
+criterion_group!(
+    benches_geom,
+    h3_set_lo_linked_geo::bench_full,
+    h3_set_lo_linked_geo::bench_holes,
+    h3_set_lo_linked_geo::bench_rings,
+    max_polygon_to_cells_size::bench,
+    polygon_to_cells::bench_full,
+    polygon_to_cells::bench_transmeridian,
+);
+
+#[cfg(feature = "geo")]
+criterion_main!(benches, benches_geom);

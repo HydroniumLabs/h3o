@@ -437,6 +437,25 @@ impl fmt::Display for LatLng {
     }
 }
 
+#[cfg(feature = "geo")]
+impl From<LatLng> for geo::Coord {
+    fn from(value: LatLng) -> Self {
+        Self {
+            x: value.lng(),
+            y: value.lat(),
+        }
+    }
+}
+
+#[cfg(feature = "geo")]
+impl TryFrom<geo::Coord> for LatLng {
+    type Error = InvalidLatLng;
+
+    fn try_from(value: geo::Coord) -> Result<Self, Self::Error> {
+        Self::new(value.y, value.x)
+    }
+}
+
 #[cfg(test)]
 #[path = "./latlng_tests.rs"]
 mod tests;
