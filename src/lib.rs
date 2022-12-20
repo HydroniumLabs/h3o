@@ -3,6 +3,118 @@
 //! H3 is a geospatial indexing system using a hexagonal grid that can be
 //! (approximately) subdivided into finer and finer hexagonal grids, combining
 //! the benefits of a hexagonal grid with S2's hierarchical subdivisions.
+//!
+//! ## H3 to H3O mapping
+//!
+//! For people used to the H3 API, here is the mapping to H3O.
+//!
+//! ### Indexing functions
+//!
+//! | H3               | H3O                        |
+//! | :--------------- | :------------------------- |
+//! | `latLngToCell`   | [`LatLng::to_cell`]        |
+//! | `cellToLatLng`   | [`LatLng::from`](./struct.LatLng.html#impl-From<CellIndex>-for-LatLng) |
+//! | `cellToBoundary` | [`CellIndex::boundary`]    |
+//!
+//! ### Index inspection functions
+//!
+//! | H3                    | H3O                              |
+//! | :-------------------- | :------------------------------- |
+//! | `getResolution`       | [`CellIndex::resolution`]        |
+//! | `getBaseCellNumber`   | [`CellIndex::base_cell`]         |
+//! | `stringToH3`          | [`str::parse`]                   |
+//! | `h3ToString`          | [`ToString::to_string`]          |
+//! | `isValidCell`         | [`CellIndex::try_from`](./struct.CellIndex.html#impl-TryFrom<u64>-for-CellIndex) |
+//! | `isResClassIII`       | [`Resolution::is_class3`]        |
+//! | `isPentagon`          | [`CellIndex::is_pentagon`]       |
+//! | `getIcosahedronFaces` | [`CellIndex::icosahedron_faces`] |
+//! | `maxFaceCount`        | [`CellIndex::max_face_count`]    |
+//!
+//! ### Grid traversal functions
+//!
+//! | H3                        | H3O                                     |
+//! | :------------------------ | :-------------------------------------- |
+//! | `gridDisk`                | [`CellIndex::grid_disk`]                |
+//! | `maxGridDiskSize`         | [`max_grid_disk_size`]                  |
+//! | `gridDiskDistances`       | [`CellIndex::grid_disk_distances`]      |
+//! | `gridDiskUnsafe`          | [`CellIndex::grid_disk_fast`]           |
+//! | `gridDiskDistancesUnsafe` | [`CellIndex::grid_disk_distances_fast`] |
+//! | `gridDiskDistancesSafe`   | [`CellIndex::grid_disk_distances_safe`] |
+//! | `gridDisksUnsafe`         | [`CellIndex::grid_disks_fast`]          |
+//! | `gridRingUnsafe`          | [`CellIndex::grid_ring_fast`]           |
+//! | `gridPathCells`           | [`CellIndex::grid_path_cells`]          |
+//! | `gridPathCellsSize`       | [`CellIndex::grid_path_cells_size`]     |
+//! | `gridDistance`            | [`CellIndex::grid_distance`]            |
+//! | `cellToLocalIj`           | [`CellIndex::to_local_ij`]              |
+//! | `localIjToCell`           | [`CellIndex::try_from`](./struct.CellIndex.html#impl-TryFrom<LocalIJ>-for-CellIndex) |
+//!
+//! ### Hierarchical grid functions
+//!
+//! | H3                      | H3O                           |
+//! | :---------------------- | :---------------------------- |
+//! | `cellToParent`          | [`CellIndex::parent`]         |
+//! | `cellToChildren`        | [`CellIndex::children`]       |
+//! | `cellToChildrenSize`    | [`CellIndex::children_count`] |
+//! | `cellToCenterChild`     | [`CellIndex::center_child`]   |
+//! | `compactCells`          | [`CellIndex::compact`]        |
+//! | `uncompactCells`        | [`CellIndex::uncompact`]      |
+//! | `uncompactCellsSize`    | [`CellIndex::uncompact_size`] |
+//!
+//! ### Region functions
+//!
+//! | H3                      | H3O                                |
+//! | :---------------------- | :--------------------------------- |
+//! | `polygonToCells`        | [`geom::ToCells::to_cells`]        |
+//! | `maxPolygonToCellsSize` | [`geom::ToCells::max_cells_count`] |
+//! | `h3SetToLinkedGeo`      | [`geom::ToGeo::to_geom`]           |
+//! | `destroyLinkedPolygon`  | N/A                                |
+//!
+//! ### Directed edge functions
+//!
+//! | H3                           | H3O                                |
+//! | :--------------------------- | :--------------------------------- |
+//! | `areNeighborCells`           | [`CellIndex::is_neighbor_with`]    |
+//! | `cellsToDirectedEdge`        | [`CellIndex::edge`]                |
+//! | `isValidDirectedEdge`        | [`DirectedEdgeIndex::try_from`](./struct.DirectedEdgeIndex.html#impl-TryFrom<u64>-for-DirectedEdgeIndex) |
+//! | `getDirectedEdgeOrigin`      | [`DirectedEdgeIndex::origin`]      |
+//! | `getDirectedEdgeDestination` | [`DirectedEdgeIndex::destination`] |
+//! | `directedEdgeToCells`        | [`DirectedEdgeIndex::cells`]       |
+//! | `originToDirectedEdges`      | [`CellIndex::edges`]               |
+//! | `directedEdgeToBoundary`     | [`DirectedEdgeIndex::boundary`]    |
+//!
+//! ### Vertex functions
+//!
+//! | H3               | H3O                       |
+//! | :--------------- | :------------------------ |
+//! | `cellToVertex`   | [`CellIndex::vertex`]     |
+//! | `cellToVertexes` | [`CellIndex::vertexes`]   |
+//! | `vertexToLatLng` | [`LatLng::from`](./struct.LatLng.html#impl-From<VertexIndex>-for-LatLng) |
+//! | `isValidVertex`  | [`VertexIndex::try_from`](./struct.VertexIndex.html#impl-TryFrom<u64>-for-VertexIndex) |
+//!
+//! ### Miscellaneous H3 functions
+//!
+//! | H3                          | H3O                                |
+//! | :-------------------------- | :--------------------------------- |
+//! | `degsToRads`                | [`f64::to_radians`]                |
+//! | `radsToDegs`                | [`f64::to_degrees`]                |
+//! | `getHexagonAreaAvgKm2`      | [`Resolution::area_km2`]           |
+//! | `getHexagonAreaAvgM2`       | [`Resolution::area_m2`]            |
+//! | `cellAreaKm2`               | [`CellIndex::area_km2`]            |
+//! | `cellAreaM2`                | [`CellIndex::area_m2`]             |
+//! | `cellAreaRads2`             | [`CellIndex::area_rads2`]          |
+//! | `getHexagonEdgeLengthAvgKm` | [`Resolution::edge_length_km`]     |
+//! | `getHexagonEdgeLengthAvgM`  | [`Resolution::edge_length_m`]      |
+//! | `edgeLengthKm`              | [`DirectedEdgeIndex::length_km`]   |
+//! | `edgeLengthM`               | [`DirectedEdgeIndex::length_m`]    |
+//! | `edgeLengthRads`            | [`DirectedEdgeIndex::length_rads`] |
+//! | `getNumCells`               | [`Resolution::cell_count`]         |
+//! | `getRes0Cells`              | [`CellIndex::base_cells`]          |
+//! | `res0CellCount`             | [`BaseCell::count`]                |
+//! | `getPentagons`              | [`Resolution::pentagons`]          |
+//! | `pentagonCount`             | [`Resolution::pentagon_count`]     |
+//! | `greatCircleDistanceKm`     | [`LatLng::distance_km`]            |
+//! | `greatCircleDistanceM`      | [`LatLng::distance_m`]             |
+//! | `greatCircleDistanceRads`   | [`LatLng::distance_rads`]          |
 
 // Lints {{{
 
