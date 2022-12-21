@@ -28,9 +28,9 @@ impl fmt::Display for LocalIjError {
 
 impl Error for LocalIjError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            &Self::ResolutionMismatch | &Self::Pentagon => None,
-            &Self::HexGrid(ref err) => Some(err),
+        match *self {
+            Self::ResolutionMismatch | Self::Pentagon => None,
+            Self::HexGrid(ref err) => Some(err),
         }
     }
 }

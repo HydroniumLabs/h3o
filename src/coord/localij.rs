@@ -146,7 +146,7 @@ impl TryFrom<LocalIJK> for CellIndex {
             } else {
                 assert!(pentagon_rotations != 0xff);
                 let count =
-                    usize::from(pentagon_rotations as u8 + base_cell_rotations);
+                    usize::from(pentagon_rotations + base_cell_rotations);
                 bits = bits::rotate60::<CCW>(bits, count);
             }
         } else if origin_on_pent && index_on_pent {

@@ -289,10 +289,12 @@ impl LatLng {
     #[must_use]
     pub(crate) fn azimuth(self, other: &Self) -> f64 {
         (other.lat.cos() * (other.lng - self.lng).sin()).atan2(
-            self.lat.cos() * other.lat.sin()
-                - self.lat.sin()
+            self.lat.cos().mul_add(
+                other.lat.sin(),
+                -self.lat.sin()
                     * other.lat.cos()
                     * (other.lng - self.lng).cos(),
+            ),
         )
     }
 
@@ -338,7 +340,7 @@ impl LatLng {
         } else {
             let sinlng =
                 (azimuth.sin() * distance.sin() / lat.cos()).clamp(-1., 1.);
-            let coslng = (distance.cos() - self.lat.sin() * lat.sin())
+            let coslng = self.lat.sin().mul_add(-lat.sin(), distance.cos())
                 / self.lat.cos()
                 / lat.cos();
             self.lng + sinlng.atan2(coslng)

@@ -292,7 +292,7 @@ impl fmt::Debug for VertexIndex {
 
 impl fmt::Display for VertexIndex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:x}", self)
+        write!(f, "{self:x}")
     }
 }
 

@@ -65,8 +65,9 @@ impl Vec2d {
             y: line2.1.y - line2.0.y,
         };
 
-        let t = (s2.x * (line1.0.y - line2.0.y)
-            - s2.y * (line1.0.x - line2.0.x))
+        let t = s2
+            .x
+            .mul_add(line1.0.y - line2.0.y, -s2.y * (line1.0.x - line2.0.x))
             / (-s2.x).mul_add(s1.y, s1.x * s2.y);
 
         Self {
@@ -167,7 +168,8 @@ impl From<Vec2d> for CoordIJK {
             }
         } else if r1 < 2. / 3. {
             let j = m2 + i32::from(r2 >= (1. - r1));
-            let i = m1 + i32::from((2. * r1 - 1.) >= r2 || r2 >= (1. - r1));
+            let i = m1
+                + i32::from(2.0_f64.mul_add(r1, -1.) >= r2 || r2 >= (1. - r1));
             (i, j)
         } else {
             let i = m1 + 1;

@@ -1633,7 +1633,7 @@ impl fmt::Debug for CellIndex {
 
 impl fmt::Display for CellIndex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:x}", self)
+        write!(f, "{self:x}")
     }
 }
 

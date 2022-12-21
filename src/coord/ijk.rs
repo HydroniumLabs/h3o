@@ -202,7 +202,7 @@ impl From<CoordIJK> for Vec2d {
         let i = f64::from(value.i - value.k);
         let j = f64::from(value.j - value.k);
 
-        Self::new(i - 0.5 * j, j * SQRT3_2)
+        Self::new(0.5_f64.mul_add(-j, i), j * SQRT3_2)
     }
 }
 
