@@ -1,7 +1,7 @@
 use crate::{
     error, index::bits, BaseCell, CellIndex, DIRECTION_BITSIZE, NUM_PENTAGONS,
 };
-use std::{ffi::c_int, fmt, iter::DoubleEndedIterator};
+use std::{ffi::c_int, fmt, iter::DoubleEndedIterator, str::FromStr};
 
 /// Maximum supported H3 resolution.
 pub const MAX: u8 = 15;
@@ -383,7 +383,7 @@ impl TryFrom<c_int> for Resolution {
 
     fn try_from(value: c_int) -> Result<Self, Self::Error> {
         u8::try_from(value)
-            .map_err(|_| Self::Error::new(u8::MAX, "c_int out of range"))
+            .map_err(|_| Self::Error::new(None, "c_int out of range"))
             .and_then(TryInto::try_into)
     }
 }
@@ -409,8 +409,18 @@ impl TryFrom<u8> for Resolution {
             13 => Ok(Self::Thirteen),
             14 => Ok(Self::Fourteen),
             15 => Ok(Self::Fifteen),
-            _ => Err(Self::Error::new(value, "out of range")),
+            _ => Err(Self::Error::new(Some(value), "out of range")),
         }
+    }
+}
+
+impl FromStr for Resolution {
+    type Err = error::InvalidResolution;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        u8::from_str(s)
+            .map_err(|_| Self::Err::new(None, "invalid 8-bit number"))
+            .and_then(Self::try_from)
     }
 }
 

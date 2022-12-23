@@ -20,7 +20,9 @@ fn display() {
 
     assert!(!hex_grid_error.to_string().is_empty());
 
-    assert!(!InvalidResolution::new(32, "error").to_string().is_empty());
+    assert!(!InvalidResolution::new(Some(32), "error")
+        .to_string()
+        .is_empty());
     assert!(!InvalidCellIndex::new(Some(0), "error")
         .to_string()
         .is_empty());
@@ -64,7 +66,7 @@ fn source() {
 
     assert!(hex_grid_error.source().is_none());
 
-    assert!(InvalidResolution::new(32, "error").source().is_none());
+    assert!(InvalidResolution::new(Some(32), "error").source().is_none());
     assert!(InvalidCellIndex::new(Some(0), "error").source().is_none());
     assert!(InvalidDirectedEdgeIndex::new(Some(0), "error")
         .source()

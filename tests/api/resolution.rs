@@ -10,6 +10,16 @@ fn try_from_u8() {
 }
 
 #[test]
+fn try_from_str() {
+    assert!("0".parse::<Resolution>().is_ok(), "lower bound");
+    assert!("11".parse::<Resolution>().is_ok(), "valid value");
+    assert!("15".parse::<Resolution>().is_ok(), "upper bound");
+
+    assert!("One".parse::<Resolution>().is_err(), "invalid");
+    assert!("16".parse::<Resolution>().is_err(), "out of range");
+}
+
+#[test]
 fn into_u8() {
     assert_eq!(u8::from(Resolution::Zero), 0, "lower bound");
     assert_eq!(u8::from(Resolution::Eleven), 11, "valid value");
