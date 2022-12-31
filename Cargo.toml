@@ -53,3 +53,6 @@ doctest = false
 [[bench]]
 harness = false
 name = "h3"
+
+[profile.release]
+lto = "thin"
