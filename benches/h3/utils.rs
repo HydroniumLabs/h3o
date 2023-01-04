@@ -22,7 +22,6 @@ pub fn load_cells(resolution: u32) -> Vec<CellIndex> {
         .collect()
 }
 
-#[cfg(feature = "geo")]
 pub fn load_polygon(name: &str) -> h3o::geom::Polygon {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let filepath = format!("dataset/{name}/shape.geojson");

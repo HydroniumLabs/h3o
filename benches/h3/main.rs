@@ -56,7 +56,6 @@ mod res0_cell_count;
 mod string_to_h3;
 mod uncompact_cells;
 mod uncompact_cells_size;
-mod utils;
 mod vertex_to_latlng;
 
 #[cfg(feature = "geo")]
@@ -65,6 +64,8 @@ mod h3_set_lo_linked_geo;
 mod max_polygon_to_cells_size;
 #[cfg(feature = "geo")]
 mod polygon_to_cells;
+#[cfg(feature = "geo")]
+mod utils;
 
 criterion_group!(
     benches,
