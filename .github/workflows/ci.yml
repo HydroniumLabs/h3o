@@ -120,6 +120,11 @@ jobs:
           zip -0 cov.zip $(find . -name "$PROJECT_NAME*.gc*" -print);
           grcov cov.zip -s . -t lcov --llvm --ignore-not-existing --ignore "/*" -o lcov.info;
           rust-covfix -o lcov-fixed.info lcov.info
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./lcov-fixed.info
+          fail_ci_if_error: true
 
   publish-dry-run:
     name: Publish dry run
