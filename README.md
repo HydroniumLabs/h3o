@@ -41,7 +41,7 @@ let cell = coord.to_cell(Resolution::Nine);
 Rust is an iron oxide.
 A Rust version of H3 is an H3 oxide, in other word $H_3O$ (a.k.a hydronium).
 Chemically speaking this is wrong ( $H_3O$ is produced by protonation of
-$H_2O$, not oxidation of $H_3$), but ¯\_(ツ)_/¯
+$H_2O$, not oxidation of $H_3$), but ¯\\_(ツ)_/¯
 
 ## License
 
