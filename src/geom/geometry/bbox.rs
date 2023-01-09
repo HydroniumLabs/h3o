@@ -29,7 +29,7 @@ pub fn compute_from_ring(
     for curr in ring {
         if !super::coord_is_valid(*curr) {
             return Err(InvalidGeometry::new(
-                "invalide coordinate (e.g. infinite)",
+                "invalid coordinate (e.g. infinite)",
             ));
         }
 

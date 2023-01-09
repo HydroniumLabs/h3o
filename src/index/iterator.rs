@@ -126,7 +126,7 @@ fn get_starting_state(index: CellIndex, resolution: Resolution) -> u64 {
     // If we have resolution between current and targeted one we clear their
     // directions.
     if range != 0 {
-        // Mask with the righ number of bit to cover the directions.
+        // Mask with the right number of bit to cover the directions.
         let mask = (1 << (range * DIRECTION_BITSIZE)) - 1;
         // Mask offset required to clear the directions.
         let offset = resolution.direction_offset();

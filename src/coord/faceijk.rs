@@ -516,7 +516,7 @@ impl FaceIJK {
 
         // The center point is now in the same substrate grid as the origin
         // cell vertices.
-        // Add the center point substate coordinates to each vertex to translate
+        // Add the center point substrate coordinates to each vertex to translate
         // the vertices to that cell.
         for (i, vertex) in vertices.iter_mut().enumerate() {
             vertex.face = self.face;

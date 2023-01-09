@@ -73,7 +73,7 @@ impl<'a> Ring<'a> {
 
             // If the latitude matches exactly, we'll hit an edge case where the
             // ray passes through the vertex twice on successive segment checks.
-            // To avoid this, adjust the latiude northward if needed.
+            // To avoid this, adjust the latitude northward if needed.
             //
             // NOTE: This currently means that a point at the north pole cannot
             // be contained in any polygon. This is acceptable in current usage,

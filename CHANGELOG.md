@@ -17,7 +17,7 @@ Possible sections are:
 ### Fixed
 
 - fix link to CHANGELOG in CONTRIBUTING
-- fix spelling in bbox
+- fix various typos
 - escape backslash in README
 
 ## [0.1.0] - 2023-01-09

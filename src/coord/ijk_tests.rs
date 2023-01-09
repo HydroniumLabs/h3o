@@ -10,7 +10,7 @@ fn from_ij_zero() {
 }
 
 #[test]
-fn from_ij_rountrip() {
+fn from_ij_roundtrip() {
     for direction in Direction::iter() {
         let ijk = CoordIJK::new(0, 0, 0).neighbor(direction);
         let ij = CoordIJ::from(&ijk);
@@ -21,13 +21,13 @@ fn from_ij_rountrip() {
 }
 
 #[test]
-fn from_cube_rountrip() {
+fn from_cube_roundtrip() {
     for direction in Direction::iter() {
         let ijk = CoordIJK::new(0, 0, 0).neighbor(direction);
         let cube = CoordCube::from(ijk);
         let recovered = CoordIJK::from(cube);
 
-        assert_eq!(ijk, recovered, "rountrip for direction {direction:?}");
+        assert_eq!(ijk, recovered, "roundtrip for direction {direction:?}");
     }
 }
 

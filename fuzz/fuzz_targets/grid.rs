@@ -11,7 +11,7 @@ pub struct Args {
 }
 
 fuzz_target!(|args: Args| {
-    // Avoir overly large output (very slow, OOM risk).
+    // Avoid overly large output (very slow, OOM risk).
     if max_grid_disk_size(args.k) > 10_000 {
         return;
     }
