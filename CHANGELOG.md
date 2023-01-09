@@ -14,4 +14,6 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.1.0] - 2023-01-09
+
 - initial release, full coverage of the H3 API
