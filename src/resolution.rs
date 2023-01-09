@@ -445,7 +445,7 @@ impl<'a> arbitrary::Arbitrary<'a> for Resolution {
 
 /// Same as an H3 index resolution, but can goes up to 16.
 ///
-/// This extented range is required for some intermediate calculation.
+/// This extended range is required for some intermediate calculation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct ExtendedResolution(u8);
 

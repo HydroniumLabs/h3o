@@ -397,7 +397,7 @@ impl Eq for LatLng {}
 
 impl PartialOrd for LatLng {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // Since our `PartialEq` use an epsilon, we must explicitely check for
+        // Since our `PartialEq` use an epsilon, we must explicitly check for
         // equality before deferring to `f64::partial_cmp`.
         if self == other {
             return Some(Ordering::Equal);

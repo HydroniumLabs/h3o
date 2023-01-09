@@ -167,7 +167,7 @@ const BASE_CELL: BaseCell = BaseCell::new_unchecked(2);
 /// - `C` are cells, coded on 3 bits each, with either a value in [0; 6] or the
 ///   pattern `0b111` if unused.
 ///
-/// Refrences:
+/// References:
 /// - [H3 Index Representations](https://h3geo.org/docs/core-library/h3Indexing)
 /// - [H3 Index Bit Layout](https://observablehq.com/@nrabinowitz/h3-index-bit-layout?collection=@nrabinowitz/h3)
 /// - [H3 Index Inspector](https://observablehq.com/@nrabinowitz/h3-index-inspector?collection=@nrabinowitz/h3)
@@ -884,7 +884,7 @@ impl CellIndex {
     where
         T: FromIterator<(Self, u32)>,
     {
-        // Optimistically try the faster faillible algorithm first.
+        // Optimistically try the faster fallible algorithm first.
         // If it fails, fall back to the slower always correct one.
         self.grid_disk_distances_fast(k)
             .collect::<Option<T>>()
@@ -1313,7 +1313,7 @@ impl CellIndex {
         } else {
             dir = origin_base_cell.direction(base_cell).ok_or_else(|| {
                 HexGridError::new(
-                    "cannot unfold (base cells are not neighnors)",
+                    "cannot unfold (base cells are not neighbors)",
                 )
             })?;
             base_cell
@@ -1545,7 +1545,7 @@ impl TryFrom<u64> for CellIndex {
     // Basically a simpler/faster version of `h3IsValid`.
     //
     // Simpler because here we focus only on the trailing 56-bit part.
-    // Faster because no loops, just plain ol' bitwise operationss :)
+    // Faster because no loops, just plain ol' bitwise operations :)
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         if (value >> 56) & 0b1000_0111 != 0 {
             return Err(Self::Error::new(Some(value), "tainted reserved bits"));

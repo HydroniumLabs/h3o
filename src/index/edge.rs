@@ -91,7 +91,7 @@ impl fmt::Display for Edge {
 /// - `E` is the edge of the origin cell, in [1; 6], coded on 3 bits (56-58).
 /// - `O` is the origin cell index, coded on 56 bits (0-55).
 ///
-/// Refrences:
+/// References:
 /// - [H3 Index Representations](https://h3geo.org/docs/core-library/h3Indexing)
 /// - [H3 Index Bit Layout](https://observablehq.com/@nrabinowitz/h3-index-bit-layout?collection=@nrabinowitz/h3)
 /// - [H3 Index Inspector](https://observablehq.com/@nrabinowitz/h3-index-inspector?collection=@nrabinowitz/h3)

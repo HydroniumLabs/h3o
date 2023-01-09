@@ -1,6 +1,6 @@
 use std::{error::Error, fmt};
 
-/// Errors related to the `IJK` coordinate system and its varians (e.g.
+/// Errors related to the `IJK` coordinate system and its variants (e.g.
 /// [`LocalIJ`](crate::LocalIJ)).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct HexGridError {

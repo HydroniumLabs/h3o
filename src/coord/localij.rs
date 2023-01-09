@@ -7,7 +7,7 @@
 //!
 //! - local coordinates are only comparable when they have the same origin
 //!   index.
-//! - local coordinates are only valid near the origin. Pratically, this is
+//! - local coordinates are only valid near the origin. Practically, this is
 //!   within the same base cell or a neighboring base cell, except for
 //!   pentagons.
 //! - the coordinate space may have deleted or warped regions due to pentagon

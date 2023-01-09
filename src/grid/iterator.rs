@@ -83,7 +83,7 @@ impl Iterator for DiskDistancesSafe {
 
 // -----------------------------------------------------------------------------
 
-/// Faillible, but faster, iterator over indexes within k distance of the origin.
+/// Fallible, but faster, iterator over indexes within k distance of the origin.
 pub struct DiskDistancesUnsafe {
     /// Starting point.
     origin: CellIndex,

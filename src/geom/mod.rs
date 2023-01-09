@@ -5,9 +5,9 @@
 //! using radians) to make them compatible with the algorithms.
 //!
 //! The general idea here is to convert your `GeoRust` geometries before
-//! applying your H3O-related processings and, when you're done, convert back to
+//! applying your H3O-related processing and, when you're done, convert back to
 //! a `GeoRust` type.
-//! That way, you'll pay the cost of the conversion/vality check only once
+//! That way, you'll pay the cost of the conversion/validity check only once
 //! (instead of every call). Moreover, some computations can be frontloaded and
 //! cached in the wrapper type.
 

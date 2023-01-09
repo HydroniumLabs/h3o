@@ -36,7 +36,7 @@ test!(res13, 0x8d1fb46622d85bf);
 test!(res14, 0x8e1fb46622d8597);
 test!(res15, 0x8f1fb46622d8591);
 
-// Those ones triggered a bug where longitude wheren't in the right bounds.
+// Those ones triggered a bug where longitude weren't in the right bounds.
 test!(bound_bug1, 0x8400481ffffffff);
 test!(bound_bug2, 0x8471921ffffffff);
 

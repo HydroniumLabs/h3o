@@ -62,7 +62,7 @@ on the tests.
 
 Integration tests are used to test the public API.
 They are divided into two tests suite:
-- `api` contains free-standind tests
+- `api` contains freestanding tests
 - `h3` contains tests that are run against the H3 reference implementation
   (differential testing).
 
