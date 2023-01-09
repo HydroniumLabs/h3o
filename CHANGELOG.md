@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- fix link to CHANGELOG in CONTRIBUTING
+
 ## [0.1.0] - 2023-01-09
 
 - initial release, full coverage of the H3 API
