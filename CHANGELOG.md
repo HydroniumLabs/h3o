@@ -17,6 +17,7 @@ Possible sections are:
 ### Fixed
 
 - fix link to CHANGELOG in CONTRIBUTING
+- fix spelling in bbox
 
 ## [0.1.0] - 2023-01-09
 

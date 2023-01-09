@@ -87,11 +87,11 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
     let diagonal = p1.distance_km(p2);
     let d1 = (p1.lng() - p2.lng()).abs();
     let d2 = (p1.lat() - p2.lat()).abs();
-    let (width, lenght) = if d1 < d2 { (d1, d2) } else { (d2, d1) };
+    let (width, length) = if d1 < d2 { (d1, d2) } else { (d2, d1) };
     // Derived constant based on: https://math.stackexchange.com/a/1921940
     // Clamped to 3 as higher values tend to rapidly drag the estimate to zero.
     #[allow(clippy::suspicious_operation_groupings)] // False positive.
-    let area = (diagonal * diagonal) / (lenght / width);
+    let area = (diagonal * diagonal) / (length / width);
 
     // Divide the two to get an estimate of the number of hexagons needed.
     let estimate = (area / pentagon_area_km2).ceil();
