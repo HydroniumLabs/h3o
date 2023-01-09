@@ -229,7 +229,7 @@ impl LocalIJ {
         self.coord.i
     }
 
-    /// Return the `i` component of the `IJ` coordinate.
+    /// Return the `j` component of the `IJ` coordinate.
     ///
     /// # Example
     ///

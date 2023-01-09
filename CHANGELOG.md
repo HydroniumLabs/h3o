@@ -19,6 +19,7 @@ Possible sections are:
 - fix link to CHANGELOG in CONTRIBUTING
 - fix spelling in bbox
 - escape backslash in README
+- fix LocalIJ doc
 
 ## [0.1.0] - 2023-01-09
 
