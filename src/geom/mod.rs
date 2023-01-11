@@ -10,6 +10,17 @@
 //! That way, you'll pay the cost of the conversion/validity check only once
 //! (instead of every call). Moreover, some computations can be frontloaded and
 //! cached in the wrapper type.
+//!
+//! Loading shapes from GeoJSON is also directly supported:
+//!
+//! ```no_run
+//! use std::io;
+//! use h3o::geom::Geometry;
+//!
+//! let geojson = geojson::GeoJson::from_reader(io::stdin())?;
+//! let geometry = Geometry::try_from(&geojson)?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
 
 mod geometry;
 mod json;
