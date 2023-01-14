@@ -8,7 +8,7 @@ use std::{
 pub fn load_cells(resolution: u32) -> Vec<CellIndex> {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let filepath = format!("dataset/Paris/cells-res{resolution}.txt");
-    path.push(&filepath);
+    path.push(filepath);
 
     let file = File::open(path).expect("open test dataset");
     let reader = BufReader::new(file);
@@ -25,7 +25,7 @@ pub fn load_cells(resolution: u32) -> Vec<CellIndex> {
 pub fn load_polygon(name: &str) -> h3o::geom::Polygon {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let filepath = format!("dataset/{name}/shape.geojson");
-    path.push(&filepath);
+    path.push(filepath);
 
     let file = File::open(path).expect("open test dataset");
     let reader = BufReader::new(file);

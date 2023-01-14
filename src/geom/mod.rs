@@ -11,7 +11,7 @@
 //! (instead of every call). Moreover, some computations can be frontloaded and
 //! cached in the wrapper type.
 //!
-//! Loading shapes from GeoJSON is also directly supported:
+//! Loading shapes from `GeoJSON` is also directly supported:
 //!
 //! ```no_run
 //! use std::io;
