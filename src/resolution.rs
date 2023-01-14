@@ -130,12 +130,14 @@ impl Resolution {
     ///               .collect::<Vec<_>>();
     /// assert_eq!(res, vec![Resolution::Two, Resolution::One, Resolution::Zero]);
     /// ```
+    #[allow(unsafe_code)]
     pub fn range(
         start: Self,
         end: Self,
     ) -> impl Iterator<Item = Self> + DoubleEndedIterator {
-        // SAFETY: values between two resolutions are valid resolutions.
-        (u8::from(start)..=u8::from(end)).map(Self::new_unchecked)
+        (u8::from(start)..=u8::from(end))
+            // SAFETY: values between two resolutions are valid resolutions.
+            .map(|value| unsafe { std::mem::transmute::<u8, Self>(value) })
     }
 
     /// Returns the average hexagon area, in square kilometers, at this
@@ -329,9 +331,9 @@ impl Resolution {
     /// # Safety
     ///
     /// The value must be a valid resolution.
-    #[allow(unsafe_code)] // TODO: bench if this is needed!
+    #[allow(unsafe_code)]
     pub(crate) const fn new_unchecked(value: u8) -> Self {
-        debug_assert!(value <= MAX, "resolution out of range");
+        assert!(value <= MAX, "resolution out of range");
         // SAFETY: range is checked above!
         unsafe { std::mem::transmute::<u8, Self>(value) }
     }

@@ -107,9 +107,9 @@ impl Direction {
     /// # Safety
     ///
     /// The value must be a valid direction.
-    #[allow(unsafe_code)] // TODO: bench if this is needed!
+    #[allow(unsafe_code)]
     pub(crate) const fn new_unchecked(value: u8) -> Self {
-        debug_assert!(value <= MAX, "direction out of range");
+        assert!(value <= MAX, "direction out of range");
         // SAFETY: range checked above.
         unsafe { std::mem::transmute::<u8, Self>(value) }
     }
