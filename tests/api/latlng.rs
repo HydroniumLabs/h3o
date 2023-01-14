@@ -88,7 +88,6 @@ fn distance_wrapped_longitude() {
 fn to_cell_icosahedron_center() {
     let ll = LatLng::new(0.49171542819877384, 0.40198820291130694).expect("ll");
     let result = ll.to_cell(Resolution::Three);
-    eprintln!("{result}");
     let expected = CellIndex::try_from(0x833e00fffffffff).expect("cell");
 
     assert_eq!(result, expected);

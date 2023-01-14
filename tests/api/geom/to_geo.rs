@@ -50,7 +50,6 @@ fn from_cells() {
   "type": "MultiPolygon"
 }
 "#;
-    eprintln!("{}", cells.clone().to_geojson().expect(""));
     let result = geo::Geometry::try_from(cells.to_geojson().expect("geojson"))
         .expect("result");
     let expected = geo::Geometry::try_from(
