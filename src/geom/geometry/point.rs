@@ -1,5 +1,7 @@
 use crate::{
-    error::InvalidGeometry, geom::ToCells, CellIndex, LatLng, Resolution,
+    error::{InvalidGeometry, InvalidLatLng},
+    geom::ToCells,
+    CellIndex, LatLng, Resolution,
 };
 use std::boxed::Box;
 
@@ -69,6 +71,14 @@ impl From<Point> for geo::Point<f64> {
     }
 }
 
+impl TryFrom<Point> for LatLng {
+    type Error = InvalidLatLng;
+
+    fn try_from(value: Point) -> Result<Self, Self::Error> {
+        Self::new(value.0.y(), value.0.x())
+    }
+}
+
 impl ToCells for Point {
     fn max_cells_count(&self, _resolution: Resolution) -> usize {
         1
@@ -78,8 +88,7 @@ impl ToCells for Point {
         &self,
         resolution: Resolution,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        let coord = geo::Point::from(*self).0;
-        let ll = LatLng::try_from(coord).expect("valid coordinate");
+        let ll = LatLng::try_from(*self).expect("valid coordinate");
         Box::new(std::iter::once(ll.to_cell(resolution)))
     }
 }

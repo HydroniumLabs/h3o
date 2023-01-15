@@ -3,7 +3,7 @@ use crate::{
     error::InvalidGeometry, geom::ToCells, CellIndex, LatLng, Resolution,
 };
 use ahash::{HashSet, HashSetExt};
-use geo::{Coord, CoordsIter};
+use geo::{coord, Coord, CoordsIter};
 use std::{borrow::Cow, boxed::Box, cmp, collections::VecDeque};
 
 /// A bounded two-dimensional area.
@@ -245,7 +245,9 @@ impl ToCells for Polygon<'_> {
 
         Box::new(std::iter::from_fn(move || {
             while let Some(cell) = candidates.pop_front() {
-                if self.contains(LatLng::from(cell).into()) {
+                let ll = LatLng::from(cell);
+                let coord = coord! { x: ll.lng(), y: ll.lat() };
+                if self.contains(coord) {
                     add_candidates(
                         cell,
                         &mut candidates,
@@ -346,10 +348,10 @@ fn line_hex_estimate(line: &geo::Line<f64>, resolution: Resolution) -> u64 {
     ];
     let pentagon_diameter = PENT_DIAMETER_KM[usize::from(resolution)];
 
-    let origin =
-        LatLng::try_from(line.start).expect("finite line-start coordinate");
-    let destination =
-        LatLng::try_from(line.end).expect("finite line-end coordinate");
+    let origin = LatLng::new(line.start.y, line.start.x)
+        .expect("finite line-start coordinate");
+    let destination = LatLng::new(line.end.y, line.end.x)
+        .expect("finite line-end coordinate");
     let distance = origin.distance_km(destination);
 
     let dist_ceil = (distance / pentagon_diameter).ceil();

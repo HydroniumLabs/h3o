@@ -1,5 +1,5 @@
 use geo::{Contains, Coord, LineString, MultiPolygon, Polygon};
-use std::{f64::consts::PI, iter::Peekable};
+use std::iter::Peekable;
 
 /// A rings hierarchy.
 pub struct RingHierarchy {
@@ -206,7 +206,7 @@ impl From<RingHierarchy> for MultiPolygon<f64> {
 // Adjusts coordinates to handle transmeridian crossing.
 fn adjust_coordinate(coord: &Coord) -> Coord {
     Coord {
-        x: f64::from(u8::from(coord.x < 0.) * 2).mul_add(PI, coord.x),
+        x: f64::from(u8::from(coord.x < 0.) * 2).mul_add(180., coord.x),
         y: coord.y,
     }
 }

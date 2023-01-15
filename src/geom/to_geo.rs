@@ -87,29 +87,29 @@ where
             VertexGraph::from_cells(self).map(Into::into);
 
         if use_degrees {
-            res.map(|mut multipolygon| {
-                for polygon in &mut multipolygon {
-                    polygon.exterior_mut(|exterior| {
-                        for coord in exterior.coords_mut() {
-                            coord.x = coord.x.to_degrees();
-                            coord.y = coord.y.to_degrees();
-                        }
-                    });
-                    polygon.interiors_mut(|interiors| {
-                        for interior in interiors.iter_mut() {
-                            for coord in interior.coords_mut() {
-                                coord.x = coord.x.to_degrees();
-                                coord.y = coord.y.to_degrees();
-                            }
-                        }
-                    });
-                }
-
-                multipolygon
-            })
-        } else {
-            res
+            return res;
         }
+
+        res.map(|mut multipolygon| {
+            for polygon in &mut multipolygon {
+                polygon.exterior_mut(|exterior| {
+                    for coord in exterior.coords_mut() {
+                        coord.x = coord.x.to_radians();
+                        coord.y = coord.y.to_radians();
+                    }
+                });
+                polygon.interiors_mut(|interiors| {
+                    for interior in interiors.iter_mut() {
+                        for coord in interior.coords_mut() {
+                            coord.x = coord.x.to_radians();
+                            coord.y = coord.y.to_radians();
+                        }
+                    }
+                });
+            }
+
+            multipolygon
+        })
     }
 }
 
@@ -133,17 +133,16 @@ impl ToGeo for CellIndex {
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     fn to_geom(self, use_degrees: bool) -> Result<Self::Output, Self::Error> {
-        let mut coords: Vec<Coord<f64>> =
-            self.boundary().iter().copied().map(Into::into).collect();
+        let mut boundary: LineString = self.boundary().into();
 
-        if use_degrees {
-            for coord in &mut coords {
-                coord.x = coord.x.to_degrees();
-                coord.y = coord.y.to_degrees();
+        if !use_degrees {
+            for coord in boundary.coords_mut() {
+                coord.x = coord.x.to_radians();
+                coord.y = coord.y.to_radians();
             }
         }
 
-        Ok(Polygon::new(LineString::new(coords), Vec::new()))
+        Ok(Polygon::new(boundary, Vec::new()))
     }
 }
 
@@ -173,11 +172,11 @@ impl ToGeo for DirectedEdgeIndex {
         // We only have two point (start and end) as boundary for an edge.
         assert_eq!(coords.len(), 2);
 
-        if use_degrees {
-            coords[0].x = coords[0].x.to_degrees();
-            coords[0].y = coords[0].y.to_degrees();
-            coords[1].x = coords[1].x.to_degrees();
-            coords[1].y = coords[1].y.to_degrees();
+        if !use_degrees {
+            coords[0].x = coords[0].x.to_radians();
+            coords[0].y = coords[0].y.to_radians();
+            coords[1].x = coords[1].x.to_radians();
+            coords[1].y = coords[1].y.to_radians();
         }
 
         Ok(Line::new(coords[0], coords[1]))
@@ -206,9 +205,9 @@ impl ToGeo for VertexIndex {
     fn to_geom(self, use_degrees: bool) -> Result<Self::Output, Self::Error> {
         let mut coord: Coord<f64> = LatLng::from(self).into();
 
-        if use_degrees {
-            coord.x = coord.x.to_degrees();
-            coord.y = coord.y.to_degrees();
+        if !use_degrees {
+            coord.x = coord.x.to_radians();
+            coord.y = coord.y.to_radians();
         }
 
         Ok(coord.into())

@@ -434,8 +434,8 @@ impl fmt::Display for LatLng {
         write!(
             f,
             "({:.10}, {:.10})",
-            self.lat.to_degrees(),
-            self.lng.to_degrees()
+            self.lat_degrees(),
+            self.lng_degrees()
         )
     }
 }
@@ -444,8 +444,8 @@ impl fmt::Display for LatLng {
 impl From<LatLng> for geo::Coord {
     fn from(value: LatLng) -> Self {
         Self {
-            x: value.lng(),
-            y: value.lat(),
+            x: value.lng_degrees(),
+            y: value.lat_degrees(),
         }
     }
 }
@@ -455,7 +455,7 @@ impl TryFrom<geo::Coord> for LatLng {
     type Error = InvalidLatLng;
 
     fn try_from(value: geo::Coord) -> Result<Self, Self::Error> {
-        Self::new(value.y, value.x)
+        Self::from_degrees(value.y, value.x)
     }
 }
 

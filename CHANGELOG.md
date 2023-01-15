@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- Conversion from/to `geo` types now assumes degrees (instead of radians)
+
 ### Fixed
 
 - fix link to CHANGELOG in CONTRIBUTING

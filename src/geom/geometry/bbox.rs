@@ -1,6 +1,6 @@
 use crate::{error::InvalidGeometry, LatLng, Resolution};
 use geo::{coord, LineString, Rect};
-use std::{cmp::max, f64::consts::PI};
+use std::f64::consts::PI;
 
 /// Create a bounding box from a polygon's ring.
 ///
@@ -82,8 +82,10 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
     ];
     let pentagon_area_km2 = PENT_AREA_KM2[usize::from(resolution)];
 
-    let p1 = LatLng::try_from(bbox.min()).expect("finite bbox-min coordinate");
-    let p2 = LatLng::try_from(bbox.max()).expect("finite bbox-max coordinate");
+    let min = bbox.min();
+    let max = bbox.max();
+    let p1 = LatLng::new(min.y, min.x).expect("finite bbox-min coordinate");
+    let p2 = LatLng::new(max.y, max.x).expect("finite bbox-max coordinate");
     let diagonal = p1.distance_km(p2);
     let d1 = (p1.lng() - p2.lng()).abs();
     let d2 = (p1.lat() - p2.lat()).abs();
@@ -100,7 +102,7 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let estimate = estimate as usize;
 
-    max(estimate, 1)
+    std::cmp::max(estimate, 1)
 }
 
 fn get_min_max(value: f64, min: f64, max: f64) -> (f64, f64) {

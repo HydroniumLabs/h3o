@@ -1,5 +1,5 @@
 use ahash::HashSet;
-use geo::{polygon, Coord, LineString};
+use geo::{coord, polygon, LineString};
 use h3o::{
     geom::{Polygon, ToCells},
     CellIndex, LatLng, Resolution,
@@ -338,7 +338,12 @@ fn h3_595_shape() -> geo::Polygon<f64> {
 fn hexagon_shape() -> geo::Polygon<f64> {
     let ll = LatLng::new(1., 2.).expect("ll");
     let cell = ll.to_cell(Resolution::Nine);
-    let ring = cell.boundary().into();
+    let ring = cell
+        .boundary()
+        .iter()
+        .copied()
+        .map(|ll| coord! {x: ll.lng(), y:ll.lat()})
+        .collect();
     geo::Polygon::new(ring, Vec::new())
 }
 
@@ -346,7 +351,8 @@ fn pentagon_shape() -> geo::Polygon<f64> {
     let pentagon = CellIndex::try_from(0x89300000003ffff).expect("pentagon");
     assert!(pentagon.is_pentagon());
 
-    let coord = Coord::from(LatLng::from(pentagon));
+    let ll = LatLng::from(pentagon);
+    let coord = coord! {x: ll.lng(), y: ll.lat() };
     // Length of half an edge of the polygon, in radians.
     let edge_length_2 = 0.001_f64.to_radians();
 
