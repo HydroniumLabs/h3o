@@ -18,7 +18,7 @@ fn vertex_to_latlng(index: VertexIndex) -> LatLng {
     unsafe {
         h3ron_h3_sys::vertexToLatLng(index.into(), &mut ll);
     }
-    LatLng::new(ll.lat, ll.lng).expect("coordinate")
+    LatLng::from_radians(ll.lat, ll.lng).expect("coordinate")
 }
 
 // }}}

@@ -14,9 +14,23 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- `LatLng::from_radians` (replace the old `LatLng::new`)
+- `LatLng::lat_radians` (replace the old `LatLng::lat`)
+- `LatLng::lng_radians` (replace the old `LatLng::lng`)
+
 ### Changed
 
 - Conversion from/to `geo` types now assumes degrees (instead of radians)
+- `LatLng::new` now expects degrees as input.
+- `LatLng::lat` and `LatLng::lng` now return degrees.
+
+### Removed
+
+- `LatLng::from_degrees` (use the new `LatLng::new` instead)
+- `LatLng::lat_degrees` (use the new `LatLng::lat` instead)
+- `LatLng::lng_degrees` (use the new `LatLng::lng` instead)
 
 ### Fixed
 

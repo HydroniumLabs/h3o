@@ -18,8 +18,8 @@ fuzz_target!(|args: Args| {
 fn latlng_to_cell(ll: LatLng, resolution: Resolution) -> CellIndex {
     let mut out: u64 = 0;
     let ll = h3ron_h3_sys::LatLng {
-        lat: ll.lat(),
-        lng: ll.lng(),
+        lat: ll.lat_radians(),
+        lng: ll.lng_radians(),
     };
     unsafe {
         h3ron_h3_sys::latLngToCell(&ll, u8::from(resolution).into(), &mut out);

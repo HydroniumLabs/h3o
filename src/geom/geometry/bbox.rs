@@ -84,11 +84,13 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
 
     let min = bbox.min();
     let max = bbox.max();
-    let p1 = LatLng::new(min.y, min.x).expect("finite bbox-min coordinate");
-    let p2 = LatLng::new(max.y, max.x).expect("finite bbox-max coordinate");
+    let p1 =
+        LatLng::from_radians(min.y, min.x).expect("finite bbox-min coordinate");
+    let p2 =
+        LatLng::from_radians(max.y, max.x).expect("finite bbox-max coordinate");
     let diagonal = p1.distance_km(p2);
-    let d1 = (p1.lng() - p2.lng()).abs();
-    let d2 = (p1.lat() - p2.lat()).abs();
+    let d1 = (p1.lng_radians() - p2.lng_radians()).abs();
+    let d2 = (p1.lat_radians() - p2.lat_radians()).abs();
     let (width, length) = if d1 < d2 { (d1, d2) } else { (d2, d1) };
     // Derived constant based on: https://math.stackexchange.com/a/1921940
     // Clamped to 3 as higher values tend to rapidly drag the estimate to zero.

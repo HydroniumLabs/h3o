@@ -141,10 +141,10 @@ fn start_end_cells(
 ) -> (CellIndex, CellIndex) {
     // TODO: precompute those at creation time?
     // Expect valid coordinates, checked by `check_coords` before.
-    let start = LatLng::new(line.start.y, line.start.x)
+    let start = LatLng::from_radians(line.start.y, line.start.x)
         .expect("valid start")
         .to_cell(resolution);
-    let end = LatLng::new(line.end.y, line.end.x)
+    let end = LatLng::from_radians(line.end.y, line.end.x)
         .expect("valid end")
         .to_cell(resolution);
 

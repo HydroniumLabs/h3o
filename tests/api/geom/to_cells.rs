@@ -327,22 +327,22 @@ fn h3_595_shape() -> geo::Polygon<f64> {
     // when one of the polygon vertexes is to the east of the index center,
     // with exactly the same latitude
     polygon![
-        (x: -2.121207808248113,  y: center_ll.lat()),
+        (x: -2.121207808248113,  y: center_ll.lat_radians()),
         (x: -2.1281107217935986, y: 0.6565301558937859),
         (x: -2.1345342663428695, y: 0.6515463604919347),
         (x: -2.1276313527973842, y: 0.6466583305904194),
-        (x: -2.121207808248113,  y: center_ll.lat())
+        (x: -2.121207808248113,  y: center_ll.lat_radians())
     ]
 }
 
 fn hexagon_shape() -> geo::Polygon<f64> {
-    let ll = LatLng::new(1., 2.).expect("ll");
+    let ll = LatLng::from_radians(1., 2.).expect("ll");
     let cell = ll.to_cell(Resolution::Nine);
     let ring = cell
         .boundary()
         .iter()
         .copied()
-        .map(|ll| coord! {x: ll.lng(), y:ll.lat()})
+        .map(|ll| coord! {x: ll.lng_radians(), y:ll.lat_radians()})
         .collect();
     geo::Polygon::new(ring, Vec::new())
 }
@@ -352,7 +352,7 @@ fn pentagon_shape() -> geo::Polygon<f64> {
     assert!(pentagon.is_pentagon());
 
     let ll = LatLng::from(pentagon);
-    let coord = coord! {x: ll.lng(), y: ll.lat() };
+    let coord = coord! {x: ll.lng_radians(), y: ll.lat_radians() };
     // Length of half an edge of the polygon, in radians.
     let edge_length_2 = 0.001_f64.to_radians();
 

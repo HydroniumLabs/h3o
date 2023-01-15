@@ -24,7 +24,7 @@ fn infinity() {
 
 #[test]
 fn display() {
-    let ll = LatLng::from_degrees(2.4, 8.2).expect("ll");
+    let ll = LatLng::new(2.4, 8.2).expect("ll");
     let result = ll.to_string();
     let expected = "(2.4000000000, 8.2000000000)".to_owned();
 
@@ -36,19 +36,19 @@ fn display() {
 fn lat_lng() {
     let lat = 2.349014;
     let lng = 48.864716;
-    let ll = LatLng::from_degrees(lat, lng).expect("ll");
+    let ll = LatLng::new(lat, lng).expect("ll");
 
-    assert_eq!(ll.lat(), lat.to_radians(), "lat radians");
-    assert_eq!(ll.lng(), lng.to_radians(), "lng radians");
+    assert_eq!(ll.lat_radians(), lat.to_radians(), "lat radians");
+    assert_eq!(ll.lng_radians(), lng.to_radians(), "lng radians");
 
-    assert_eq!(ll.lat_degrees(), lat, "lat degrees");
-    assert_eq!(ll.lng_degrees(), lng, "lng degrees");
+    assert_eq!(ll.lat(), lat, "lat degrees");
+    assert_eq!(ll.lng(), lng, "lng degrees");
 }
 
 #[test]
 fn distance_rads() {
-    let p1 = LatLng::from_degrees(10., 10.).expect("p1");
-    let p2 = LatLng::from_degrees(0., 10.).expect("p2");
+    let p1 = LatLng::new(10., 10.).expect("p1");
+    let p2 = LatLng::new(0., 10.).expect("p2");
 
     assert_float_eq!(
         p1.distance_rads(p1),
@@ -67,7 +67,7 @@ fn distance_rads() {
 
 #[test]
 fn distance_wrapped_longitude() {
-    let negative_lng = LatLng::new(0., -(PI + FRAC_PI_2)).expect("ll");
+    let negative_lng = LatLng::from_radians(0., -(PI + FRAC_PI_2)).expect("ll");
     let zero = LatLng::default();
 
     assert_float_eq!(
@@ -86,7 +86,7 @@ fn distance_wrapped_longitude() {
 
 #[test]
 fn to_cell_icosahedron_center() {
-    let ll = LatLng::new(0.49171542819877384, 0.40198820291130694).expect("ll");
+    let ll = LatLng::new(28.173218757257807, 23.03222744086644).expect("ll");
     let result = ll.to_cell(Resolution::Three);
     let expected = CellIndex::try_from(0x833e00fffffffff).expect("cell");
 

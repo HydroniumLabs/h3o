@@ -95,8 +95,7 @@ fn distance() {
 
 #[test]
 fn from_hex2d() {
-    let ll =
-        LatLng::from_degrees(48.85458622023985, 2.373012457671282).expect("ll");
+    let ll = LatLng::new(48.85458622023985, 2.373012457671282).expect("ll");
     let (face, distance) = ll.closest_face();
     let resolutions = Resolution::range(Resolution::Zero, Resolution::Fifteen);
     let cases = [

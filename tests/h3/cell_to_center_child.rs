@@ -5,7 +5,7 @@ macro_rules! test {
     ($name:ident, $resolution:literal) => {
         #[test]
         fn $name() {
-            let ll = LatLng::new(0.9889333399871891, 0.35726431370692086)
+            let ll = LatLng::new(56.66170660104207, 20.46973734604441)
                 .expect("coordinate");
             let resolution =
                 Resolution::try_from($resolution).expect("index resolution");

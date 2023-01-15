@@ -56,7 +56,7 @@ pub fn cell_to_boundary(index: CellIndex) -> Boundary {
     let mut boundary = Boundary::new();
     for i in 0..(result.numVerts as usize) {
         boundary.push(
-            LatLng::new(result.verts[i].lat, result.verts[i].lng)
+            LatLng::from_radians(result.verts[i].lat, result.verts[i].lng)
                 .expect("vertex coordinate"),
         );
     }
@@ -126,7 +126,7 @@ pub fn cell_to_latlng(index: CellIndex) -> LatLng {
     unsafe {
         h3ron_h3_sys::cellToLatLng(index.into(), &mut ll);
     }
-    LatLng::new(ll.lat, ll.lng).expect("coordinate")
+    LatLng::from_radians(ll.lat, ll.lng).expect("coordinate")
 }
 
 /// Expose `cellToLocalIj`.
@@ -239,7 +239,7 @@ pub fn directed_edge_to_boundary(index: DirectedEdgeIndex) -> Boundary {
     let mut boundary = Boundary::new();
     for i in 0..(result.numVerts as usize) {
         boundary.push(
-            LatLng::new(result.verts[i].lat, result.verts[i].lng)
+            LatLng::from_radians(result.verts[i].lat, result.verts[i].lng)
                 .expect("vertex coordinate"),
         );
     }
@@ -430,12 +430,12 @@ pub fn get_resolution(index: CellIndex) -> Resolution {
 /// Expose `greatCircleDistanceKm`.
 pub fn great_circle_distance_km(src: &LatLng, dst: &LatLng) -> f64 {
     let src = h3ron_h3_sys::LatLng {
-        lat: src.lat(),
-        lng: src.lng(),
+        lat: src.lat_radians(),
+        lng: src.lng_radians(),
     };
     let dst = h3ron_h3_sys::LatLng {
-        lat: dst.lat(),
-        lng: dst.lng(),
+        lat: dst.lat_radians(),
+        lng: dst.lng_radians(),
     };
     unsafe { h3ron_h3_sys::greatCircleDistanceKm(&src, &dst) }
 }
@@ -443,12 +443,12 @@ pub fn great_circle_distance_km(src: &LatLng, dst: &LatLng) -> f64 {
 /// Expose `greatCircleDistanceM`.
 pub fn great_circle_distance_m(src: &LatLng, dst: &LatLng) -> f64 {
     let src = h3ron_h3_sys::LatLng {
-        lat: src.lat(),
-        lng: src.lng(),
+        lat: src.lat_radians(),
+        lng: src.lng_radians(),
     };
     let dst = h3ron_h3_sys::LatLng {
-        lat: dst.lat(),
-        lng: dst.lng(),
+        lat: dst.lat_radians(),
+        lng: dst.lng_radians(),
     };
     unsafe { h3ron_h3_sys::greatCircleDistanceM(&src, &dst) }
 }
@@ -456,12 +456,12 @@ pub fn great_circle_distance_m(src: &LatLng, dst: &LatLng) -> f64 {
 /// Expose `greatCircleDistanceRads`.
 pub fn great_circle_distance_rads(src: &LatLng, dst: &LatLng) -> f64 {
     let src = h3ron_h3_sys::LatLng {
-        lat: src.lat(),
-        lng: src.lng(),
+        lat: src.lat_radians(),
+        lng: src.lng_radians(),
     };
     let dst = h3ron_h3_sys::LatLng {
-        lat: dst.lat(),
-        lng: dst.lng(),
+        lat: dst.lat_radians(),
+        lng: dst.lng_radians(),
     };
     unsafe { h3ron_h3_sys::greatCircleDistanceRads(&src, &dst) }
 }
@@ -745,8 +745,8 @@ pub fn is_valid_vertex(index: u64) -> bool {
 pub fn latlng_to_cell(ll: &LatLng, resolution: Resolution) -> CellIndex {
     let mut out: u64 = 0;
     let ll = h3ron_h3_sys::LatLng {
-        lat: ll.lat(),
-        lng: ll.lng(),
+        lat: ll.lat_radians(),
+        lng: ll.lng_radians(),
     };
     unsafe {
         h3ron_h3_sys::latLngToCell(&ll, u8::from(resolution).into(), &mut out);
@@ -891,5 +891,5 @@ pub fn vertex_to_latlng(index: VertexIndex) -> LatLng {
     unsafe {
         h3ron_h3_sys::vertexToLatLng(index.into(), &mut ll);
     }
-    LatLng::new(ll.lat, ll.lng).expect("coordinate")
+    LatLng::from_radians(ll.lat, ll.lng).expect("coordinate")
 }

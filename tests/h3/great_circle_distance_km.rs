@@ -10,10 +10,8 @@ macro_rules! test {
     ($name:ident, $src:ident, $dst:ident) => {
         #[test]
         fn $name() {
-            let src = LatLng::new($src.0.to_radians(), $src.1.to_radians())
-                .expect("valid location");
-            let dst = LatLng::new($dst.0.to_radians(), $dst.1.to_radians())
-                .expect("valid location");
+            let src = LatLng::new($src.0, $src.1).expect("valid location");
+            let dst = LatLng::new($dst.0, $dst.1).expect("valid location");
             let result = src.distance_km(dst);
             let reference = h3api::great_circle_distance_km(&src, &dst);
 

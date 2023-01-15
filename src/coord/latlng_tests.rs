@@ -3,8 +3,8 @@ use float_eq::assert_float_eq;
 
 #[test]
 fn coord_at_noop() {
-    let start = LatLng::from_degrees(15., 10.).expect("start");
-    let expected = LatLng::from_degrees(15., 10.).expect("expected");
+    let start = LatLng::new(15., 10.).expect("start");
+    let expected = LatLng::new(15., 10.).expect("expected");
     let result = start.coord_at(0., 0.);
 
     assert_eq!(result, expected);
@@ -13,8 +13,8 @@ fn coord_at_noop() {
 #[test]
 fn coord_at_due_north_south() {
     // Due north to north pole.
-    let start = LatLng::from_degrees(45., 1.).expect("start");
-    let expected = LatLng::from_degrees(90., 0.).expect("expected");
+    let start = LatLng::new(45., 1.).expect("start");
+    let expected = LatLng::new(90., 0.).expect("expected");
     let result = start.coord_at(0., 45.0_f64.to_radians());
     assert_eq!(
         result, expected,
@@ -22,8 +22,8 @@ fn coord_at_due_north_south() {
     );
 
     // Due north to south pole, which doesn't get wrapped correctly.
-    let start = LatLng::from_degrees(45., 1.).expect("start");
-    let expected = LatLng::from_degrees(270., 1.).expect("expected");
+    let start = LatLng::new(45., 1.).expect("start");
+    let expected = LatLng::new(270., 1.).expect("expected");
     let result = start.coord_at(0., (45.0_f64 + 180.).to_radians());
     assert_eq!(
         result, expected,
@@ -31,8 +31,8 @@ fn coord_at_due_north_south() {
     );
 
     // Due south to south pole.
-    let start = LatLng::from_degrees(-45., 2.).expect("start");
-    let expected = LatLng::from_degrees(-90., 0.).expect("expected");
+    let start = LatLng::new(-45., 2.).expect("start");
+    let expected = LatLng::new(-90., 0.).expect("expected");
     let result = start.coord_at(180.0_f64.to_radians(), 45.0_f64.to_radians());
     assert_eq!(
         result, expected,
@@ -40,8 +40,8 @@ fn coord_at_due_north_south() {
     );
 
     // Due north to non-pole.
-    let start = LatLng::from_degrees(-45., 10.).expect("start");
-    let expected = LatLng::from_degrees(-10., 10.).expect("expected");
+    let start = LatLng::new(-45., 10.).expect("start");
+    let expected = LatLng::new(-10., 10.).expect("expected");
     let result = start.coord_at(0., 35.0_f64.to_radians());
     assert_eq!(result, expected, "due north produces expected result");
 }
@@ -51,16 +51,16 @@ fn coord_at_pole_to_pole() {
     // Azimuth doesn't really matter in this case. Any azimuth from the
     // north pole is south, any azimuth from the south pole is north.
 
-    let start = LatLng::from_degrees(90., 0.).expect("start");
-    let expected = LatLng::from_degrees(-90., 0.).expect("expected");
+    let start = LatLng::new(90., 0.).expect("start");
+    let expected = LatLng::new(-90., 0.).expect("expected");
     let result = start.coord_at(12.0_f64.to_radians(), 180.0_f64.to_radians());
     assert_eq!(
         result, expected,
         "some direction to south pole produces south pole"
     );
 
-    let start = LatLng::from_degrees(-90., 0.).expect("start");
-    let expected = LatLng::from_degrees(90., 0.).expect("expected");
+    let start = LatLng::new(-90., 0.).expect("start");
+    let expected = LatLng::new(90., 0.).expect("expected");
     let result = start.coord_at(34.0_f64.to_radians(), 180.0_f64.to_radians());
     assert_eq!(
         result, expected,
@@ -70,7 +70,7 @@ fn coord_at_pole_to_pole() {
 
 #[test]
 fn coord_at_invertible() {
-    let start = LatLng::from_degrees(15., 10.).expect("start");
+    let start = LatLng::new(15., 10.).expect("start");
     let azimuth = 20.0_f64.to_radians();
     let degrees180 = 180.0_f64.to_radians();
     let distance = 15.0_f64.to_radians();
@@ -90,8 +90,7 @@ fn coord_at_invertible() {
 
 #[test]
 fn to_vec2d() {
-    let ll =
-        LatLng::from_degrees(48.85458622023985, 2.373012457671282).expect("ll");
+    let ll = LatLng::new(48.85458622023985, 2.373012457671282).expect("ll");
     let (face, distance) = ll.closest_face();
     let resolutions = Resolution::range(Resolution::Zero, Resolution::Fifteen);
     let cases = [
@@ -162,8 +161,7 @@ fn into_vec3d() {
         "Geo point is the other side of the sphere"
     );
 
-    let ll =
-        LatLng::from_degrees(48.85458622023985, 2.373012457671282).expect("ll");
+    let ll = LatLng::new(48.85458622023985, 2.373012457671282).expect("ll");
     let v3d = Vec3d::from(ll);
 
     assert_float_eq!(v3d.x, 0.6574080802540908, abs <= EPSILON_RAD, "x");
@@ -173,8 +171,7 @@ fn into_vec3d() {
 
 #[test]
 fn closest_face() {
-    let ll =
-        LatLng::from_degrees(48.85458622023985, 2.373012457671282).expect("ll");
+    let ll = LatLng::new(48.85458622023985, 2.373012457671282).expect("ll");
     let (face, distance) = ll.closest_face();
 
     assert_eq!(u8::from(face), 3, "face");

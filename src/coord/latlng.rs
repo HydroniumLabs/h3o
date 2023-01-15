@@ -19,7 +19,7 @@ const EPSILON_DEG: f64 = 0.000000001;
 /// Same as `EPSILON_DEG`, but in radians.
 const EPSILON_RAD: f64 = EPSILON_DEG * PI / 180.0;
 
-/// Latitude/longitude, in radians.
+/// Latitude/longitude.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LatLng {
@@ -30,31 +30,6 @@ pub struct LatLng {
 }
 
 impl LatLng {
-    /// Initializes a new coordinate with the specified component values.
-    ///
-    /// # Errors
-    ///
-    /// [`InvalidLatLng`] when one (or both) components is not a finite number.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let ll = h3o::LatLng::new(0.852850182, 0.0409980285)?;
-    ///
-    /// assert!(h3o::LatLng::new(f64::NAN, 10.).is_err());
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
-    /// ```
-    pub fn new(lat: f64, lng: f64) -> Result<Self, InvalidLatLng> {
-        if !lat.is_finite() {
-            return Err(InvalidLatLng::new(lat, "infinite latitude"));
-        }
-        if !lng.is_finite() {
-            return Err(InvalidLatLng::new(lng, "infinite longitude"));
-        }
-
-        Ok(Self { lat, lng })
-    }
-
     /// Initializes a new coordinate from degrees.
     ///
     /// # Errors
@@ -65,40 +40,35 @@ impl LatLng {
     ///
     /// ```
     /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
+    ///
+    /// assert!(h3o::LatLng::new(f64::NAN, 10.).is_err());
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
-    pub fn from_degrees(lat: f64, lng: f64) -> Result<Self, InvalidLatLng> {
-        Self::new(lat.to_radians(), lng.to_radians())
+    pub fn new(lat: f64, lng: f64) -> Result<Self, InvalidLatLng> {
+        Self::from_radians(lat.to_radians(), lng.to_radians())
     }
 
-    /// Latitude, in radians.
+    /// Initializes a new coordinate from radians.
+    ///
+    /// # Errors
+    ///
+    /// [`InvalidLatLng`] when one (or both) components is not a finite number.
     ///
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::from_degrees(48.864716, 2.349014)?;
-    ///
-    /// assert_eq!(ll.lat(), 0.8528501822519535);
+    /// let ll = h3o::LatLng::from_radians(0.852850182, 0.0409980285)?;
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
-    #[must_use]
-    pub const fn lat(self) -> f64 {
-        self.lat
-    }
+    pub fn from_radians(lat: f64, lng: f64) -> Result<Self, InvalidLatLng> {
+        if !lat.is_finite() {
+            return Err(InvalidLatLng::new(lat, "infinite latitude"));
+        }
+        if !lng.is_finite() {
+            return Err(InvalidLatLng::new(lng, "infinite longitude"));
+        }
 
-    /// Longitude, in radians.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let ll = h3o::LatLng::from_degrees(48.864716, 2.349014)?;
-    ///
-    /// assert_eq!(ll.lng(), 0.04099802847544208);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
-    /// ```
-    #[must_use]
-    pub const fn lng(self) -> f64 {
-        self.lng
+        Ok(Self { lat, lng })
     }
 
     /// Latitude, in degrees.
@@ -106,13 +76,13 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::from_degrees(48.864716, 2.349014)?;
+    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
     ///
-    /// assert_eq!(ll.lat_degrees(), 48.864716);
+    /// assert_eq!(ll.lat(), 48.864716);
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
     #[must_use]
-    pub fn lat_degrees(self) -> f64 {
+    pub fn lat(self) -> f64 {
         self.lat.to_degrees()
     }
 
@@ -121,14 +91,44 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::from_degrees(48.864716, 2.349014)?;
+    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
     ///
-    /// assert_eq!(ll.lng_degrees(), 2.349014);
+    /// assert_eq!(ll.lng(), 2.349014);
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
     #[must_use]
-    pub fn lng_degrees(self) -> f64 {
+    pub fn lng(self) -> f64 {
         self.lng.to_degrees()
+    }
+
+    /// Latitude, in radians.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
+    ///
+    /// assert_eq!(ll.lat_radians(), 0.8528501822519535);
+    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// ```
+    #[must_use]
+    pub const fn lat_radians(self) -> f64 {
+        self.lat
+    }
+
+    /// Longitude, in degrees.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
+    ///
+    /// assert_eq!(ll.lng_radians(), 0.04099802847544208);
+    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// ```
+    #[must_use]
+    pub const fn lng_radians(self) -> f64 {
+        self.lng
     }
 
     /// The great circle distance, in radians, between two spherical
@@ -143,8 +143,8 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let src = h3o::LatLng::from_degrees(48.864716, 2.349014)?;
-    /// let dst = h3o::LatLng::from_degrees(31.224361, 121.469170)?;
+    /// let src = h3o::LatLng::new(48.864716, 2.349014)?;
+    /// let dst = h3o::LatLng::new(31.224361, 121.469170)?;
     ///
     /// assert_eq!(src.distance_rads(dst), 1.453859220532047);
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
@@ -168,8 +168,8 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let src = h3o::LatLng::from_degrees(48.864716, 2.349014)?;
-    /// let dst = h3o::LatLng::from_degrees(31.224361, 121.469170)?;
+    /// let src = h3o::LatLng::new(48.864716, 2.349014)?;
+    /// let dst = h3o::LatLng::new(31.224361, 121.469170)?;
     ///
     /// assert_eq!(src.distance_km(dst), 9262.547534054209);
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
@@ -184,8 +184,8 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let src = h3o::LatLng::from_degrees(48.864716, 2.349014)?;
-    /// let dst = h3o::LatLng::from_degrees(31.224361, 121.469170)?;
+    /// let src = h3o::LatLng::new(48.864716, 2.349014)?;
+    /// let dst = h3o::LatLng::new(31.224361, 121.469170)?;
     ///
     /// assert_eq!(src.distance_m(dst), 9262547.534054209);
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
@@ -201,7 +201,7 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::from_degrees(48.864716, 2.349014)?;
+    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
     /// let cell = ll.to_cell(h3o::Resolution::Five);
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
@@ -431,12 +431,7 @@ impl fmt::Display for LatLng {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // For display purpose, 10 decimals be more than enough.
         // See https://gis.stackexchange.com/a/8674
-        write!(
-            f,
-            "({:.10}, {:.10})",
-            self.lat_degrees(),
-            self.lng_degrees()
-        )
+        write!(f, "({:.10}, {:.10})", self.lat(), self.lng())
     }
 }
 
@@ -444,8 +439,8 @@ impl fmt::Display for LatLng {
 impl From<LatLng> for geo::Coord {
     fn from(value: LatLng) -> Self {
         Self {
-            x: value.lng_degrees(),
-            y: value.lat_degrees(),
+            x: value.lng(),
+            y: value.lat(),
         }
     }
 }
@@ -455,7 +450,7 @@ impl TryFrom<geo::Coord> for LatLng {
     type Error = InvalidLatLng;
 
     fn try_from(value: geo::Coord) -> Result<Self, Self::Error> {
-        Self::from_degrees(value.y, value.x)
+        Self::new(value.y, value.x)
     }
 }
 
@@ -467,7 +462,8 @@ impl<'a> arbitrary::Arbitrary<'a> for LatLng {
         let lat = f64::arbitrary(data)?;
         let lng = f64::arbitrary(data)?;
 
-        Self::new(lat, lng).map_err(|_| arbitrary::Error::IncorrectFormat)
+        Self::from_radians(lat, lng)
+            .map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }
 

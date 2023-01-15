@@ -94,7 +94,7 @@ fn directed_edge_to_boundary(index: DirectedEdgeIndex) -> Boundary {
     let mut boundary = Boundary::new();
     for i in 0..(result.numVerts as usize) {
         boundary.push(
-            LatLng::new(result.verts[i].lat, result.verts[i].lng)
+            LatLng::from_radians(result.verts[i].lat, result.verts[i].lng)
                 .expect("vertex coordinate"),
         );
     }

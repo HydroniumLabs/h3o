@@ -32,7 +32,7 @@ The goals are:
 ```rust
 use h3o::{LatLng, Resolution};
 
-let coord = LatLng::from_degrees(37.769377, -122.388903).expect("valid coord");
+let coord = LatLng::new(37.769377, -122.388903).expect("valid coord");
 let cell = coord.to_cell(Resolution::Nine);
 ```
 

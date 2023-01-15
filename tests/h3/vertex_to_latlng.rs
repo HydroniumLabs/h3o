@@ -18,14 +18,14 @@ macro_rules! exhaustive_test {
                         let reference = h3api::vertex_to_latlng(index);
 
                         assert_float_eq!(
-                            result.lat(),
-                            reference.lat(),
+                            result.lat_radians(),
+                            reference.lat_radians(),
                             abs <= f64::from(f32::EPSILON),
                             "latitude (vertex {index})"
                         );
                         assert_float_eq!(
-                            result.lng(),
-                            reference.lng(),
+                            result.lng_radians(),
+                            reference.lng_radians(),
                             abs <= f64::from(f32::EPSILON),
                             "longitude (vertex {index})"
                         );

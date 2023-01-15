@@ -246,7 +246,7 @@ impl ToCells for Polygon<'_> {
         Box::new(std::iter::from_fn(move || {
             while let Some(cell) = candidates.pop_front() {
                 let ll = LatLng::from(cell);
-                let coord = coord! { x: ll.lng(), y: ll.lat() };
+                let coord = coord! { x: ll.lng_radians(), y: ll.lat_radians() };
                 if self.contains(coord) {
                     add_candidates(
                         cell,
@@ -282,7 +282,8 @@ fn get_edge_cells(
             let lng =
                 (line.start.x * (count - i) / count) + (line.end.x * i / count);
 
-            let ll = LatLng::new(lat, lng).expect("finite line coordinate");
+            let ll =
+                LatLng::from_radians(lat, lng).expect("finite line coordinate");
             ll.to_cell(resolution)
         })
     })
@@ -348,9 +349,9 @@ fn line_hex_estimate(line: &geo::Line<f64>, resolution: Resolution) -> u64 {
     ];
     let pentagon_diameter = PENT_DIAMETER_KM[usize::from(resolution)];
 
-    let origin = LatLng::new(line.start.y, line.start.x)
+    let origin = LatLng::from_radians(line.start.y, line.start.x)
         .expect("finite line-start coordinate");
-    let destination = LatLng::new(line.end.y, line.end.x)
+    let destination = LatLng::from_radians(line.end.y, line.end.x)
         .expect("finite line-end coordinate");
     let distance = origin.distance_km(destination);
 

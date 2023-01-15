@@ -144,7 +144,7 @@ fn cell_to_latlng(index: CellIndex) -> LatLng {
     unsafe {
         h3ron_h3_sys::cellToLatLng(index.into(), &mut ll);
     }
-    LatLng::new(ll.lat, ll.lng).expect("coordinate")
+    LatLng::from_radians(ll.lat, ll.lng).expect("coordinate")
 }
 
 fn cell_to_boundary(index: CellIndex) -> Boundary {
@@ -159,7 +159,7 @@ fn cell_to_boundary(index: CellIndex) -> Boundary {
     let mut boundary = Boundary::new();
     for i in 0..(result.numVerts as usize) {
         boundary.push(
-            LatLng::new(result.verts[i].lat, result.verts[i].lng)
+            LatLng::from_radians(result.verts[i].lat, result.verts[i].lng)
                 .expect("vertex coordinate"),
         );
     }

@@ -1,8 +1,8 @@
 use criterion::{black_box, Bencher, Criterion};
 use h3o::LatLng;
 
-const SRC: (f64, f64) = (0.8526719057498671, 0.04141613156319031);
-const DST: (f64, f64) = (0.5932110794774323, -2.0677488002513313);
+const SRC: (f64, f64) = (48.854501508844095, 2.3729695423293613);
+const DST: (f64, f64) = (33.988491214456516, -118.47327934764078);
 
 pub fn bench_rads(c: &mut Criterion) {
     bench_distance(
