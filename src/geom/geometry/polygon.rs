@@ -329,31 +329,31 @@ fn add_candidates(
 /// line.
 fn line_hex_estimate(line: &geo::Line<f64>, resolution: Resolution) -> u64 {
     // Get the area of the pentagon as the maximally-distorted area possible
-    const PENT_DIAMETER_KM: [f64; 16] = [
-        2_073.7217767817406,
-        704.7608418567091,
-        274.9288669449002,
-        97.35076612345429,
-        38.83754315003446,
-        13.840222219535644,
-        5.539293217388523,
-        1.9758095817231678,
-        0.7911454555939742,
-        0.28223066278338094,
-        0.11301706221901277,
-        0.040318097800798244,
-        0.01614521875314634,
-        0.005759716669314975,
-        0.0023064582837116258,
-        0.0008228164451153948,
+    const PENT_DIAMETER_RADS: [f64; 16] = [
+        0.32549355508382627,
+        0.11062000431697926,
+        0.0431531246375496,
+        0.015280278825461551,
+        0.006095981694441515,
+        0.00217237586248339,
+        0.0008694532999397082,
+        0.0003101251537809772,
+        0.00012417902430910614,
+        0.00004429922220615181,
+        0.00001773927716796858,
+        0.000006328371112691009,
+        0.0000025341705472716865,
+        0.0000009040511973807097,
+        0.00000036202412300873475,
+        0.00000012915013523209886,
     ];
-    let pentagon_diameter = PENT_DIAMETER_KM[usize::from(resolution)];
+    let pentagon_diameter = PENT_DIAMETER_RADS[usize::from(resolution)];
 
     let origin = LatLng::from_radians(line.start.y, line.start.x)
         .expect("finite line-start coordinate");
     let destination = LatLng::from_radians(line.end.y, line.end.x)
         .expect("finite line-end coordinate");
-    let distance = origin.distance_km(destination);
+    let distance = origin.distance_rads(destination);
 
     let dist_ceil = (distance / pentagon_diameter).ceil();
     assert!(dist_ceil.is_finite());

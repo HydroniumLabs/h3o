@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- geometry functions relies on radians only, making the planet-independant
+
 ## [0.2.0] - 2023-01-15
 
 ### Added

@@ -62,25 +62,25 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
     // edges with hexagons, so the most-distorted hexagons have this area,
     // shrunk by 20% off chance that the bounding box perfectly bounds a
     // pentagon.
-    const PENT_AREA_KM2: [f64; 16] = [
-        2_234_512.861765512,
-        258_086.57450412086,
-        39_275.57632506273,
-        4_924.482850651414,
-        783.7641229713141,
-        99.53320954786122,
-        15.943754243628701,
-        2.0284861954074076,
-        0.32523296444385297,
-        0.04138950889941268,
-        0.006636970848428596,
-        0.0008446600428891398,
-        0.00013544711204373916,
-        0.000017237890705367126,
-        0.0000027642230944745357,
-        0.00000035179349216609857,
+    const PENT_AREA_RADS2: [f64; 16] = [
+        0.05505118472518226,
+        0.006358420186890303,
+        0.0009676234334810151,
+        0.00012132336301389888,
+        0.000019309418286620768,
+        0.0000024521770265310696,
+        0.0000003928026439666205,
+        0.00000004997535264470275,
+        0.000000008012690511075445,
+        0.0000000010197039091132572,
+        0.00000000016351353999538285,
+        0.000000000020809697203105007,
+        0.000000000003336979666606075,
+        0.0000000000004246859893033221,
+        0.00000000000006810153522091642,
+        0.000000000000008667056198238203,
     ];
-    let pentagon_area_km2 = PENT_AREA_KM2[usize::from(resolution)];
+    let pentagon_area_rads2 = PENT_AREA_RADS2[usize::from(resolution)];
 
     let min = bbox.min();
     let max = bbox.max();
@@ -88,7 +88,7 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
         LatLng::from_radians(min.y, min.x).expect("finite bbox-min coordinate");
     let p2 =
         LatLng::from_radians(max.y, max.x).expect("finite bbox-max coordinate");
-    let diagonal = p1.distance_km(p2);
+    let diagonal = p1.distance_rads(p2);
     let d1 = (p1.lng_radians() - p2.lng_radians()).abs();
     let d2 = (p1.lat_radians() - p2.lat_radians()).abs();
     let (width, length) = if d1 < d2 { (d1, d2) } else { (d2, d1) };
@@ -98,7 +98,7 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
     let area = (diagonal * diagonal) / (length / width);
 
     // Divide the two to get an estimate of the number of hexagons needed.
-    let estimate = (area / pentagon_area_km2).ceil();
+    let estimate = (area / pentagon_area_rads2).ceil();
 
     // Truncate on purpose.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
