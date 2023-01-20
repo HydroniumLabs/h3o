@@ -140,6 +140,36 @@ impl Resolution {
             .map(|value| unsafe { std::mem::transmute::<u8, Self>(value) })
     }
 
+    /// Returns the average hexagon area, in square radians, at this
+    /// resolution (excludes pentagons).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let avg_area = h3o::Resolution::Three.area_rads2();
+    /// ```
+    #[must_use]
+    pub const fn area_rads2(self) -> f64 {
+        match self {
+            Self::Zero => 0.10735348936216678,
+            Self::One => 0.015023219032163554,
+            Self::Two => 0.002138515704691145,
+            Self::Three => 0.00030533422843566127,
+            Self::Four => 4.361565217314979e-5,
+            Self::Five => 6.230734784621071e-6,
+            Self::Six => 8.90103480357314e-7,
+            Self::Seven => 1.2715760961973138e-7,
+            Self::Eight => 1.8165372181422116e-8,
+            Self::Nine => 2.5950531560902726e-9,
+            Self::Ten => 3.707218791825834e-10,
+            Self::Eleven => 5.2960268449371254e-11,
+            Self::Twelve => 7.565752635516638e-12,
+            Self::Thirteen => 1.0808218050716045e-12,
+            Self::Fourteen => 1.5440311501018426e-13,
+            Self::Fifteen => 2.205758785859684e-14,
+        }
+    }
+
     /// Returns the average hexagon area, in square kilometers, at this
     /// resolution (excludes pentagons).
     ///
@@ -197,6 +227,36 @@ impl Resolution {
             Self::Thirteen => 4.387026794728301e1,
             Self::Fourteen => 6.267181135324322,
             Self::Fifteen => 8.953115907605802e-1,
+        }
+    }
+
+    /// Returns the average hexagon edge length, in radians, at this
+    /// resolution (excludes pentagons).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let avg_edge_len = h3o::Resolution::Three.edge_length_rads();
+    /// ```
+    #[must_use]
+    pub const fn edge_length_rads(self) -> f64 {
+        match self {
+            Self::Zero => 0.17386773543713177,
+            Self::One => 0.06571582696594004,
+            Self::Two => 0.024838247910621048,
+            Self::Three => 0.00938797528264242,
+            Self::Four => 0.0035483211300887216,
+            Self::Five => 0.0013411393259123903,
+            Self::Six => 0.000506903018673795,
+            Self::Seven => 0.00019159133310284987,
+            Self::Eight => 7.241471731216742e-5,
+            Self::Nine => 2.7370188582154633e-5,
+            Self::Ten => 1.0344958831218647e-5,
+            Self::Eleven => 3.909987901851459e-6,
+            Self::Twelve => 1.4778708817343719e-6,
+            Self::Thirteen => 5.587645562011106e-7,
+            Self::Fourteen => 2.1167375294114534e-7,
+            Self::Fifteen => 8.000508954480841e-8,
         }
     }
 

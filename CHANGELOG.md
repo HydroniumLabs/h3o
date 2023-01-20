@@ -14,6 +14,11 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- `Resolution::area_rads2`
+- `Resolution::edge_length_rads`
+
 ### Changed
 
 - geometry functions relies on radians only, making the planet-independant
