@@ -4,6 +4,7 @@ mod are_neighbor_cells;
 mod cell_area;
 mod cell_to_boundary;
 mod cell_to_center_child;
+mod cell_to_child_pos;
 mod cell_to_children;
 mod cell_to_children_size;
 mod cell_to_latlng;
@@ -76,6 +77,7 @@ criterion_group!(
     cell_to_boundary::bench,
     cell_to_center_child::bench,
     cell_to_children_size::bench,
+    cell_to_child_pos::bench,
     cell_to_children::bench,
     cell_to_latlng::bench,
     cell_to_local_ij::bench,

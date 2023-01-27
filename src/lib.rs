@@ -56,6 +56,7 @@
 //! | `cellToChildren`        | [`CellIndex::children`]       |
 //! | `cellToChildrenSize`    | [`CellIndex::children_count`] |
 //! | `cellToCenterChild`     | [`CellIndex::center_child`]   |
+//! | `cellToChildPos`        | [`CellIndex::child_position`] |
 //! | `compactCells`          | [`CellIndex::compact`]        |
 //! | `uncompactCells`        | [`CellIndex::uncompact`]      |
 //! | `uncompactCellsSize`    | [`CellIndex::uncompact_size`] |

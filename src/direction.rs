@@ -213,6 +213,12 @@ impl From<Direction> for u8 {
     }
 }
 
+impl From<Direction> for u64 {
+    fn from(value: Direction) -> Self {
+        u8::from(value).into()
+    }
+}
+
 impl From<Direction> for usize {
     fn from(value: Direction) -> Self {
         u8::from(value).into()

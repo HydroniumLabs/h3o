@@ -100,6 +100,28 @@ pub fn cell_to_children_size(index: CellIndex, resolution: Resolution) -> u64 {
     }
 }
 
+/// Expose `cellToChildPos`.
+pub fn cell_to_child_pos(
+    index: CellIndex,
+    resolution: Resolution,
+) -> Option<u64> {
+    let resolution = u8::from(resolution);
+    let mut out: i64 = 0;
+    unsafe {
+        let res = h3ron_h3_sys::cellToChildPos(
+            index.into(),
+            resolution.into(),
+            &mut out,
+        );
+        match res {
+            0 => Some(out as u64),
+            // E_RES_DOMAIN: when index res == res, H3 error while we return 0.
+            4 => Some(0),
+            _ => None,
+        }
+    }
+}
+
 /// Expose `cellToChildren`.
 pub fn cell_to_children(
     cell: CellIndex,

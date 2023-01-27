@@ -18,6 +18,7 @@ Possible sections are:
 
 - `Resolution::area_rads2`
 - `Resolution::edge_length_rads`
+- `CellIndex::child_position`
 
 ### Changed
 

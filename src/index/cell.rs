@@ -474,6 +474,76 @@ impl CellIndex {
         res
     }
 
+    /// Returns the position of the cell within an ordered list of all children
+    /// of the cell's parent at the specified resolution.
+    ///
+    /// Returns `None` if the cell's resolution is coarser than the given
+    /// resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Resolution};
+    ///
+    /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// assert_eq!(index.child_position(Resolution::Eight), Some(24));
+    /// assert_eq!(index.child_position(Resolution::Twelve), None);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn child_position(self, resolution: Resolution) -> Option<u64> {
+        let Some(parent_is_pentagon) = self.parent(resolution).map(Self::is_pentagon) else {
+            // cell's resolution is coarser than `resolution`.
+            return None
+        };
+
+        Some(if parent_is_pentagon {
+            Resolution::range(resolution, self.resolution())
+                .skip(1)
+                .map(|res| {
+                    // Thansk to the `skip(1)`, iteration cannot start below
+                    // resolution 1, thus the calls to pred always succeed.
+                    // Moreover, the check at the start of the function ensure
+                    // that we can get the parent at every iteration.
+                    let parent_is_pentagon = self
+                        .parent(res.pred().expect("resolution > 0"))
+                        .map(Self::is_pentagon)
+                        .expect("valid parent");
+                    let mut digit = bits::get_direction(self.0.get(), res);
+                    // Adjust digit index for deleted K-subsequence.
+                    if parent_is_pentagon && digit > 0 {
+                        digit -= 1;
+                    };
+                    if digit == 0 {
+                        return 0;
+                    }
+
+                    let diff = u8::from(self.resolution()) - u8::from(res);
+                    let hex_count = HEXAGON_CHILDREN_COUNTS[usize::from(diff)];
+                    // The offset for the 0-digit slot depends on whether the
+                    // current index is the child of a pentagon. If so, the offset
+                    // is based on the count of pentagon children, otherwise,
+                    // hexagon children.
+                    let count0 = if parent_is_pentagon {
+                        PENTAGON_CHILDREN_COUNTS[usize::from(diff)]
+                    } else {
+                        hex_count
+                    };
+                    u64::from(digit - 1) * hex_count + count0
+                })
+                .sum()
+        } else {
+            Resolution::range(resolution, self.resolution())
+                .skip(1)
+                .map(|res| {
+                    let diff = u8::from(self.resolution()) - u8::from(res);
+                    let hex_count = HEXAGON_CHILDREN_COUNTS[usize::from(diff)];
+                    let digit = bits::get_direction(self.0.get(), res);
+                    u64::from(digit) * hex_count
+                })
+                .sum()
+        })
+    }
+
     /// Return the children, at the specified resolution, of the cell index.
     ///
     /// # Example

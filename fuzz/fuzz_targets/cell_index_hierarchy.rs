@@ -21,6 +21,12 @@ fuzz_target!(|args: Args| {
         "cellToCenterChild"
     );
 
+    assert_eq!(
+        args.index.child_position(args.res),
+        cell_to_child_pos(args.index, args.res),
+        "cellToParent"
+    );
+
     // Do not generate children when the generation gap is too large (OOM risk).
     if u8::from(args.res).saturating_sub(u8::from(args.index.resolution())) < 10
     {
@@ -78,6 +84,24 @@ fn cell_to_children(cell: CellIndex, resolution: Resolution) -> Vec<CellIndex> {
     out.into_iter()
         .map(|index| CellIndex::try_from(index).expect("cell index"))
         .collect()
+}
+
+pub fn cell_to_child_pos(index: CellIndex, resolution: Resolution) -> Option<u64> {
+    let resolution = u8::from(resolution);
+    let mut out: i64 = 0;
+    unsafe {
+        let res = h3ron_h3_sys::cellToChildPos(
+            index.into(),
+            resolution.into(),
+            &mut out,
+        );
+        match res {
+            0 => Some(out as u64),
+            // E_RES_DOMAIN: when index res == res, H3 error while we return 0.
+            4 => Some(0),
+            _ => None,
+        }
+    }
 }
 
 // }}}

@@ -11,7 +11,7 @@ cargo-fuzz = true
 arbitrary = { version = "1.0", default-features = false, features = ["derive"] }
 float_eq = { version = "1.0", default-features = false }
 geo-types = { version = "0.7", default-features = false }
-h3ron-h3-sys = { version = "0.15", default-features = false }
+h3ron-h3-sys = { version = "0.16", default-features = false }
 libfuzzer-sys = { version = "0.4", default-features = false }
 
 [dependencies.h3o]

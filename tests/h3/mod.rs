@@ -4,6 +4,7 @@ mod cell_area_m2;
 mod cell_area_rads2;
 mod cell_to_boundary;
 mod cell_to_center_child;
+mod cell_to_child_pos;
 mod cell_to_children;
 mod cell_to_children_size;
 mod cell_to_latlng;

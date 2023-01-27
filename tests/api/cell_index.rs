@@ -68,3 +68,11 @@ fn display() {
             .to_owned();
     assert_eq!(result, expected, "binary");
 }
+
+#[test]
+fn child_position() {
+    let index = CellIndex::try_from(0x8a1fb46622dffff).expect("index");
+
+    assert_eq!(index.child_position(Resolution::Eight), Some(24));
+    assert_eq!(index.child_position(Resolution::Twelve), None);
+}

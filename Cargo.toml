@@ -43,7 +43,7 @@ serde_repr = { version = "0.1", optional = true, default-features = false }
 [dev-dependencies]
 approx = { version = "0.5", default-features = false }
 criterion = { version = "0.4", default-features = false, features = ["plotters", "cargo_bench_support", "html_reports"] }
-h3ron-h3-sys = { version = "0.15", default-features = false }
+h3ron-h3-sys = { version = "0.16", default-features = false }
 
 [lib]
 # doctests are good for docs, but unfortunately they are slow.
