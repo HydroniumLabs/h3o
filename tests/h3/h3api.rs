@@ -221,6 +221,28 @@ pub fn cells_to_directed_edge(
     (res == 0).then(|| DirectedEdgeIndex::try_from(out).expect("edge index"))
 }
 
+/// Expose `childPosToCell`.
+pub fn child_pos_to_cell(
+    parent: CellIndex,
+    position: u64,
+    resolution: Resolution,
+) -> Option<CellIndex> {
+    let resolution = u8::from(resolution);
+    let mut out: u64 = 0;
+    unsafe {
+        let res = h3ron_h3_sys::childPosToCell(
+            position as i64,
+            parent.into(),
+            resolution.into(),
+            &mut out,
+        );
+        match res {
+            0 => Some(CellIndex::try_from(out).expect("cell index")),
+            _ => None,
+        }
+    }
+}
+
 /// Expose `compactCells`.
 pub fn compact_cells(cells: &[CellIndex]) -> Option<Vec<CellIndex>> {
     let mut out = vec![0; cells.len()];

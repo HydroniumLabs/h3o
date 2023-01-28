@@ -13,6 +13,7 @@ mod cell_to_parent;
 mod cell_to_vertex;
 mod cell_to_vertexes;
 mod cells_to_directed_edge;
+mod child_pos_to_cell;
 mod compact_cells;
 mod constants;
 mod degs_to_rads;
@@ -85,6 +86,7 @@ criterion_group!(
     cell_to_vertex::bench,
     cell_to_vertexes::bench,
     cells_to_directed_edge::bench,
+    child_pos_to_cell::bench,
     compact_cells::bench,
     degs_to_rads::bench,
     directed_edge_to_boundary::bench,

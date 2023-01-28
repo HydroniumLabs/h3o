@@ -13,6 +13,7 @@ mod cell_to_parent;
 mod cell_to_vertex;
 mod cell_to_vertexes;
 mod cells_to_directed_edge;
+mod child_pos_to_cell;
 mod compact_cells;
 mod degs_to_rads;
 mod directed_edge_to_boundary;

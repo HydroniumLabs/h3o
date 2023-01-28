@@ -544,6 +544,75 @@ impl CellIndex {
         })
     }
 
+    /// Returns the child cell at a given position within an ordered list of
+    /// all children at the specified resolution.
+    ///
+    /// Returns `None` if no child can be found (coarser resolution, index out
+    /// of bound, …).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Resolution};
+    ///
+    /// let index = CellIndex::try_from(0x881fb46623fffff)?;
+    /// assert_eq!(
+    ///     index.child_at(73, Resolution::Ten),
+    ///     CellIndex::try_from(0x8a1fb46622dffff).ok();
+    /// );
+    /// assert_eq!(index.child_at(73, Resolution::Five), None);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn child_at(
+        self,
+        mut position: u64,
+        resolution: Resolution,
+    ) -> Option<Self> {
+        #[allow(clippy::cast_possible_truncation)] // Safe thx to assert.
+        fn set_direction(bits: u64, digit: u64, resolution: Resolution) -> u64 {
+            assert!(digit < 7);
+            bits::set_direction(bits, digit as u8, resolution)
+        }
+
+        if resolution < self.resolution()
+            || position >= self.children_count(resolution)
+        {
+            return None;
+        }
+
+        let mut child = bits::set_resolution(self.0.get(), resolution);
+        let mut cur_res = self.resolution();
+        if self.is_pentagon() {
+            // While we are inside a parent pentagon, we need to check
+            // if this cell is a pentagon, and if not, we need to offset
+            // its digit to account for the skipped direction
+            for res in Resolution::range(self.resolution(), resolution).skip(1)
+            {
+                cur_res = res;
+                let diff = u8::from(resolution) - u8::from(res);
+                let pent_count = HEXAGON_CHILDREN_COUNTS[usize::from(diff)];
+                if position < pent_count {
+                    child = bits::set_direction(child, 0, res);
+                } else {
+                    let count = HEXAGON_CHILDREN_COUNTS[usize::from(diff)];
+                    position -= pent_count;
+                    child = set_direction(child, (position / count) + 2, res);
+                    position %= count;
+                    break;
+                }
+            }
+        }
+        for res in Resolution::range(cur_res, resolution).skip(1) {
+            let diff = u8::from(resolution) - u8::from(res);
+            let count = HEXAGON_CHILDREN_COUNTS[usize::from(diff)];
+            child = set_direction(child, position / count, res);
+            position %= count;
+        }
+
+        Some(Self::new_unchecked(child))
+    }
+
     /// Return the children, at the specified resolution, of the cell index.
     ///
     /// # Example
