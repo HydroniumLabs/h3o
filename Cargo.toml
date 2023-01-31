@@ -10,7 +10,7 @@ homepage = "https://docs.rs/h3o"
 repository = "https://github.com/HydroniumLabs/h3o"
 license = "BSD-3-Clause"
 keywords = ["geography", "geospatial", "gis", "h3", "spatial-index"]
-categories = ["science"]
+categories = ["science::geo"]
 
 [package.metadata.docs.rs]
 all-features = true
