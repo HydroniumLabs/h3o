@@ -16,6 +16,8 @@ Possible sections are:
 
 ## [0.3.0] - 2023-01-31
 
+## [0.3.0] - 2023-01-31
+
 ### Added
 
 - `Resolution::area_rads2`
