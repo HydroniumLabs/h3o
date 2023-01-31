@@ -76,3 +76,15 @@ fn child_position() {
     assert_eq!(index.child_position(Resolution::Eight), Some(24));
     assert_eq!(index.child_position(Resolution::Twelve), None);
 }
+
+#[test]
+fn child_position_roundtrip() {
+    let res = Resolution::Zero;
+    let child = CellIndex::try_from(0x8fc3b0804200001).expect("child");
+    let parent = child.parent(res).expect("parent");
+
+    let position = child.child_position(res).expect("position");
+    let cell = parent.child_at(position, child.resolution());
+
+    assert_eq!(cell, Some(child));
+}

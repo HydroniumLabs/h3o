@@ -21,8 +21,25 @@ fuzz_target!(|args: Args| {
         "cellToCenterChild"
     );
 
+    let position = args.index.child_position(args.res);
     assert_eq!(
-        args.index.child_position(args.res),
+        position,
+        cell_to_child_pos(args.index, args.res),
+        "cellToChildPos"
+    );
+
+    if let Some(position) = position {
+        let parent = args.index.parent(args.res).expect("parent");
+
+        assert_eq!(
+            parent.child_at(position, args.index.resolution()),
+            Some(args.index),
+            "childPosToCell"
+        );
+    }
+
+    assert_eq!(
+        position,
         cell_to_child_pos(args.index, args.res),
         "cellToParent"
     );
@@ -86,7 +103,10 @@ fn cell_to_children(cell: CellIndex, resolution: Resolution) -> Vec<CellIndex> {
         .collect()
 }
 
-pub fn cell_to_child_pos(index: CellIndex, resolution: Resolution) -> Option<u64> {
+pub fn cell_to_child_pos(
+    index: CellIndex,
+    resolution: Resolution,
+) -> Option<u64> {
     let resolution = u8::from(resolution);
     let mut out: i64 = 0;
     unsafe {

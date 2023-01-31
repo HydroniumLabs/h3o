@@ -591,7 +591,7 @@ impl CellIndex {
             {
                 cur_res = res;
                 let diff = u8::from(resolution) - u8::from(res);
-                let pent_count = HEXAGON_CHILDREN_COUNTS[usize::from(diff)];
+                let pent_count = PENTAGON_CHILDREN_COUNTS[usize::from(diff)];
                 if position < pent_count {
                     child = bits::set_direction(child, 0, res);
                 } else {
