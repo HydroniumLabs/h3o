@@ -557,10 +557,10 @@ impl CellIndex {
     ///
     /// let index = CellIndex::try_from(0x881fb46623fffff)?;
     /// assert_eq!(
-    ///     index.child_at(73, Resolution::Ten),
-    ///     CellIndex::try_from(0x8a1fb46622dffff).ok();
+    ///     index.child_at(24, Resolution::Ten),
+    ///     CellIndex::try_from(0x8a1fb46622dffff).ok(),
     /// );
-    /// assert_eq!(index.child_at(73, Resolution::Five), None);
+    /// assert_eq!(index.child_at(24, Resolution::Five), None);
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     #[must_use]

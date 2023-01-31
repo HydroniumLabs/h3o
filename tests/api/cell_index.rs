@@ -78,6 +78,17 @@ fn child_position() {
 }
 
 #[test]
+fn child_at() {
+    let index = CellIndex::try_from(0x881fb46623fffff).expect("index");
+
+    assert_eq!(
+        index.child_at(24, Resolution::Ten),
+        CellIndex::try_from(0x8a1fb46622dffff).ok(),
+    );
+    assert_eq!(index.child_at(24, Resolution::Five), None);
+}
+
+#[test]
 fn child_position_roundtrip() {
     let res = Resolution::Zero;
     let child = CellIndex::try_from(0x8fc3b0804200001).expect("child");

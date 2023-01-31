@@ -15,9 +15,9 @@ macro_rules! exhaustive_test {
                         Resolution::try_from(u8::from(resolution) + offset)
                             .expect("valid resolution");
                     for pos in 0..index.children_count(children_res) {
-                        let result = index.child_at(pos, resolution);
+                        let result = index.child_at(pos, children_res);
                         let expected =
-                            h3api::child_pos_to_cell(index, pos, resolution);
+                            h3api::child_pos_to_cell(index, pos, children_res);
 
                         assert_eq!(
                             result, expected,
