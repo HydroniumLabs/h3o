@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- fix `LatLng` ordering
+
 ## [0.3.0] - 2023-01-31
 
 ### Added

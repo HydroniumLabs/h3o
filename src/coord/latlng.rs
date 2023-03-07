@@ -398,11 +398,20 @@ impl Eq for LatLng {}
 impl PartialOrd for LatLng {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         // Since our `PartialEq` use an epsilon, we must explicitly check for
-        // equality before deferring to `f64::partial_cmp`.
-        if self == other {
-            return Some(Ordering::Equal);
-        }
-        (self.lat, self.lng).partial_cmp(&(other.lat, other.lng))
+        // equality, cannot rely on `f64::partial_cmp`.
+        Some(if (self.lat - other.lat).abs() <= EPSILON_RAD {
+            if (self.lng - other.lng).abs() <= EPSILON_RAD {
+                Ordering::Equal
+            } else if self.lng < other.lng {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        } else if self.lat < other.lat {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        })
     }
 }
 
