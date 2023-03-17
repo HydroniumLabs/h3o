@@ -29,7 +29,7 @@ geo = ["dep:geo", "dep:geojson"]
 serde = ["dep:serde", "dep:serde_repr"]
 
 [dependencies]
-ahash = { version = "0.8", default-features = false, features = ["std", "runtime-rng"] }
+ahash = { version = "0.8", default-features = false, features = ["std", "compile-time-rng"] }
 arbitrary = { version = "1.0", optional = true, default-features = false }
 auto_ops = { version = "0.3", default-features = false }
 konst = { version = "0.3", default-features = false, features = ["parsing"] }

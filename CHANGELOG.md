@@ -17,6 +17,7 @@ Possible sections are:
 ### Fixed
 
 - fix `LatLng` ordering
+- fix compilation to WASM by using compile-time RNG for ahash
 
 ## [0.3.0] - 2023-01-31
 
