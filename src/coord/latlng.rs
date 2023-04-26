@@ -20,7 +20,10 @@ const EPSILON_DEG: f64 = 0.000000001;
 const EPSILON_RAD: f64 = EPSILON_DEG * PI / 180.0;
 
 /// Latitude/longitude.
-#[derive(Clone, Copy, Debug, Default)]
+///
+/// Note that the `Display` impl prints the values as degrees (10 decimals at
+/// most), while the `Debug` impl prints both degrees and radians.
+#[derive(Clone, Copy, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LatLng {
     /// Latitude, in radians.
@@ -441,6 +444,17 @@ impl fmt::Display for LatLng {
         // For display purpose, 10 decimals be more than enough.
         // See https://gis.stackexchange.com/a/8674
         write!(f, "({:.10}, {:.10})", self.lat(), self.lng())
+    }
+}
+
+impl fmt::Debug for LatLng {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LatLng")
+            .field("lat_rad", &self.lat)
+            .field("lat_deg", &self.lat())
+            .field("lng_rad", &self.lng)
+            .field("lng_deg", &self.lng())
+            .finish()
     }
 }
 

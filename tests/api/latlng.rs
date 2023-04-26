@@ -32,6 +32,17 @@ fn display() {
 }
 
 #[test]
+fn debug() {
+    let ll = LatLng::new(2.4, 8.2).expect("ll");
+    let result = format!("{ll:?}");
+
+    assert!(result.contains("2.4"));
+    assert!(result.contains("0.04188"));
+    assert!(result.contains("8.2"));
+    assert!(result.contains("0.14311"));
+}
+
+#[test]
 #[allow(clippy::float_cmp)] // On purpose.
 fn lat_lng() {
     let lat = 2.349014;

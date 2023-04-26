@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- `Debug` impl for `LatLng` now prints both radians and degrees.
+
 ## [0.3.1] - 2023-03-17
 
 ### Fixed
