@@ -18,6 +18,13 @@ Possible sections are:
 
 - fix the `to_geom` implementation
 
+### Added
+
+- `CellIndex::succ`
+- `CellIndex::pred`
+- `CellIndex::first`
+- `CellIndex::last`
+
 ### Changed
 
 - `Debug` impl for `LatLng` now prints both radians and degrees.

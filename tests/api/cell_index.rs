@@ -99,3 +99,85 @@ fn child_position_roundtrip() {
 
     assert_eq!(cell, Some(child));
 }
+
+#[test]
+fn succ() {
+    let index = CellIndex::try_from(0o42417664314213377777).expect("index");
+    let expected = CellIndex::try_from(0o42417664314213477777).ok();
+    assert_eq!(index.succ(), expected, "base case");
+
+    let index = CellIndex::try_from(0o42417664314213677777).expect("index");
+    let expected = CellIndex::try_from(0o42417664314214077777).ok();
+    assert_eq!(index.succ(), expected, "single carry");
+
+    let index = CellIndex::try_from(0o42417664314666677777).expect("index");
+    let expected = CellIndex::try_from(0o42417664315000077777).ok();
+    assert_eq!(index.succ(), expected, "cascade carry");
+
+    let index = CellIndex::try_from(0o42466666666666677777).expect("index");
+    let expected = CellIndex::try_from(0o42467000000000077777).ok();
+    assert_eq!(index.succ(), expected, "cascade to base cell");
+
+    let index = CellIndex::try_from(0o42571666666666677777).expect("index");
+    assert!(index.succ().is_none(), "last");
+
+    let index = CellIndex::try_from(0o42404000000000077777).expect("index");
+    let expected = CellIndex::try_from(0o42404000000000277777).ok();
+    assert_eq!(index.succ(), expected, "deleted subsequence");
+
+    let index = CellIndex::try_from(0x8009fffffffffff).expect("index");
+    let expected = CellIndex::try_from(0x800bfffffffffff).ok();
+    assert_eq!(index.succ(), expected, "base cell");
+}
+
+#[test]
+fn pred() {
+    let index = CellIndex::try_from(0o42417664314213477777).expect("index");
+    let expected = CellIndex::try_from(0o42417664314213377777).ok();
+    assert_eq!(index.pred(), expected, "base case");
+
+    let index = CellIndex::try_from(0o42417664314213077777).expect("index");
+    let expected = CellIndex::try_from(0o42417664314212677777).ok();
+    assert_eq!(index.pred(), expected, "single carry");
+
+    let index = CellIndex::try_from(0o42417664314000077777).expect("index");
+    let expected = CellIndex::try_from(0o42417664313666677777).ok();
+    assert_eq!(index.pred(), expected, "cascade carry");
+
+    let index = CellIndex::try_from(0o42500000000000077777).expect("index");
+    let expected = CellIndex::try_from(0o42477666666666677777).ok();
+    assert_eq!(index.pred(), expected, "cascade to base cell");
+
+    let index = CellIndex::try_from(0o42400000000000077777).expect("index");
+    assert!(index.pred().is_none(), "last");
+
+    let index = CellIndex::try_from(0o42404000000000277777).expect("index");
+    let expected = CellIndex::try_from(0o42404000000000077777).ok();
+    assert_eq!(index.pred(), expected, "deleted subsequence");
+
+    let index = CellIndex::try_from(0x800bfffffffffff).expect("index");
+    let expected = CellIndex::try_from(0x8009fffffffffff).ok();
+    assert_eq!(index.pred(), expected, "base cell");
+}
+
+#[test]
+fn first() {
+    for resolution in Resolution::range(Resolution::Zero, Resolution::Fifteen) {
+        assert!(
+            CellIndex::first(resolution).pred().is_none(),
+            "res {}",
+            resolution
+        );
+    }
+}
+
+#[test]
+fn last() {
+    for resolution in Resolution::range(Resolution::Zero, Resolution::Fifteen) {
+        assert!(
+            CellIndex::last(resolution).succ().is_none(),
+            "res {}",
+            resolution
+        );
+    }
+}

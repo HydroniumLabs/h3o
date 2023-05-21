@@ -1364,6 +1364,115 @@ impl CellIndex {
         Ok(LocalIJ::new_unchecked(lijk.anchor, coord.i, coord.j))
     }
 
+    /// Returns the next cell, in term of ordering.
+    ///
+    /// Returns `None` if `self` is the last cell at this resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let start = CellIndex::try_from(0x823147fffffffff)?;
+    /// let after = start.succ().expect("next cell index");
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn succ(self) -> Option<Self> {
+        let mut bits = u64::from(self);
+
+        // TODO: avoid loop with clever bit twiddling!
+        for resolution in
+            Resolution::range(Resolution::One, self.resolution()).rev()
+        {
+            let direction = bits::get_direction(bits, resolution);
+            if direction < 6 {
+                bits = bits::set_direction(bits, direction + 1, resolution);
+                // Skip deleted sub-sequence.
+                return Some(Self::try_from(bits).unwrap_or_else(|_| {
+                    bits = bits::set_direction(bits, direction + 2, resolution);
+                    Self::new_unchecked(bits)
+                }));
+            }
+            debug_assert_eq!(direction, 6);
+            bits = bits::set_direction(bits, 0, resolution);
+        }
+
+        let base_cell = u8::from(self.base_cell());
+
+        (base_cell != 121)
+            .then(|| bits::set_base_cell(bits, base_cell + 1))
+            .map(Self::new_unchecked)
+    }
+
+    /// Returns the previous cell, in term of ordering.
+    ///
+    /// Returns `None` if `self` is the frist cell at this resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::CellIndex;
+    ///
+    /// let start = CellIndex::try_from(0x823147fffffffff)?;
+    /// let before = start.pred().expect("next cell index");
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    pub fn pred(self) -> Option<Self> {
+        let mut bits = u64::from(self);
+
+        // TODO: avoid loop with clever bit twiddling!
+        for resolution in
+            Resolution::range(Resolution::One, self.resolution()).rev()
+        {
+            let direction = bits::get_direction(bits, resolution);
+            if direction > 0 {
+                bits = bits::set_direction(bits, direction - 1, resolution);
+                return Some(Self::try_from(bits).unwrap_or_else(|_| {
+                    bits = bits::set_direction(bits, direction - 2, resolution);
+                    Self::new_unchecked(bits)
+                }));
+            }
+            debug_assert_eq!(direction, 0);
+            bits = bits::set_direction(bits, 6, resolution);
+        }
+
+        let base_cell = u8::from(self.base_cell());
+
+        (base_cell != 0)
+            .then(|| bits::set_base_cell(bits, base_cell - 1))
+            .map(Self::new_unchecked)
+    }
+
+    /// The first cell index at the given resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Resolution};
+    ///
+    /// let first = CellIndex::first(Resolution::Nine);
+    /// ```
+    #[must_use]
+    pub fn first(resolution: Resolution) -> Self {
+        let bits = bits::set_resolution(0x0800_0000_0000_0000, resolution);
+        Self::new_unchecked(bits::set_unused(bits, resolution))
+    }
+
+    /// The last cell index at the given resolution.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3o::{CellIndex, Resolution};
+    ///
+    /// let last = CellIndex::last(Resolution::Nine);
+    /// ```
+    #[must_use]
+    pub fn last(resolution: Resolution) -> Self {
+        let bits = bits::set_resolution(0x080f_3b6d_b6db_6db6, resolution);
+        Self::new_unchecked(bits::set_unused(bits, resolution))
+    }
+
     pub(crate) fn new_unchecked(value: u64) -> Self {
         debug_assert!(Self::try_from(value).is_ok(), "invalid cell index");
         Self(NonZeroU64::new(value).expect("valid cell index"))
