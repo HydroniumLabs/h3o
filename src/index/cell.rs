@@ -1378,27 +1378,40 @@ impl CellIndex {
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     pub fn succ(self) -> Option<Self> {
-        let mut bits = u64::from(self);
+        // Bitmask to detect IJ (6) directions.
+        const IJ_MASK: u64 = 0o666666666666666;
 
-        // TODO: avoid loop with clever bit twiddling!
-        for resolution in
-            Resolution::range(Resolution::One, self.resolution()).rev()
-        {
-            let direction = bits::get_direction(bits, resolution);
-            if direction < 6 {
-                bits = bits::set_direction(bits, direction + 1, resolution);
-                // Skip deleted sub-sequence.
-                return Some(Self::try_from(bits).unwrap_or_else(|_| {
-                    bits = bits::set_direction(bits, direction + 2, resolution);
-                    Self::new_unchecked(bits)
-                }));
-            }
-            debug_assert_eq!(direction, 6);
-            bits = bits::set_direction(bits, 0, resolution);
+        let resolution = self.resolution();
+        let res_offset = self.resolution().direction_offset();
+        // Shift to get rid of unused directions.
+        let mut bits = u64::from(self) >> res_offset;
+
+        // Find the first non-IJ direction (e.g. can be ++ w/o carry).
+        // First in term of bit offset, then convert to resolution offset.
+        let bitpos = (bits ^ IJ_MASK).trailing_zeros() as usize;
+        let respos = bitpos / DIRECTION_BITSIZE;
+
+        // Clear directions affected by the carry propagation.
+        let mask = !((1 << (respos * DIRECTION_BITSIZE)) - 1);
+        bits &= mask;
+
+        // Restore unused direction.
+        bits = bits::set_unused(bits << res_offset, resolution);
+
+        // If the carry stopped before the base cell, we simply increment.
+        if respos < usize::from(resolution) {
+            // Everything is ready, we can increment now.
+            let one = 1 << (res_offset + respos * DIRECTION_BITSIZE);
+            bits += one;
+            // Skip deleted sub-sequence.
+            return Some(Self::try_from(bits).unwrap_or_else(|_| {
+                bits += one;
+                Self::new_unchecked(bits)
+            }));
         }
 
+        // We moved onto another base cell.
         let base_cell = u8::from(self.base_cell());
-
         (base_cell != 121)
             .then(|| bits::set_base_cell(bits, base_cell + 1))
             .map(Self::new_unchecked)
@@ -1418,26 +1431,37 @@ impl CellIndex {
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     pub fn pred(self) -> Option<Self> {
-        let mut bits = u64::from(self);
+        let resolution = self.resolution();
+        let res_offset = self.resolution().direction_offset();
+        // Shift to get rid of unused directions.
+        let mut bits = u64::from(self) >> res_offset;
 
-        // TODO: avoid loop with clever bit twiddling!
-        for resolution in
-            Resolution::range(Resolution::One, self.resolution()).rev()
-        {
-            let direction = bits::get_direction(bits, resolution);
-            if direction > 0 {
-                bits = bits::set_direction(bits, direction - 1, resolution);
-                return Some(Self::try_from(bits).unwrap_or_else(|_| {
-                    bits = bits::set_direction(bits, direction - 2, resolution);
-                    Self::new_unchecked(bits)
-                }));
-            }
-            debug_assert_eq!(direction, 0);
-            bits = bits::set_direction(bits, 6, resolution);
+        // Find the first non-zero direction (e.g. can be -- w/o carry).
+        // First in term of bit offset, then convert to resolution offset.
+        let bitpos = bits.trailing_zeros() as usize;
+        let respos = bitpos / DIRECTION_BITSIZE;
+
+        // Set directions affected by the carry propagation.
+        let mask = (1 << (respos * DIRECTION_BITSIZE)) - 1;
+        bits |= 0o666666666666666 & mask;
+
+        // Restore unused direction.
+        bits = bits::set_unused(bits << res_offset, resolution);
+
+        // If the carry stopped before the base cell, we simply decrement.
+        if respos < usize::from(resolution) {
+            // Everything is ready, we can decrement now.
+            let one = 1 << (res_offset + respos * DIRECTION_BITSIZE);
+            bits -= one;
+            // Skip deleted sub-sequence.
+            return Some(Self::try_from(bits).unwrap_or_else(|_| {
+                bits -= one;
+                Self::new_unchecked(bits)
+            }));
         }
 
+        // We moved onto another base cell.
         let base_cell = u8::from(self.base_cell());
-
         (base_cell != 0)
             .then(|| bits::set_base_cell(bits, base_cell - 1))
             .map(Self::new_unchecked)
