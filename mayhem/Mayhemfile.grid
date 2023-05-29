@@ -1,0 +1,5 @@
+project: h3o
+target: grid
+
+cmds:
+  - cmd: /grid

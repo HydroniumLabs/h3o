@@ -1,0 +1,5 @@
+project: h3o
+target: cell_index_hierarchy
+
+cmds:
+  - cmd: /cell_index_hierarchy

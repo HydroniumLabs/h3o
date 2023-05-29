@@ -1,0 +1,5 @@
+project: h3o
+target: cell_index
+
+cmds:
+  - cmd: /cell_index

@@ -1,0 +1,5 @@
+project: h3o
+target: polygon_to_cells
+
+cmds:
+  - cmd: /polygon_to_cells

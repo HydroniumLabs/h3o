@@ -1,0 +1,5 @@
+project: h3o
+target: cell_to_vertex
+
+cmds:
+  - cmd: /cell_to_vertex

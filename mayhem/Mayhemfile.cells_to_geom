@@ -1,0 +1,5 @@
+project: h3o
+target: cells_to_geom
+
+cmds:
+  - cmd: /cells_to_geom

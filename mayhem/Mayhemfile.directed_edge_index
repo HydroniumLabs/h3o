@@ -1,0 +1,5 @@
+project: h3o
+target: directed_edge_index
+
+cmds:
+  - cmd: /directed_edge_index

@@ -1,0 +1,5 @@
+project: h3o
+target: latltng_to_cell
+
+cmds:
+  - cmd: /latltng_to_cell

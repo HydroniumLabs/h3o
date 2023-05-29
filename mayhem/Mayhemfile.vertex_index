@@ -1,0 +1,5 @@
+project: h3o
+target: vertex_index
+
+cmds:
+  - cmd: /vertex_index
