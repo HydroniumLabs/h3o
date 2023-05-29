@@ -432,6 +432,21 @@ fn contiguous_distorted() {
     assert!(result.0[0].interiors().is_empty());
 }
 
+// See https://github.com/HydroniumLabs/h3o/issues/12
+#[test]
+fn issue_12() {
+    let set = [
+        0x8b1f25a91526fff,
+        0x8b1f2506d45dfff,
+        0x8b1f25a901a1fff,
+        0x8b1f25324b98fff,
+    ]
+    .into_iter()
+    .map(|bits| CellIndex::try_from(bits).expect("cell index"));
+
+    assert!(set.to_geom(false).is_ok());
+}
+
 macro_rules! grid_disk {
     ($name:ident, $base_cell:literal, $resolution:literal) => {
         #[test]

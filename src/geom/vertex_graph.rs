@@ -1,7 +1,7 @@
 use super::RingHierarchy;
 use crate::{error::OutlinerError, CellIndex, LatLng, Resolution};
 use geo::{LineString, MultiPolygon, Polygon};
-use std::collections::{btree_map::Entry, BTreeMap};
+use std::{cmp::Ordering, collections::BTreeMap, ops::Bound};
 
 /// A single node in a vertex graph.
 #[derive(Debug)]
@@ -21,10 +21,37 @@ pub struct Value {
 
 // -----------------------------------------------------------------------------
 
+#[derive(Copy, Clone)]
+struct OrderedCoord(LatLng);
+
+impl PartialEq for OrderedCoord {
+    fn eq(&self, other: &Self) -> bool {
+        (self.0.lat_radians(), self.0.lng_radians())
+            == (other.0.lat_radians(), other.0.lng_radians())
+    }
+}
+
+impl Eq for OrderedCoord {}
+
+impl PartialOrd for OrderedCoord {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        (self.0.lat_radians(), self.0.lng_radians())
+            .partial_cmp(&(other.0.lat_radians(), other.0.lng_radians()))
+    }
+}
+
+impl Ord for OrderedCoord {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // LatLng are guaranteed to be finite number.
+        self.partial_cmp(other)
+            .expect("LatLng number can be ordered")
+    }
+}
+
 /// A data structure to store a graph of vertices.
 #[derive(Default)]
 pub struct VertexGraph {
-    nodes: BTreeMap<LatLng, Vec<Value>>,
+    nodes: BTreeMap<OrderedCoord, Vec<Value>>,
 }
 
 impl VertexGraph {
@@ -65,15 +92,13 @@ impl VertexGraph {
     pub fn insert(&mut self, node: &Node) -> Result<(), OutlinerError> {
         // First lookup the reversed edge.
         // If we've seen this edge already, it will be reversed.
-        if let Entry::Occupied(mut entry) = self.nodes.entry(node.to) {
-            if let Some(pos) = entry
-                .get()
-                .iter()
-                .position(|value| value.vertex == node.from)
+        if let Some((_, entry)) = self.get_mut(node.to) {
+            if let Some(pos) =
+                entry.iter().position(|value| value.vertex == node.from)
             {
                 // Flag the edge as `not part of the outline`.
-                if entry.get()[pos].is_outline {
-                    entry.get_mut()[pos].is_outline = false;
+                if entry[pos].is_outline {
+                    entry[pos].is_outline = false;
                     return Ok(());
                 }
                 // If the edge was already flagged, we have a dup!
@@ -86,19 +111,17 @@ impl VertexGraph {
             vertex: node.to,
             is_outline: true,
         };
-        match self.nodes.entry(node.from) {
-            Entry::Occupied(mut entry) => {
-                // Check if the node already exists.
-                if entry.get().iter().any(|value| value.vertex == node.to) {
-                    return Err(OutlinerError::DuplicateInput);
-                }
-                entry.get_mut().push(value);
+        if let Some((_, entry)) = self.get_mut(node.from) {
+            // Check if the node already exists.
+            if entry.iter().any(|value| value.vertex == node.to) {
+                return Err(OutlinerError::DuplicateInput);
             }
-            Entry::Vacant(entry) => {
-                // A vertex is shared by at most 3 edges.
-                let values = entry.insert(Vec::with_capacity(3));
-                values.push(value);
-            }
+            entry.push(value);
+        } else {
+            // A vertex is shared by at most 3 edges.
+            let mut values = Vec::with_capacity(3);
+            values.push(value);
+            self.nodes.insert(OrderedCoord(node.from), values);
         }
 
         Ok(())
@@ -106,15 +129,18 @@ impl VertexGraph {
 
     /// Removes a node from the graph.
     pub fn remove(&mut self, node: &Node) {
-        if let Entry::Occupied(mut entry) = self.nodes.entry(node.from) {
+        let del_key = if let Some((key, entry)) = self.get_mut(node.from) {
             if let Some(pos) =
-                entry.get().iter().position(|value| value.vertex == node.to)
+                entry.iter().position(|value| value.vertex == node.to)
             {
-                entry.get_mut().swap_remove(pos);
+                entry.swap_remove(pos);
             }
-            if entry.get().is_empty() {
-                entry.remove_entry();
-            }
+            entry.is_empty().then_some(*key)
+        } else {
+            None
+        };
+        if let Some(key) = del_key {
+            self.nodes.remove(&key);
         }
     }
 
@@ -128,7 +154,7 @@ impl VertexGraph {
 
     /// Finds a vertex node starting at the given vertex, if it exists.
     pub fn get_from_vertex(&self, from: LatLng) -> Option<Node> {
-        self.nodes.get(&from).map(|to| Node {
+        self.get(from).map(|(_, to)| Node {
             from,
             to: to[0].vertex,
         })
@@ -137,6 +163,48 @@ impl VertexGraph {
     /// Returns true if the graph is empty.
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
+    }
+
+    /// Lookup edges starting from `coord`.
+    fn get_mut(
+        &mut self,
+        coord: LatLng,
+    ) -> Option<(&OrderedCoord, &mut Vec<Value>)> {
+        // Since LatLng relies on approximate equality, we have to first select a
+        // range and then perform an equality test.
+        let (lower, higher) = coord.bounds();
+        let bounds = (
+            Bound::Included(OrderedCoord(lower)),
+            Bound::Included(OrderedCoord(higher)),
+        );
+
+        let mut values = self
+            .nodes
+            .range_mut(bounds)
+            .filter(|&(key, _)| key.0 == coord);
+
+        let nodes = values.next();
+        assert!(values.next().is_none(), "expect a single match");
+
+        nodes
+    }
+
+    fn get(&self, coord: LatLng) -> Option<(&OrderedCoord, &Vec<Value>)> {
+        // Since LatLng relies on approximate equality, we have to first select a
+        // range and then perform an equality test.
+        let (lower, higher) = coord.bounds();
+        let bounds = (
+            Bound::Included(OrderedCoord(lower)),
+            Bound::Included(OrderedCoord(higher)),
+        );
+
+        let mut values =
+            self.nodes.range(bounds).filter(|&(key, _)| key.0 == coord);
+
+        let nodes = values.next();
+        assert!(values.next().is_none(), "expect a single match");
+
+        nodes
     }
 }
 
@@ -154,7 +222,7 @@ impl From<VertexGraph> for MultiPolygon<f64> {
             let (&from, to) =
                 value.nodes.iter().next().expect("non-empty graph");
             let mut node = Node {
-                from,
+                from: from.0,
                 to: to[0].vertex,
             };
             loop {

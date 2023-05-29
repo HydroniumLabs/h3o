@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- fix the `to_geom` implementation
+
 ### Changed
 
 - `Debug` impl for `LatLng` now prints both radians and degrees.

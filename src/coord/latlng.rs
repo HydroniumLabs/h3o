@@ -8,7 +8,6 @@ use crate::{
 };
 use float_eq::float_eq;
 use std::{
-    cmp::Ordering,
     f64::consts::{FRAC_PI_2, PI},
     fmt,
 };
@@ -374,6 +373,26 @@ impl LatLng {
         Self { lat, lng }
     }
 
+    /// Returns the lower and upper bounds of this coordinate.
+    ///
+    /// `LatLng` values are not exact, their equality is approximative (using an
+    /// epsilon).
+    /// This function returns the range of coordinates that is equal to `self`.
+    #[must_use]
+    #[cfg(feature = "geo")]
+    pub(crate) fn bounds(self) -> (Self, Self) {
+        (
+            Self {
+                lat: self.lat - EPSILON_RAD,
+                lng: self.lng - EPSILON_RAD,
+            },
+            Self {
+                lat: self.lat + EPSILON_RAD,
+                lng: self.lng + EPSILON_RAD,
+            },
+        )
+    }
+
     /// Encodes a coordinate on the sphere to the `FaceIJK` address of the
     /// containing cell at the specified resolution.
     ///
@@ -397,33 +416,6 @@ impl PartialEq for LatLng {
 }
 
 impl Eq for LatLng {}
-
-impl PartialOrd for LatLng {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // Since our `PartialEq` use an epsilon, we must explicitly check for
-        // equality, cannot rely on `f64::partial_cmp`.
-        Some(if (self.lat - other.lat).abs() <= EPSILON_RAD {
-            if (self.lng - other.lng).abs() <= EPSILON_RAD {
-                Ordering::Equal
-            } else if self.lng < other.lng {
-                Ordering::Less
-            } else {
-                Ordering::Greater
-            }
-        } else if self.lat < other.lat {
-            Ordering::Less
-        } else {
-            Ordering::Greater
-        })
-    }
-}
-
-impl Ord for LatLng {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other)
-            .expect("finite number can be ordered")
-    }
-}
 
 impl From<LatLng> for Vec3d {
     /// Computes the 3D coordinate on unit sphere from the latitude and

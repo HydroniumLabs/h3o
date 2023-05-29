@@ -182,13 +182,3 @@ fn closest_face() {
         "distance"
     );
 }
-
-#[test]
-fn ord() {
-    let ll_lo =
-        LatLng::new(48.85458622023986, 1.373012457671282).expect("ll lo");
-    let ll_hi =
-        LatLng::new(48.85458622023985, 2.373012457671282).expect("ll hi");
-
-    assert!(ll_lo < ll_hi);
-}
