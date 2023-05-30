@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.3.2] - 2023-05-30
+
 ### Fixed
 
 - fix the `to_geom` implementation
