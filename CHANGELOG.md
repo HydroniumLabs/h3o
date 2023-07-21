@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- compilation issue on Rust 1.71+ due to an outdated version of `geo`
+
 ## [0.3.2] - 2023-05-30
 
 ### Fixed
