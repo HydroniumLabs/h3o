@@ -491,9 +491,11 @@ impl CellIndex {
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     pub fn child_position(self, resolution: Resolution) -> Option<u64> {
-        let Some(parent_is_pentagon) = self.parent(resolution).map(Self::is_pentagon) else {
+        let Some(parent_is_pentagon) =
+            self.parent(resolution).map(Self::is_pentagon)
+        else {
             // cell's resolution is coarser than `resolution`.
-            return None
+            return None;
         };
 
         Some(if parent_is_pentagon {

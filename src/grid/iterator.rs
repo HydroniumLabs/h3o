@@ -143,10 +143,10 @@ impl Iterator for DiskDistancesUnsafe {
 
             // Move to the next ring.
             let Some((new_origin, new_rotations)) = super::neighbor_rotations(
-                    self.origin,
-                    NEXT_RING_DIRECTION,
-                    self.rotations,
-                ) else {
+                self.origin,
+                NEXT_RING_DIRECTION,
+                self.rotations,
+            ) else {
                 self.is_failed = true;
                 return Some(None);
             };
@@ -156,12 +156,12 @@ impl Iterator for DiskDistancesUnsafe {
 
         // Move to the next cell.
         let Some((new_origin, new_rotations)) = super::neighbor_rotations(
-                 self.origin,
-                 DIRECTIONS[usize::from(self.side)],
-                 self.rotations,
-             ) else {
-             self.is_failed = true;
-             return Some(None);
+            self.origin,
+            DIRECTIONS[usize::from(self.side)],
+            self.rotations,
+        ) else {
+            self.is_failed = true;
+            return Some(None);
         };
         self.origin = new_origin;
         self.rotations = new_rotations;
