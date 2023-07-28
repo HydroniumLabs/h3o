@@ -49,3 +49,28 @@ fn to_cells() {
 
     assert!(result <= bound);
 }
+
+// https://github.com/nmandery/h3ronpy/issues/25
+#[test]
+fn h3ronpy_25() {
+    // Manhattan Central Park
+    let pt = geo::Point::new(-73.9575, 40.7938);
+    let cells: Vec<_> =
+        h3o::geom::Geometry::from_degrees(geo::Geometry::Point(pt))
+            .unwrap()
+            .to_cells(Resolution::Eight)
+            .collect();
+
+    //  Using h3-py v3.7.x:
+    //
+    // $ python
+    // Python 3.10.6 (main, May 29 2023, 11:10:38) [GCC 11.3.0] on linux
+    // Type "help", "copyright", "credits" or "license" for more information.
+    // >>> import h3.api.numpy_int as h3
+    // >>> h3.geo_to_h3(40.7938, -73.9575, 8)
+    // 613229523021856767
+    assert_eq!(
+        cells[0],
+        h3o::CellIndex::try_from(613229523021856767).unwrap()
+    )
+}

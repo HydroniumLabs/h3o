@@ -75,7 +75,7 @@ impl TryFrom<Point> for LatLng {
     type Error = InvalidLatLng;
 
     fn try_from(value: Point) -> Result<Self, Self::Error> {
-        Self::new(value.0.y(), value.0.x())
+        Self::from_radians(value.0.y(), value.0.x())
     }
 }
 

@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- fix `Point` to `LatLng` conversion
+
 ## [0.3.3] - 2023-07-21
 
 ### Fixed
