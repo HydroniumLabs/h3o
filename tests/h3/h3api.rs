@@ -383,32 +383,6 @@ pub fn get_hexagon_area_avg_m2(resolution: Resolution) -> f64 {
     out
 }
 
-/// Expose `getHexagonEdgeLengthAvgKm`.
-pub fn get_hexagon_edge_length_avg_km(resolution: Resolution) -> f64 {
-    let resolution = u8::from(resolution);
-    let mut out: f64 = 0.;
-    unsafe {
-        let res = h3ron_h3_sys::getHexagonEdgeLengthAvgKm(
-            resolution.into(),
-            &mut out,
-        );
-        assert_eq!(res, 0, "getHexagonEdgeLengthAvgKm");
-    }
-    out
-}
-
-/// Expose `getHexagonEdgeLengthAvgM`.
-pub fn get_hexagon_edge_length_avg_m(resolution: Resolution) -> f64 {
-    let resolution = u8::from(resolution);
-    let mut out: f64 = 0.;
-    unsafe {
-        let res =
-            h3ron_h3_sys::getHexagonEdgeLengthAvgM(resolution.into(), &mut out);
-        assert_eq!(res, 0, "getHexagonEdgeLengthAvgM");
-    }
-    out
-}
-
 /// Expose `getIcosahedronFaces`.
 pub fn get_icosahedron_faces(index: CellIndex) -> Vec<Face> {
     let max_count = max_face_count(index);

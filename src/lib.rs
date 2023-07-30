@@ -282,7 +282,7 @@ const CCW: bool = true;
 const CW: bool = false;
 
 /// Earth radius in kilometers using WGS84 authalic radius.
-const EARTH_RADIUS_KM: f64 = 6371.007180918475_f64;
+pub const EARTH_RADIUS_KM: f64 = 6371.007180918475_f64;
 
 /// Number of pentagon per resolution.
 const NUM_PENTAGONS: u8 = 12;

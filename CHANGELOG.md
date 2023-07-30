@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- update precomputed average edge lengths (they were underestimated).
+
 ## [0.3.4] - 2023-07-28
 
 ### Fixed

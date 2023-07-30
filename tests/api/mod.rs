@@ -1,3 +1,4 @@
+mod avg_edge_len;
 mod base_cell;
 mod boundary;
 mod cell_index;
