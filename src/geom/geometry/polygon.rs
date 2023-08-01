@@ -4,6 +4,7 @@ use crate::{
 };
 use ahash::{HashSet, HashSetExt};
 use geo::{coord, Coord, CoordsIter};
+use std::f64::consts::PI;
 use std::{borrow::Cow, boxed::Box, cmp, collections::VecDeque};
 
 /// A bounded two-dimensional area.
@@ -269,24 +270,36 @@ fn get_edge_cells(
     ring: &geo::LineString<f64>,
     resolution: Resolution,
 ) -> impl Iterator<Item = CellIndex> + '_ {
-    ring.lines().flat_map(move |line| {
-        let count = line_hex_estimate(&line, resolution);
+    // Detect transmeridian ring.
+    let is_transmeridian = ring
+        .lines()
+        .any(|line| (line.start.x - line.end.x).abs() > PI);
 
-        assert!(count <= 1 << f64::MANTISSA_DIGITS);
-        #[allow(clippy::cast_precision_loss)]
-        (0..count).map(move |i| {
-            let i = i as f64;
-            let count = count as f64;
-            let lat =
-                (line.start.y * (count - i) / count) + (line.end.y * i / count);
-            let lng =
-                (line.start.x * (count - i) / count) + (line.end.x * i / count);
+    ring.lines()
+        .flat_map(move |line @ geo::Line { start, end }| {
+            let count = line_hex_estimate(&line, resolution);
 
-            let ll =
-                LatLng::from_radians(lat, lng).expect("finite line coordinate");
-            ll.to_cell(resolution)
+            assert!(count <= 1 << f64::MANTISSA_DIGITS);
+            #[allow(clippy::cast_precision_loss)]
+            // Nope thanks to assert above.
+            (0..count).map(move |i| {
+                let i = i as f64;
+                let count = count as f64;
+
+                // Apply fix for longitude across the antimeridian if necessary.
+                let need_fix = u8::from(is_transmeridian && start.x < 0.);
+                let startx = (f64::from(need_fix) * 2.).mul_add(PI, start.x);
+                let need_fix = u8::from(is_transmeridian && end.x < 0.);
+                let endx = (f64::from(need_fix) * 2.).mul_add(PI, end.x);
+
+                let lat = (start.y * (count - i) / count) + (end.y * i / count);
+                let lng = (startx * (count - i) / count) + (endx * i / count);
+
+                LatLng::from_radians(lat, lng)
+                    .expect("finite line coordinate")
+                    .to_cell(resolution)
+            })
         })
-    })
 }
 
 // Return the next round of candidates from the given cell.
