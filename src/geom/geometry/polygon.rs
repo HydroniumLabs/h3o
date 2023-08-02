@@ -4,9 +4,7 @@ use crate::{
 };
 use ahash::{HashSet, HashSetExt};
 use geo::{coord, Coord, CoordsIter};
-use std::{
-    borrow::Cow, boxed::Box, cmp, collections::VecDeque, f64::consts::PI,
-};
+use std::{borrow::Cow, boxed::Box, cmp, f64::consts::PI};
 
 /// A bounded two-dimensional area.
 #[derive(Clone, Debug, PartialEq)]
@@ -202,8 +200,8 @@ impl<'a> Polygon<'a> {
         outlines: &[CellIndex],
         already_seen: &mut HashSet<CellIndex>,
         scratchpad: &mut [u64],
-    ) -> VecDeque<CellIndex> {
-        outlines.iter().fold(VecDeque::new(), |mut acc, cell| {
+    ) -> Vec<CellIndex> {
+        outlines.iter().fold(Vec::new(), |mut acc, cell| {
             let count = neighbors(*cell, scratchpad);
 
             acc.extend(scratchpad[0..count].iter().filter_map(|candidate| {
@@ -294,11 +292,8 @@ impl ToCells for Polygon<'_> {
         &self,
         resolution: Resolution,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        // Get the estimated number of cells and allocate some temporary memory.
-        let cell_count = self.max_cells_count(resolution);
-
         // Set used for dedup.
-        let mut seen = HashSet::with_capacity(cell_count);
+        let mut seen = HashSet::new();
         // Scratchpad memory to store a cell and its immediate neighbors.
         // Cell itself + at most 6 neighbors = 7.
         let mut scratchpad = [0; 7];
@@ -310,10 +305,16 @@ impl ToCells for Polygon<'_> {
         // propagation step.
         let mut candidates =
             self.outermost_inner_cells(&outlines, &mut seen, &mut scratchpad);
+        let mut next_gen = Vec::with_capacity(candidates.len() * 7);
+        let mut new_seen = HashSet::with_capacity(seen.len());
 
         // Last step: inward propagation from the outermost layers.
         let inward_propagation = std::iter::from_fn(move || {
-            candidates.pop_front().map(|cell| {
+            if candidates.is_empty() {
+                return None;
+            }
+
+            for &cell in &candidates {
                 debug_assert!(
                     {
                         let ll = LatLng::from(cell);
@@ -325,19 +326,28 @@ impl ToCells for Polygon<'_> {
                 );
 
                 let count = neighbors(cell, &mut scratchpad);
-                candidates.extend(scratchpad[0..count].iter().filter_map(
+                next_gen.extend(scratchpad[0..count].iter().filter_map(
                     |candidate| {
                         // SAFETY: candidate comes from `ring_disk_*`.
                         let index = CellIndex::new_unchecked(*candidate);
+                        new_seen.insert(index);
                         seen.insert(index).then_some(index)
                     },
                 ));
+            }
 
-                cell
-            })
+            let curr_gen = candidates.clone();
+
+            std::mem::swap(&mut next_gen, &mut candidates);
+            next_gen.clear();
+
+            std::mem::swap(&mut new_seen, &mut seen);
+            new_seen.clear();
+
+            Some(curr_gen.into_iter())
         });
 
-        Box::new(outlines.into_iter().chain(inward_propagation))
+        Box::new(outlines.into_iter().chain(inward_propagation.flatten()))
     }
 }
 
