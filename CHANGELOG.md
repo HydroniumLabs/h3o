@@ -17,6 +17,8 @@ Possible sections are:
 ### Fixed
 
 - update precomputed average edge lengths (they were underestimated).
+- HUGE improvements, both in  term of speed and memory usage, for
+  `Polygon::to_cells`.
 
 ## [0.3.4] - 2023-07-28
 
