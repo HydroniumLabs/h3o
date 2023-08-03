@@ -4,8 +4,7 @@ use crate::{
 };
 use ahash::{HashSet, HashSetExt};
 use geo::{coord, Coord, CoordsIter};
-use std::f64::consts::PI;
-use std::{borrow::Cow, boxed::Box, cmp, collections::VecDeque};
+use std::{borrow::Cow, boxed::Box, cmp, f64::consts::PI};
 
 /// A bounded two-dimensional area.
 #[derive(Clone, Debug, PartialEq)]
@@ -145,6 +144,83 @@ impl<'a> Polygon<'a> {
         self.exterior.contains(coord)
             && !self.interiors.iter().any(|ring| ring.contains(coord))
     }
+
+    // Return the cell indexes that traces the ring outline.
+    fn hex_outline(
+        &self,
+        resolution: Resolution,
+        already_seen: &mut HashSet<CellIndex>,
+        scratchpad: &mut [u64],
+    ) -> Vec<CellIndex> {
+        // IIUC, the collect is necessary to consume the iterator and release
+        // the mutable borrow on `already_seen`.
+        #[allow(clippy::needless_collect)]
+        // Compute the set of cells making the outlines of the polygon.
+        let outlines = self
+            .interiors()
+            .chain(std::iter::once(self.exterior()))
+            .flat_map(|ring| get_edge_cells(ring, resolution))
+            .filter_map(|cell| already_seen.insert(cell).then_some(cell))
+            .collect::<Vec<_>>();
+        // Reset the `already_seen` set: content can't be trusted because we
+        // `get_edge_cells` is based on a rough approximation.
+        already_seen.clear();
+
+        // Buffer the initial outlines with immediate neighbors, (since we used
+        // a rough approximation, some cells from the initial set may be just
+        // out of the polygon).
+        outlines.into_iter().fold(Vec::new(), |mut acc, cell| {
+            let count = neighbors(cell, scratchpad);
+
+            acc.extend(scratchpad[0..count].iter().filter_map(|candidate| {
+                // SAFETY: candidate comes from `ring_disk_*`.
+                let index = CellIndex::new_unchecked(*candidate);
+
+                already_seen
+                    .insert(index)
+                    .then_some(index)
+                    .and_then(|index| {
+                        let ll = LatLng::from(index);
+                        let coord =
+                            coord! { x: ll.lng_radians(), y: ll.lat_radians() };
+                        self.contains(coord).then_some(index)
+                    })
+            }));
+
+            acc
+        })
+    }
+
+    // Compute the outermost layer of inner cells.
+    //
+    // Those are the last ones that requires a PiP check, due to their
+    // proximity with the outline.
+    fn outermost_inner_cells(
+        &self,
+        outlines: &[CellIndex],
+        already_seen: &mut HashSet<CellIndex>,
+        scratchpad: &mut [u64],
+    ) -> Vec<CellIndex> {
+        outlines.iter().fold(Vec::new(), |mut acc, cell| {
+            let count = neighbors(*cell, scratchpad);
+
+            acc.extend(scratchpad[0..count].iter().filter_map(|candidate| {
+                // SAFETY: candidate comes from `ring_disk_*`.
+                let index = CellIndex::new_unchecked(*candidate);
+
+                already_seen
+                    .insert(index)
+                    .then_some(index)
+                    .and_then(|index| {
+                        let ll = LatLng::from(index);
+                        let coord =
+                            coord! { x: ll.lng_radians(), y: ll.lat_radians() };
+                        self.contains(coord).then_some(index)
+                    })
+            }));
+            acc
+        })
+    }
 }
 
 impl From<Polygon<'_>> for geo::Polygon<f64> {
@@ -190,82 +266,94 @@ impl ToCells for Polygon<'_> {
         cmp::max(estimated_count, vertex_count) + POLYGON_TO_CELLS_BUFFER
     }
 
-    /// This implementation traces the polygon loop(s) in cartesian space with
-    /// hexagons, tests them and their neighbors to be contained by the loop(s),
-    /// and then any newly found hexagons are used to test again until no new
-    /// hexagons are found.
+    // One of the goals of the polygon_to_cells algorithm is that two adjacent
+    // polygons with zero overlap have zero overlapping hexagons. That the
+    // hexagons are uniquely assigned. There are a few approaches to take here,
+    // such as deciding based on which polygon has the greatest overlapping area
+    // of the hexagon, or the most number of contained points on the hexagon
+    // (using the center point as a tiebreaker).
+    //
+    // But if the polygons are convex, both of these more complex algorithms can
+    // be reduced down to checking whether or not the center of the hexagon is
+    // contained in the polygon, and so this is the approach that this
+    // polygon_to_cells algorithm will follow, as it's simpler, faster, and the
+    // error for concave polygons is still minimal (only affecting concave
+    // shapes on the order of magnitude of the hexagon size or smaller, not
+    // impacting larger concave shapes).
+
+    /// This implementation traces the outlines of the polygon's rings, fill one
+    /// layer of internal cells and then propagate inwards until the whole area
+    /// is covered.
+    ///
+    /// Only the outlines and the first inner layer of cells requires
+    /// Point-in-Polygon checks, inward propagation doesn't (since we're bounded
+    /// by the outlines) which make this approach relatively efficient.
     fn to_cells(
         &self,
         resolution: Resolution,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        // One of the goals of the polygon_to_cells algorithm is that two
-        // adjacent polygons with zero overlap have zero overlapping hexagons.
-        // That the hexagons are uniquely assigned. There are a few approaches
-        // to take here, such as deciding based on which polygon has the
-        // greatest overlapping area of the hexagon, or the most number of
-        // contained points on the hexagon (using the center point as a
-        // tiebreaker).
-        //
-        // But if the polygons are convex, both of these more complex algorithms
-        // can be reduced down to checking whether or not the center of the
-        // hexagon is contained in the polygon, and so this is the approach that
-        // this polygon_to_cells algorithm will follow, as it's simpler, faster,
-        // and the error for concave polygons is still minimal (only affecting
-        // concave shapes on the order of magnitude of the hexagon size or
-        // smaller, not impacting larger concave shapes).
-
-        // Get the estimated number of cells and allocate some temporary memory.
-        let cell_count = self.max_cells_count(resolution);
-
         // Set used for dedup.
-        let mut seen = HashSet::with_capacity(cell_count);
-        // IIUC, the collect is necessary to consume the iterator and release
-        // the mutable borrow on `seen`.
-        #[allow(clippy::needless_collect)]
-        // Compute the initial set of cell, using polygon edges.
-        let edge_cells = self
-            .interiors()
-            .chain(std::iter::once(self.exterior()))
-            .flat_map(|ring| get_edge_cells(ring, resolution))
-            .filter_map(|cell| seen.insert(cell).then_some(cell))
-            .collect::<Vec<_>>();
-        seen.clear();
-
+        let mut seen = HashSet::new();
         // Scratchpad memory to store a cell and its immediate neighbors.
         // Cell itself + at most 6 neighbors = 7.
         let mut scratchpad = [0; 7];
-        // Expand the initial set with neighbors, because computed edge cells
-        // may be just out of the shape (since we use a rough approximation).
-        let mut candidates =
-            edge_cells
-                .into_iter()
-                .fold(VecDeque::new(), |mut acc, cell| {
-                    add_candidates(cell, &mut acc, &mut seen, &mut scratchpad);
-                    acc
-                });
 
-        Box::new(std::iter::from_fn(move || {
-            while let Some(cell) = candidates.pop_front() {
-                let ll = LatLng::from(cell);
-                let coord = coord! { x: ll.lng_radians(), y: ll.lat_radians() };
-                if self.contains(coord) {
-                    add_candidates(
-                        cell,
-                        &mut candidates,
-                        &mut seen,
-                        &mut scratchpad,
-                    );
-                    return Some(cell);
-                }
+        // First, compute the outline.
+        let outlines = self.hex_outline(resolution, &mut seen, &mut scratchpad);
+
+        // Next, compute the outermost layer of inner cells to seed the
+        // propagation step.
+        let mut candidates =
+            self.outermost_inner_cells(&outlines, &mut seen, &mut scratchpad);
+        let mut next_gen = Vec::with_capacity(candidates.len() * 7);
+        let mut new_seen = HashSet::with_capacity(seen.len());
+
+        // Last step: inward propagation from the outermost layers.
+        let inward_propagation = std::iter::from_fn(move || {
+            if candidates.is_empty() {
+                return None;
             }
-            None
-        }))
+
+            for &cell in &candidates {
+                debug_assert!(
+                    {
+                        let ll = LatLng::from(cell);
+                        let coord =
+                            coord! { x: ll.lng_radians(), y: ll.lat_radians() };
+                        self.contains(coord)
+                    },
+                    "cell index {cell} in polygon"
+                );
+
+                let count = neighbors(cell, &mut scratchpad);
+                next_gen.extend(scratchpad[0..count].iter().filter_map(
+                    |candidate| {
+                        // SAFETY: candidate comes from `ring_disk_*`.
+                        let index = CellIndex::new_unchecked(*candidate);
+                        new_seen.insert(index);
+                        seen.insert(index).then_some(index)
+                    },
+                ));
+            }
+
+            let curr_gen = candidates.clone();
+
+            std::mem::swap(&mut next_gen, &mut candidates);
+            next_gen.clear();
+
+            std::mem::swap(&mut new_seen, &mut seen);
+            new_seen.clear();
+
+            Some(curr_gen.into_iter())
+        });
+
+        Box::new(outlines.into_iter().chain(inward_propagation.flatten()))
     }
 }
 
 // ----------------------------------------------------------------------------
 
-// Return the cell indexes that traces the ring outline.
+// Return the cell indexes that traces the ring outline (rough approximation)
 fn get_edge_cells(
     ring: &geo::LineString<f64>,
     resolution: Resolution,
@@ -302,13 +390,8 @@ fn get_edge_cells(
         })
 }
 
-// Return the next round of candidates from the given cell.
-fn add_candidates(
-    cell: CellIndex,
-    candidates: &mut VecDeque<CellIndex>,
-    seen: &mut HashSet<CellIndex>,
-    scratchpad: &mut [u64],
-) {
+// Return the immediate neighbors.
+fn neighbors(cell: CellIndex, scratchpad: &mut [u64]) -> usize {
     let mut count = 0;
 
     // Don't use `grid_disk` to avoid the allocation,
@@ -331,11 +414,7 @@ fn add_candidates(
         }
     }
 
-    candidates.extend(scratchpad[0..count].iter().filter_map(|candidate| {
-        // SAFETY: candidate comes from `ring_disk_*`.
-        let index = CellIndex::new_unchecked(*candidate);
-        seen.insert(index).then_some(index)
-    }));
+    count
 }
 
 /// Returns an estimated number of hexagons that trace the cartesian-projected
