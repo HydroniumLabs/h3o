@@ -373,26 +373,6 @@ impl LatLng {
         Self { lat, lng }
     }
 
-    /// Returns the lower and upper bounds of this coordinate.
-    ///
-    /// `LatLng` values are not exact, their equality is approximative (using an
-    /// epsilon).
-    /// This function returns the range of coordinates that is equal to `self`.
-    #[must_use]
-    #[cfg(feature = "geo")]
-    pub(crate) fn bounds(self) -> (Self, Self) {
-        (
-            Self {
-                lat: self.lat - EPSILON_RAD,
-                lng: self.lng - EPSILON_RAD,
-            },
-            Self {
-                lat: self.lat + EPSILON_RAD,
-                lng: self.lng + EPSILON_RAD,
-            },
-        )
-    }
-
     /// Encodes a coordinate on the sphere to the `FaceIJK` address of the
     /// containing cell at the specified resolution.
     ///

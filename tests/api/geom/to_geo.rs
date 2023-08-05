@@ -1,4 +1,4 @@
-use approx::assert_relative_eq;
+use approx::{assert_relative_eq, relative_eq};
 use h3o::{geom::ToGeo, CellIndex, DirectedEdgeIndex, Resolution, VertexIndex};
 
 #[test]
@@ -50,14 +50,36 @@ fn from_cells() {
   "type": "MultiPolygon"
 }
 "#;
-    let result = geo::Geometry::try_from(cells.to_geojson().expect("geojson"))
-        .expect("result");
-    let expected = geo::Geometry::try_from(
+    let result =
+        geo::MultiPolygon::try_from(cells.to_geojson().expect("geojson"))
+            .expect("result");
+    let expected = geo::MultiPolygon::try_from(
         json.parse::<geojson::Geometry>().expect("geojson"),
     )
     .expect("expected");
 
-    assert_relative_eq!(result, expected, epsilon = 1e-6);
+    assert_eq!(result.0.len(), expected.0.len(), "polygon count mismatch");
+
+    let holes_result = result.0[0].interiors();
+    let holes_expected = expected.0[0].interiors();
+
+    assert_eq!(
+        holes_expected.len(),
+        holes_expected.len(),
+        "holes count mismatch"
+    );
+    // Check equivalence due to hashing being used internally, starting point of
+    // each ring isn't deterministic.
+    for (hole_result, hole_expected) in
+        holes_result.into_iter().zip(holes_expected.into_iter())
+    {
+        assert_line_string_equivalent(&hole_result, &hole_expected, 1e-6);
+    }
+    assert_line_string_equivalent(
+        result.0[0].exterior(),
+        expected.0[0].exterior(),
+        1e-6,
+    );
 }
 
 #[test]
@@ -510,3 +532,36 @@ grid_disk!(grid_disk_pentagon_res12, 0x8031fffffffffff, 12);
 grid_disk!(grid_disk_pentagon_res13, 0x8031fffffffffff, 13);
 grid_disk!(grid_disk_pentagon_res14, 0x8031fffffffffff, 14);
 grid_disk!(grid_disk_pentagon_res15, 0x8031fffffffffff, 15);
+
+// -----------------------------------------------------------------------------
+
+/// Returns true if two LineString are equivalent.
+///
+/// LineString are equivalent if they contains the same point in the same order
+/// (but they don't necessarily start at the same point).
+fn assert_line_string_equivalent(
+    line1: &geo::LineString,
+    line2: &geo::LineString,
+    epsilon: f64,
+) {
+    assert!(line1.is_closed(), "line1 is a LinearRing");
+    let mut coords1 = line1.coords().collect::<Vec<_>>();
+    coords1.pop(); // Remove the duplicated coord that close the ring
+                   //
+    assert!(line2.is_closed(), "line2 is a LinearRing");
+    let mut coords2 = line2.coords().collect::<Vec<_>>();
+    coords2.pop(); // Remove the duplicated coord that close the ring
+                   //
+    assert_eq!(coords1.len(), coords2.len(), "size mismatch");
+    let offset = coords2
+        .iter()
+        .position(|&coord| relative_eq!(coord, coords1[0], epsilon = epsilon))
+        .expect("lines are different");
+    for i in 0..coords1.len() {
+        assert_relative_eq!(
+            coords1[i],
+            coords2[(i + offset) % coords2.len()],
+            epsilon = epsilon
+        );
+    }
+}

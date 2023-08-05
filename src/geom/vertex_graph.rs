@@ -1,57 +1,22 @@
 use super::RingHierarchy;
-use crate::{error::OutlinerError, CellIndex, LatLng, Resolution};
+use crate::{error::OutlinerError, CellIndex, LatLng, Resolution, VertexIndex};
+use ahash::{HashMap, HashMapExt};
 use geo::{LineString, MultiPolygon, Polygon};
-use std::{cmp::Ordering, collections::BTreeMap, ops::Bound};
+use std::collections::hash_map::Entry;
 
 /// A single node in a vertex graph.
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct Node {
-    from: LatLng,
-    to: LatLng,
-}
-
-/// A `BTreeMap` value.
-#[derive(Debug)]
-pub struct Value {
-    /// End of the edge.
-    vertex: LatLng,
-    /// Is the edge part of the outline.
-    is_outline: bool,
-}
-
-// -----------------------------------------------------------------------------
-
-#[derive(Copy, Clone)]
-struct OrderedCoord(LatLng);
-
-impl PartialEq for OrderedCoord {
-    fn eq(&self, other: &Self) -> bool {
-        (self.0.lat_radians(), self.0.lng_radians())
-            == (other.0.lat_radians(), other.0.lng_radians())
-    }
-}
-
-impl Eq for OrderedCoord {}
-
-impl PartialOrd for OrderedCoord {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        (self.0.lat_radians(), self.0.lng_radians())
-            .partial_cmp(&(other.0.lat_radians(), other.0.lng_radians()))
-    }
-}
-
-impl Ord for OrderedCoord {
-    fn cmp(&self, other: &Self) -> Ordering {
-        // LatLng are guaranteed to be finite number.
-        self.partial_cmp(other)
-            .expect("LatLng number can be ordered")
-    }
+    from: VertexIndex,
+    to: VertexIndex,
 }
 
 /// A data structure to store a graph of vertices.
 #[derive(Default)]
 pub struct VertexGraph {
-    nodes: BTreeMap<OrderedCoord, Vec<Value>>,
+    nodes: HashMap<VertexIndex, Vec<VertexIndex>>,
+    distortions: HashMap<Node, LatLng>,
+    is_class3: bool,
 }
 
 impl VertexGraph {
@@ -59,105 +24,101 @@ impl VertexGraph {
     pub fn from_cells(
         cells: impl IntoIterator<Item = CellIndex>,
     ) -> Result<Self, OutlinerError> {
-        let mut cells = cells.into_iter();
-        let mut graph = Self::default();
-        let mut item = cells.next();
-        let resolution =
-            item.map_or_else(|| Resolution::Zero, CellIndex::resolution);
+        // Detect duplicates in the input.
+        // (sort + dedup is slower than HashSet but use less memory, especially
+        // for large input).
+        let mut cells = cells.into_iter().collect::<Vec<_>>();
+        let old_len = cells.len();
+        cells.sort_unstable();
+        cells.dedup();
+        if cells.len() < old_len {
+            // Dups were removed, not good.
+            return Err(OutlinerError::DuplicateInput);
+        }
 
-        while let Some(cell) = item {
+        let resolution = cells
+            .first()
+            .copied()
+            .map_or_else(|| Resolution::Zero, CellIndex::resolution);
+        let mut graph = Self {
+            nodes: HashMap::new(),
+            distortions: HashMap::new(),
+            is_class3: resolution.is_class3(),
+        };
+
+        for cell in cells {
             if cell.resolution() != resolution {
                 return Err(OutlinerError::HeterogeneousResolution);
             }
 
-            let boundary = cell.boundary();
+            // FIXME: collect
+            let vertexes = cell.vertexes().collect::<Vec<_>>();
 
             // Iterate through every edge.
-            for i in 0..boundary.len() {
-                let from = boundary[i];
-                let to = boundary[(i + 1) % boundary.len()];
+            for i in 0..vertexes.len() {
+                let from = vertexes[i];
+                let to = vertexes[(i + 1) % vertexes.len()];
 
-                graph.insert(&Node { from, to })?;
+                graph.insert(&Node { from, to });
             }
 
-            item = cells.next();
+            // Keep track of distortions vertices when necessary.
+            if graph.is_class3 && cell.icosahedron_faces().len() > 1 {
+                graph.index_distorsions(cell, &vertexes);
+            }
         }
-
-        graph.prune();
 
         Ok(graph)
     }
 
     /// Adds an edge to the graph.
-    pub fn insert(&mut self, node: &Node) -> Result<(), OutlinerError> {
+    pub fn insert(&mut self, node: &Node) {
         // First lookup the reversed edge.
         // If we've seen this edge already, it will be reversed.
-        if let Some((_, entry)) = self.get_mut(node.to) {
+        if let Entry::Occupied(mut entry) = self.nodes.entry(node.to) {
+            // Edge share by two cells: not part of the outline!
             if let Some(pos) =
-                entry.iter().position(|value| value.vertex == node.from)
+                entry.get().iter().position(|&vertex| vertex == node.from)
             {
-                // Flag the edge as `not part of the outline`.
-                if entry[pos].is_outline {
-                    entry[pos].is_outline = false;
-                    return Ok(());
+                entry.get_mut().swap_remove(pos);
+                if entry.get().is_empty() {
+                    entry.remove_entry();
                 }
-                // If the edge was already flagged, we have a dup!
-                return Err(OutlinerError::DuplicateInput);
+                self.distortions.remove(&Node {
+                    from: node.to,
+                    to: node.from,
+                });
+                return;
             }
         }
 
         // New edge, insert it.
-        let value = Value {
-            vertex: node.to,
-            is_outline: true,
-        };
-        if let Some((_, entry)) = self.get_mut(node.from) {
-            // Check if the node already exists.
-            if entry.iter().any(|value| value.vertex == node.to) {
-                return Err(OutlinerError::DuplicateInput);
-            }
-            entry.push(value);
-        } else {
+        let nodes = self
+            .nodes
+            .entry(node.from)
             // A vertex is shared by at most 3 edges.
-            let mut values = Vec::with_capacity(3);
-            values.push(value);
-            self.nodes.insert(OrderedCoord(node.from), values);
-        }
-
-        Ok(())
+            .or_insert_with(|| Vec::with_capacity(3));
+        nodes.push(node.to);
     }
 
     /// Removes a node from the graph.
     pub fn remove(&mut self, node: &Node) {
-        let del_key = if let Some((key, entry)) = self.get_mut(node.from) {
+        if let Entry::Occupied(mut entry) = self.nodes.entry(node.from) {
             if let Some(pos) =
-                entry.iter().position(|value| value.vertex == node.to)
+                entry.get().iter().position(|&vertex| vertex == node.to)
             {
-                entry.swap_remove(pos);
+                entry.get_mut().swap_remove(pos);
+                if entry.get().is_empty() {
+                    entry.remove_entry();
+                }
+                // XXX: distortions deletion is handled when injected.
             }
-            entry.is_empty().then_some(*key)
-        } else {
-            None
-        };
-        if let Some(key) = del_key {
-            self.nodes.remove(&key);
         }
     }
 
-    /// Remove the edges that are not part of an outline.
-    pub fn prune(&mut self) {
-        self.nodes.retain(|_, value| {
-            value.retain(|value| value.is_outline);
-            !value.is_empty()
-        });
-    }
-
     /// Finds a vertex node starting at the given vertex, if it exists.
-    pub fn get_from_vertex(&self, from: LatLng) -> Option<Node> {
-        self.get(from).map(|(_, to)| Node {
-            from,
-            to: to[0].vertex,
-        })
+    pub fn get_from_vertex(&self, from: VertexIndex) -> Option<Node> {
+        self.nodes.get(&from).map(|to| Node { from, to: to[0] })
     }
 
     /// Returns true if the graph is empty.
@@ -165,46 +126,30 @@ impl VertexGraph {
         self.nodes.is_empty()
     }
 
-    /// Lookup edges starting from `coord`.
-    fn get_mut(
-        &mut self,
-        coord: LatLng,
-    ) -> Option<(&OrderedCoord, &mut Vec<Value>)> {
-        // Since LatLng relies on approximate equality, we have to first select a
-        // range and then perform an equality test.
-        let (lower, higher) = coord.bounds();
-        let bounds = (
-            Bound::Included(OrderedCoord(lower)),
-            Bound::Included(OrderedCoord(higher)),
-        );
+    /// Index distortions vertices that exists between topological ones.
+    fn index_distorsions(&mut self, cell: CellIndex, vertexes: &[VertexIndex]) {
+        // Boundary contains the every vertex (topological and distortions).
+        let boundary = cell.boundary();
+        let mut topological_idx = 0;
 
-        let mut values = self
-            .nodes
-            .range_mut(bounds)
-            .filter(|&(key, _)| key.0 == coord);
+        for i in 0..boundary.len() {
+            let vertex = boundary[i];
 
-        let nodes = values.next();
-        assert!(values.next().is_none(), "expect a single match");
-
-        nodes
-    }
-
-    fn get(&self, coord: LatLng) -> Option<(&OrderedCoord, &Vec<Value>)> {
-        // Since LatLng relies on approximate equality, we have to first select a
-        // range and then perform an equality test.
-        let (lower, higher) = coord.bounds();
-        let bounds = (
-            Bound::Included(OrderedCoord(lower)),
-            Bound::Included(OrderedCoord(higher)),
-        );
-
-        let mut values =
-            self.nodes.range(bounds).filter(|&(key, _)| key.0 == coord);
-
-        let nodes = values.next();
-        assert!(values.next().is_none(), "expect a single match");
-
-        nodes
+            if vertex == LatLng::from(vertexes[topological_idx]) {
+                topological_idx = (topological_idx + 1) % vertexes.len();
+            } else {
+                let from = topological_idx
+                    .checked_sub(1)
+                    .unwrap_or(vertexes.len() - 1);
+                self.distortions.insert(
+                    Node {
+                        from: vertexes[from],
+                        to: vertexes[topological_idx],
+                    },
+                    vertex,
+                );
+            }
+        }
     }
 }
 
@@ -221,12 +166,16 @@ impl From<VertexGraph> for MultiPolygon<f64> {
         while !value.is_empty() {
             let (&from, to) =
                 value.nodes.iter().next().expect("non-empty graph");
-            let mut node = Node {
-                from: from.0,
-                to: to[0].vertex,
-            };
+            let mut node = Node { from, to: to[0] };
             loop {
-                coords.push(node.from.into());
+                coords.push(LatLng::from(node.from).into());
+                // Inject distortion vertex, if any.
+                if value.is_class3 {
+                    if let Some(distortion) = value.distortions.remove(&node) {
+                        coords.push(distortion.into());
+                    }
+                }
+
                 let to = node.to;
                 value.remove(&node);
                 match value.get_from_vertex(to) {
