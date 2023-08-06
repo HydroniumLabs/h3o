@@ -4,7 +4,7 @@ use crate::{
 };
 use ahash::{HashSet, HashSetExt};
 use geo::{coord, Coord, CoordsIter};
-use std::{borrow::Cow, boxed::Box, cmp, f64::consts::PI};
+use std::{borrow::Cow, boxed::Box, cmp};
 
 /// A bounded two-dimensional area.
 #[derive(Clone, Debug, PartialEq)]
@@ -358,11 +358,6 @@ fn get_edge_cells(
     ring: &geo::LineString<f64>,
     resolution: Resolution,
 ) -> impl Iterator<Item = CellIndex> + '_ {
-    // Detect transmeridian ring.
-    let is_transmeridian = ring
-        .lines()
-        .any(|line| (line.start.x - line.end.x).abs() > PI);
-
     ring.lines()
         .flat_map(move |line @ geo::Line { start, end }| {
             let count = line_hex_estimate(&line, resolution);
@@ -374,14 +369,8 @@ fn get_edge_cells(
                 let i = i as f64;
                 let count = count as f64;
 
-                // Apply fix for longitude across the antimeridian if necessary.
-                let need_fix = u8::from(is_transmeridian && start.x < 0.);
-                let startx = (f64::from(need_fix) * 2.).mul_add(PI, start.x);
-                let need_fix = u8::from(is_transmeridian && end.x < 0.);
-                let endx = (f64::from(need_fix) * 2.).mul_add(PI, end.x);
-
                 let lat = (start.y * (count - i) / count) + (end.y * i / count);
-                let lng = (startx * (count - i) / count) + (endx * i / count);
+                let lng = (start.x * (count - i) / count) + (end.x * i / count);
 
                 LatLng::from_radians(lat, lng)
                     .expect("finite line coordinate")

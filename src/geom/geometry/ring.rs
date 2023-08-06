@@ -1,6 +1,9 @@
 use super::bbox;
 use crate::{error::InvalidGeometry, TWO_PI};
-use geo::{Coord, Intersects};
+use geo::{
+    algorithm::coordinate_position::{coord_pos_relative_to_ring, CoordPos},
+    Coord, Intersects,
+};
 use std::{borrow::Cow, f64::consts::PI};
 
 /// A closed ring and its bounding box.
@@ -8,17 +11,28 @@ use std::{borrow::Cow, f64::consts::PI};
 pub struct Ring<'a> {
     geom: Cow<'a, geo::LineString<f64>>,
     bbox: geo::Rect<f64>,
+    is_transmeridian: bool,
 }
 
 impl<'a> Ring<'a> {
     /// Initialize a new ring from a closed `geo::LineString` whose coordinates
     /// are in radians.
     pub fn from_radians(
-        ring: Cow<'a, geo::LineString<f64>>,
+        mut ring: Cow<'a, geo::LineString<f64>>,
     ) -> Result<Self, InvalidGeometry> {
+        let is_transmeridian = ring_is_transmeridian(&ring);
+        if is_transmeridian {
+            for coord in ring.to_mut().coords_mut() {
+                coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
+            }
+        }
         let bbox = bbox::compute_from_ring(&ring)?;
 
-        Ok(Self { geom: ring, bbox })
+        Ok(Self {
+            geom: ring,
+            bbox,
+            is_transmeridian,
+        })
     }
 
     /// Initialize a new ring from a closed `geo::LineString` whose coordinates
@@ -26,16 +40,22 @@ impl<'a> Ring<'a> {
     pub fn from_degrees(
         mut ring: geo::LineString<f64>,
     ) -> Result<Self, InvalidGeometry> {
+        let is_transmeridian = ring_is_transmeridian(&ring);
         let geom = {
             for coord in ring.coords_mut() {
-                coord.x = coord.x.to_radians();
+                coord.x = f64::from(u8::from(coord.x < 0.))
+                    .mul_add(TWO_PI, coord.x.to_radians());
                 coord.y = coord.y.to_radians();
             }
             Cow::Owned(ring)
         };
         let bbox = bbox::compute_from_ring(&geom)?;
 
-        Ok(Self { geom, bbox })
+        Ok(Self {
+            geom,
+            bbox,
+            is_transmeridian,
+        })
     }
 
     pub fn geom(&self) -> &geo::LineString<f64> {
@@ -46,16 +66,8 @@ impl<'a> Ring<'a> {
         self.bbox
     }
 
-    // Those strict comparisons are done on purpose.
-    #[allow(clippy::float_cmp)]
     pub fn contains(&self, mut coord: Coord<f64>) -> bool {
-        // Use the ray-tracing algorithm: count #times a
-        // horizontal ray from point (to positive infinity).
-        //
-        // See: https://en.wikipedia.org/wiki/Point_in_polygon
-
-        let is_transmeridian = self.bbox.max().x > PI;
-        if is_transmeridian {
+        if self.is_transmeridian {
             coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
         }
 
@@ -63,63 +75,14 @@ impl<'a> Ring<'a> {
             return false;
         }
 
-        let mut contains = false;
-        for geo::Line { mut start, mut end } in self.geom.lines() {
-            // Ray casting algo requires the second point to always be higher
-            // than the first, so swap if needed.
-            if start.y > end.y {
-                (start, end) = (end, start);
-            }
-
-            // If the latitude matches exactly, we'll hit an edge case where the
-            // ray passes through the vertex twice on successive segment checks.
-            // To avoid this, adjust the latitude northward if needed.
-            //
-            // NOTE: This currently means that a point at the north pole cannot
-            // be contained in any polygon. This is acceptable in current usage,
-            // because the point we test in this function at present is always a
-            // cell center or vertex, and no cell has a center or vertex on the
-            // north pole. If we need to expand this algo to more generic uses
-            // we might need to handle this edge case.
-            if coord.y == start.y || coord.y == end.y {
-                coord.y += f64::EPSILON;
-            }
-
-            // If we're totally above or below the latitude ranges, the test ray
-            // cannot intersect the line segment, so let's move on.
-            if coord.y < start.y || coord.y > end.y {
-                continue;
-            }
-
-            if is_transmeridian {
-                start.x += f64::from(u8::from(start.x < 0.)) * TWO_PI;
-                end.x += f64::from(u8::from(end.x < 0.)) * TWO_PI;
-            }
-
-            // Rays are cast in the longitudinal direction, in case a point
-            // exactly matches, to decide tiebreakers, bias westerly.
-            if start.x == coord.x || end.x == coord.x {
-                coord.x -= f64::EPSILON;
-            }
-
-            // For the latitude of the point, compute the longitude of the
-            // point that lies on the line segment defined by `a` and `b`
-            // This is done by computing the percent above `a` the lat is,
-            // and traversing the same percent in the longitudinal direction
-            // of `a` to `b`.
-            let ratio = (coord.y - start.y) / (end.y - start.y);
-            let mut test_lng = (end.x - start.x).mul_add(ratio, start.x);
-            test_lng +=
-                f64::from(u8::from(is_transmeridian && test_lng < 0.)) * TWO_PI;
-
-            // Intersection of the ray
-            if test_lng > coord.x {
-                contains = !contains;
-            }
-        }
-
-        contains
+        coord_pos_relative_to_ring(coord, &self.geom) == CoordPos::Inside
     }
+}
+
+// Check for arcs > 180 degrees longitude, flagging as transmeridian.
+fn ring_is_transmeridian(ring: &geo::LineString<f64>) -> bool {
+    ring.lines()
+        .any(|line| (line.start.x - line.end.x).abs() > PI)
 }
 
 impl From<Ring<'_>> for geo::LineString<f64> {

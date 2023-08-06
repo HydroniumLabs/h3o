@@ -1,6 +1,5 @@
 use crate::{error::InvalidGeometry, LatLng, Resolution};
 use geo::{coord, LineString, Rect};
-use std::f64::consts::PI;
 
 /// Create a bounding box from a polygon's ring.
 ///
@@ -18,11 +17,6 @@ pub fn compute_from_ring(
         ));
     }
 
-    // Check for arcs > 180 degrees longitude, flagging as transmeridian.
-    let is_transmeridian = ring
-        .lines()
-        .any(|line| (line.start.x - line.end.x).abs() > PI);
-
     let mut lng_range = (f64::MAX, f64::MIN);
     let mut lat_range = (f64::MAX, f64::MIN);
 
@@ -33,9 +27,7 @@ pub fn compute_from_ring(
             ));
         }
 
-        let lng = (f64::from(u8::from(is_transmeridian && curr.x < 0.)) * 2.)
-            .mul_add(PI, curr.x);
-        lng_range = get_min_max(lng, lng_range.0, lng_range.1);
+        lng_range = get_min_max(curr.x, lng_range.0, lng_range.1);
         lat_range = get_min_max(curr.y, lat_range.0, lat_range.1);
     }
 
