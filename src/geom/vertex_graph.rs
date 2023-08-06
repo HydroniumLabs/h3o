@@ -46,13 +46,15 @@ impl VertexGraph {
             is_class3: resolution.is_class3(),
         };
 
+        let mut vertexes = Vec::with_capacity(6);
         for cell in cells {
             if cell.resolution() != resolution {
                 return Err(OutlinerError::HeterogeneousResolution);
             }
 
-            // FIXME: collect
-            let vertexes = cell.vertexes().collect::<Vec<_>>();
+            for vertex in cell.vertexes() {
+                vertexes.push(vertex);
+            }
 
             // Iterate through every edge.
             for i in 0..vertexes.len() {
@@ -66,6 +68,8 @@ impl VertexGraph {
             if graph.is_class3 && cell.icosahedron_faces().len() > 1 {
                 graph.index_distorsions(cell, &vertexes);
             }
+
+            vertexes.clear();
         }
 
         Ok(graph)
