@@ -1,7 +1,7 @@
 use super::{Geometry, GeometryCollection};
 use crate::error::InvalidGeometry;
 
-impl TryFrom<&geojson::Geometry> for Geometry<'_> {
+impl TryFrom<&geojson::Geometry> for Geometry {
     type Error = InvalidGeometry;
 
     fn try_from(value: &geojson::Geometry) -> Result<Self, Self::Error> {
@@ -11,7 +11,7 @@ impl TryFrom<&geojson::Geometry> for Geometry<'_> {
     }
 }
 
-impl TryFrom<&geojson::Feature> for Geometry<'_> {
+impl TryFrom<&geojson::Feature> for Geometry {
     type Error = InvalidGeometry;
 
     fn try_from(value: &geojson::Feature) -> Result<Self, Self::Error> {
@@ -27,7 +27,7 @@ impl TryFrom<&geojson::Feature> for Geometry<'_> {
     }
 }
 
-impl TryFrom<&geojson::FeatureCollection> for Geometry<'_> {
+impl TryFrom<&geojson::FeatureCollection> for Geometry {
     type Error = InvalidGeometry;
 
     fn try_from(
@@ -50,17 +50,15 @@ impl TryFrom<&geojson::FeatureCollection> for Geometry<'_> {
     }
 }
 
-impl TryFrom<&geojson::GeoJson> for Geometry<'_> {
+impl TryFrom<&geojson::GeoJson> for Geometry {
     type Error = InvalidGeometry;
 
     fn try_from(value: &geojson::GeoJson) -> Result<Self, Self::Error> {
         match *value {
-            geojson::GeoJson::Geometry(ref geom) => Geometry::try_from(geom),
-            geojson::GeoJson::Feature(ref feature) => {
-                Geometry::try_from(feature)
-            }
+            geojson::GeoJson::Geometry(ref geom) => Self::try_from(geom),
+            geojson::GeoJson::Feature(ref feature) => Self::try_from(feature),
             geojson::GeoJson::FeatureCollection(ref collection) => {
-                Geometry::try_from(collection)
+                Self::try_from(collection)
             }
         }
     }

@@ -1,19 +1,23 @@
 use super::{bbox, Geometry, Ring};
 use crate::{
-    error::InvalidGeometry, geom::ToCells, CellIndex, LatLng, Resolution,
+    error::InvalidGeometry,
+    geom::{ContainmentMode, PolyfillConfig, ToCells},
+    CellIndex, LatLng, Resolution,
 };
 use ahash::{HashSet, HashSetExt};
-use geo::{coord, Coord, CoordsIter};
+use geo::{coord, CoordsIter};
 use std::{borrow::Cow, boxed::Box, cmp};
+
+type ContainmentPredicate = fn(polygon: &Polygon, cell: CellIndex) -> bool;
 
 /// A bounded two-dimensional area.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Polygon<'a> {
-    exterior: Ring<'a>,
-    interiors: Vec<Ring<'a>>,
+pub struct Polygon {
+    exterior: Ring,
+    interiors: Vec<Ring>,
 }
 
-impl<'a> Polygon<'a> {
+impl Polygon {
     /// Initialize a new polygon from a `geo::Polygon` whose coordinates are in
     /// radians.
     ///
@@ -35,18 +39,17 @@ impl<'a> Polygon<'a> {
     ///     (x: 0.6559997912129759, y: 0.9735034901250053),
     ///     (x: 0.6559997912129759, y: 0.9726707149994819),
     /// ];
-    /// let polygon = Polygon::from_radians(&p)?;
+    /// let polygon = Polygon::from_radians(p)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        polygon: &'a geo::Polygon<f64>,
+        polygon: geo::Polygon<f64>,
     ) -> Result<Self, InvalidGeometry> {
+        let (exterior, interiors) = polygon.into_inner();
         Ok(Self {
-            exterior: Ring::from_radians(Cow::Borrowed(polygon.exterior()))?,
-            interiors: polygon
-                .interiors()
-                .iter()
-                .map(Cow::Borrowed)
+            exterior: Ring::from_radians(exterior)?,
+            interiors: interiors
+                .into_iter()
                 .map(Ring::from_radians)
                 .collect::<Result<Vec<_>, _>>()?,
         })
@@ -103,7 +106,7 @@ impl<'a> Polygon<'a> {
         debug_assert!(interiors.is_empty());
 
         Ok(Self {
-            exterior: Ring::from_radians(Cow::Owned(exterior))?,
+            exterior: Ring::from_radians(exterior)?,
             interiors: Vec::new(),
         })
     }
@@ -123,7 +126,7 @@ impl<'a> Polygon<'a> {
         debug_assert!(interiors.is_empty());
 
         Ok(Self {
-            exterior: Ring::from_radians(Cow::Owned(exterior))?,
+            exterior: Ring::from_radians(exterior)?,
             interiors: Vec::new(),
         })
     }
@@ -140,17 +143,13 @@ impl<'a> Polygon<'a> {
         self.interiors.iter().map(Ring::geom)
     }
 
-    fn contains(&self, coord: Coord<f64>) -> bool {
-        self.exterior.contains(coord)
-            && !self.interiors.iter().any(|ring| ring.contains(coord))
-    }
-
     // Return the cell indexes that traces the ring outline.
     fn hex_outline(
         &self,
         resolution: Resolution,
         already_seen: &mut HashSet<CellIndex>,
         scratchpad: &mut [u64],
+        contains: ContainmentPredicate,
     ) -> Vec<CellIndex> {
         // IIUC, the collect is necessary to consume the iterator and release
         // the mutable borrow on `already_seen`.
@@ -179,12 +178,7 @@ impl<'a> Polygon<'a> {
                 already_seen
                     .insert(index)
                     .then_some(index)
-                    .and_then(|index| {
-                        let ll = LatLng::from(index);
-                        let coord =
-                            coord! { x: ll.lng_radians(), y: ll.lat_radians() };
-                        self.contains(coord).then_some(index)
-                    })
+                    .and_then(|index| contains(self, index).then_some(index))
             }));
 
             acc
@@ -200,6 +194,7 @@ impl<'a> Polygon<'a> {
         outlines: &[CellIndex],
         already_seen: &mut HashSet<CellIndex>,
         scratchpad: &mut [u64],
+        contains: ContainmentPredicate,
     ) -> Vec<CellIndex> {
         outlines.iter().fold(Vec::new(), |mut acc, cell| {
             let count = neighbors(*cell, scratchpad);
@@ -211,20 +206,15 @@ impl<'a> Polygon<'a> {
                 already_seen
                     .insert(index)
                     .then_some(index)
-                    .and_then(|index| {
-                        let ll = LatLng::from(index);
-                        let coord =
-                            coord! { x: ll.lng_radians(), y: ll.lat_radians() };
-                        self.contains(coord).then_some(index)
-                    })
+                    .and_then(|index| contains(self, index).then_some(index))
             }));
             acc
         })
     }
 }
 
-impl From<Polygon<'_>> for geo::Polygon<f64> {
-    fn from(value: Polygon<'_>) -> Self {
+impl From<Polygon> for geo::Polygon<f64> {
+    fn from(value: Polygon) -> Self {
         Self::new(
             value.exterior.into(),
             value.interiors.into_iter().map(Into::into).collect(),
@@ -232,10 +222,10 @@ impl From<Polygon<'_>> for geo::Polygon<f64> {
     }
 }
 
-impl<'a> TryFrom<Geometry<'a>> for Polygon<'a> {
+impl TryFrom<Geometry> for Polygon {
     type Error = InvalidGeometry;
 
-    fn try_from(value: Geometry<'a>) -> Result<Self, Self::Error> {
+    fn try_from(value: Geometry) -> Result<Self, Self::Error> {
         match value {
             Geometry::Polygon(polygon) => Ok(polygon),
             _ => Err(Self::Error::new("invalid type (polygon expected)")),
@@ -243,11 +233,12 @@ impl<'a> TryFrom<Geometry<'a>> for Polygon<'a> {
     }
 }
 
-impl ToCells for Polygon<'_> {
-    fn max_cells_count(&self, resolution: Resolution) -> usize {
+impl ToCells for Polygon {
+    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
         const POLYGON_TO_CELLS_BUFFER: usize = 12;
 
-        let estimated_count = bbox::hex_estimate(&self.bbox(), resolution);
+        let estimated_count =
+            bbox::hex_estimate(&self.bbox(), config.resolution);
 
         // This algorithm assumes that the number of vertices is usually less
         // than the number of hexagons, but when it's wrong, this will keep it
@@ -266,21 +257,6 @@ impl ToCells for Polygon<'_> {
         cmp::max(estimated_count, vertex_count) + POLYGON_TO_CELLS_BUFFER
     }
 
-    // One of the goals of the polygon_to_cells algorithm is that two adjacent
-    // polygons with zero overlap have zero overlapping hexagons. That the
-    // hexagons are uniquely assigned. There are a few approaches to take here,
-    // such as deciding based on which polygon has the greatest overlapping area
-    // of the hexagon, or the most number of contained points on the hexagon
-    // (using the center point as a tiebreaker).
-    //
-    // But if the polygons are convex, both of these more complex algorithms can
-    // be reduced down to checking whether or not the center of the hexagon is
-    // contained in the polygon, and so this is the approach that this
-    // polygon_to_cells algorithm will follow, as it's simpler, faster, and the
-    // error for concave polygons is still minimal (only affecting concave
-    // shapes on the order of magnitude of the hexagon size or smaller, not
-    // impacting larger concave shapes).
-
     /// This implementation traces the outlines of the polygon's rings, fill one
     /// layer of internal cells and then propagate inwards until the whole area
     /// is covered.
@@ -290,8 +266,14 @@ impl ToCells for Polygon<'_> {
     /// by the outlines) which make this approach relatively efficient.
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
+        let contains = match config.containment {
+            ContainmentMode::ContainsCentroid => contains_centroid,
+            ContainmentMode::ContainsBoundary => contains_boundary,
+            ContainmentMode::IntersectsBoundary => intersects_or_contains,
+        };
+
         // Set used for dedup.
         let mut seen = HashSet::new();
         // Scratchpad memory to store a cell and its immediate neighbors.
@@ -299,12 +281,21 @@ impl ToCells for Polygon<'_> {
         let mut scratchpad = [0; 7];
 
         // First, compute the outline.
-        let outlines = self.hex_outline(resolution, &mut seen, &mut scratchpad);
+        let outlines = self.hex_outline(
+            config.resolution,
+            &mut seen,
+            &mut scratchpad,
+            contains,
+        );
 
         // Next, compute the outermost layer of inner cells to seed the
         // propagation step.
-        let mut candidates =
-            self.outermost_inner_cells(&outlines, &mut seen, &mut scratchpad);
+        let mut candidates = self.outermost_inner_cells(
+            &outlines,
+            &mut seen,
+            &mut scratchpad,
+            contains,
+        );
         let mut next_gen = Vec::with_capacity(candidates.len() * 7);
         let mut new_seen = HashSet::with_capacity(seen.len());
 
@@ -316,12 +307,7 @@ impl ToCells for Polygon<'_> {
 
             for &cell in &candidates {
                 debug_assert!(
-                    {
-                        let ll = LatLng::from(cell);
-                        let coord =
-                            coord! { x: ll.lng_radians(), y: ll.lat_radians() };
-                        self.contains(coord)
-                    },
+                    contains_boundary(self, cell),
                     "cell index {cell} in polygon"
                 );
 
@@ -349,6 +335,65 @@ impl ToCells for Polygon<'_> {
 
         Box::new(outlines.into_iter().chain(inward_propagation.flatten()))
     }
+}
+
+// ----------------------------------------------------------------------------
+
+fn contains_centroid(polygon: &Polygon, cell: CellIndex) -> bool {
+    let ll = LatLng::from(cell);
+    let coord = coord! { x: ll.lng_radians(), y: ll.lat_radians() };
+
+    polygon.exterior.contains_centroid(coord)
+        && !polygon
+            .interiors
+            .iter()
+            .any(|ring| ring.contains_centroid(coord))
+}
+
+fn intersects_or_contains(polygon: &Polygon, cell: CellIndex) -> bool {
+    intersects_boundary(polygon, cell) || contains_boundary(polygon, cell)
+}
+
+fn intersects_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
+    let mut boundary = geo::LineString(
+        cell.boundary()
+            .iter()
+            .copied()
+            .map(|ll| coord! { x: ll.lng_radians(), y: ll.lat_radians() })
+            .collect(),
+    );
+    boundary.close();
+
+    let intersects_enveloppe = polygon
+        .exterior
+        .intersects_boundary(Cow::Borrowed(&boundary));
+
+    intersects_enveloppe || {
+        polygon
+            .interiors
+            .iter()
+            .any(|ring| ring.intersects_boundary(Cow::Borrowed(&boundary)))
+    }
+}
+
+fn contains_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
+    let mut boundary = geo::LineString(
+        cell.boundary()
+            .iter()
+            .copied()
+            .map(|ll| coord! { x: ll.lng_radians(), y: ll.lat_radians() })
+            .collect(),
+    );
+    boundary.close();
+
+    let within_enveloppe =
+        polygon.exterior.contains_boundary(Cow::Borrowed(&boundary));
+
+    within_enveloppe
+        && !polygon.interiors.iter().any(|ring| {
+            ring.intersects_boundary(Cow::Borrowed(&boundary))
+                || ring.contains_boundary(Cow::Borrowed(&boundary))
+        })
 }
 
 // ----------------------------------------------------------------------------

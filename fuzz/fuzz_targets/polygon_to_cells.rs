@@ -2,7 +2,7 @@
 
 use geo_types as geo;
 use h3o::{
-    geom::{Polygon, ToCells},
+    geom::{PolyfillConfig, Polygon, ToCells},
     Resolution,
 };
 use libfuzzer_sys::fuzz_target;
@@ -37,11 +37,12 @@ fuzz_target!(|args: Args| {
     if let Ok(polygon) =
         Polygon::from_degrees(geo::Polygon::new(ring, Vec::new()))
     {
-        let upper_bound = polygon.max_cells_count(args.resolution);
+        let config = PolyfillConfig::new(args.resolution);
+        let upper_bound = polygon.max_cells_count(config);
 
         if upper_bound > 4_000_000 {
             return;
         }
-        polygon.to_cells(args.resolution).for_each(drop);
+        polygon.to_cells(config).for_each(drop);
     }
 });

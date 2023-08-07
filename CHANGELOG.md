@@ -14,6 +14,11 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- `to_cells` and `max_cells_count` now takes a `PolyfillConfig` as input.
+- `from_radians` constructors for geometry now take ownership of the input.
+
 ## [0.3.5] - 2023-08-05
 
 ### Fixed

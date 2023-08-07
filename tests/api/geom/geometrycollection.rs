@@ -1,6 +1,6 @@
 use geo::{line_string, point, polygon};
 use h3o::{
-    geom::{GeometryCollection, ToCells},
+    geom::{GeometryCollection, PolyfillConfig, ToCells},
     Resolution,
 };
 
@@ -131,7 +131,7 @@ fn geometrycollection_degs() -> geo::GeometryCollection {
 #[test]
 fn from_radians() {
     let geoms = geometrycollection_rads();
-    let result = GeometryCollection::from_radians(&geoms);
+    let result = GeometryCollection::from_radians(geoms);
 
     assert!(result.is_ok());
 }
@@ -147,7 +147,7 @@ fn from_degrees() {
 #[test]
 fn into_geo() {
     let geoms = geometrycollection_rads();
-    let geom = GeometryCollection::from_radians(&geoms).expect("geom");
+    let geom = GeometryCollection::from_radians(geoms).expect("geom");
     let result = geo::GeometryCollection::from(geom);
     let expected = geometrycollection_rads();
 
@@ -158,8 +158,9 @@ fn into_geo() {
 fn to_cells() {
     let geom = GeometryCollection::from_degrees(geometrycollection_degs())
         .expect("geom");
-    let bound = geom.max_cells_count(Resolution::Two);
-    let result = geom.to_cells(Resolution::Two).count();
+    let config = PolyfillConfig::new(Resolution::Two);
+    let bound = geom.max_cells_count(config);
+    let result = geom.to_cells(config).count();
 
     assert!(result <= bound);
 }

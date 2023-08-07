@@ -1,7 +1,7 @@
 use crate::{
     error::{InvalidGeometry, InvalidLatLng},
-    geom::ToCells,
-    CellIndex, LatLng, Resolution,
+    geom::{PolyfillConfig, ToCells},
+    CellIndex, LatLng,
 };
 use std::boxed::Box;
 
@@ -80,15 +80,15 @@ impl TryFrom<Point> for LatLng {
 }
 
 impl ToCells for Point {
-    fn max_cells_count(&self, _resolution: Resolution) -> usize {
+    fn max_cells_count(&self, _config: PolyfillConfig) -> usize {
         1
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         let ll = LatLng::try_from(*self).expect("valid coordinate");
-        Box::new(std::iter::once(ll.to_cell(resolution)))
+        Box::new(std::iter::once(ll.to_cell(config.resolution)))
     }
 }

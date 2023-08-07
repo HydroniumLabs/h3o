@@ -1,12 +1,16 @@
 use super::Polygon;
-use crate::{error::InvalidGeometry, geom::ToCells, CellIndex, Resolution};
+use crate::{
+    error::InvalidGeometry,
+    geom::{PolyfillConfig, ToCells},
+    CellIndex,
+};
 use std::boxed::Box;
 
 /// A collection of [`geo::Polygon`].
 #[derive(Clone, Debug, PartialEq)]
-pub struct MultiPolygon<'a>(Vec<Polygon<'a>>);
+pub struct MultiPolygon(Vec<Polygon>);
 
-impl<'a> MultiPolygon<'a> {
+impl MultiPolygon {
     /// Initialize a collection of polygons from polygons whose coordinates are
     /// in radians.
     ///
@@ -29,15 +33,15 @@ impl<'a> MultiPolygon<'a> {
     ///     (x: 0.6559997912129759, y: 0.9726707149994819),
     /// ];
     /// let mp = geo::MultiPolygon::new(vec![p]);
-    /// let multipolygon = MultiPolygon::from_radians(&mp)?;
+    /// let multipolygon = MultiPolygon::from_radians(mp)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        polygons: &'a geo::MultiPolygon<f64>,
+        polygons: geo::MultiPolygon<f64>,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             polygons
-                .iter()
+                .into_iter()
                 .map(Polygon::from_radians)
                 .collect::<Result<Vec<_>, _>>()?,
         ))
@@ -80,28 +84,28 @@ impl<'a> MultiPolygon<'a> {
     }
 }
 
-impl From<MultiPolygon<'_>> for geo::MultiPolygon<f64> {
-    fn from(value: MultiPolygon<'_>) -> Self {
+impl From<MultiPolygon> for geo::MultiPolygon<f64> {
+    fn from(value: MultiPolygon) -> Self {
         Self(value.0.into_iter().map(Into::into).collect())
     }
 }
 
-impl ToCells for MultiPolygon<'_> {
-    fn max_cells_count(&self, resolution: Resolution) -> usize {
+impl ToCells for MultiPolygon {
+    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
         self.0
             .iter()
-            .map(|polygon| polygon.max_cells_count(resolution))
+            .map(|polygon| polygon.max_cells_count(config))
             .sum()
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         Box::new(
             self.0
                 .iter()
-                .flat_map(move |polygon| polygon.to_cells(resolution)),
+                .flat_map(move |polygon| polygon.to_cells(config)),
         )
     }
 }

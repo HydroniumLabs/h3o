@@ -1,5 +1,7 @@
 use crate::{
-    error::InvalidGeometry, geom::ToCells, CellIndex, Resolution, TWO_PI,
+    error::InvalidGeometry,
+    geom::{PolyfillConfig, ToCells},
+    CellIndex, TWO_PI,
 };
 use std::{boxed::Box, f64::consts::PI};
 
@@ -34,33 +36,33 @@ pub use triangle::Triangle;
 /// An enum representing any possible geometry type.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
-pub enum Geometry<'a> {
+pub enum Geometry {
     /// A single point represented by one [`geo::Coord`].
     Point(Point),
     /// A line segment represented by two [`geo::Coord`]s.
     Line(Line),
     /// A series of contiguous line segments represented by two or more
     /// [`geo::Coord`]s.
-    LineString(LineString<'a>),
+    LineString(LineString),
     /// A bounded area represented by one [`LineString`] exterior ring, and zero
     /// or more [`LineString`] interior rings.
-    Polygon(Polygon<'a>),
+    Polygon(Polygon),
     /// A collection of [`Point`]s.
     MultiPoint(MultiPoint),
     /// A collection of [`LineString`]s.
-    MultiLineString(MultiLineString<'a>),
+    MultiLineString(MultiLineString),
     /// A collection of [`Polygon`]s.
-    MultiPolygon(MultiPolygon<'a>),
+    MultiPolygon(MultiPolygon),
     /// A collection of [`Geometry`]s.
-    GeometryCollection(GeometryCollection<'a>),
+    GeometryCollection(GeometryCollection),
     /// An axis-aligned bounded rectangle represented by minimum and maximum
     /// [`geo::Coord`]s.
-    Rect(Rect<'a>),
+    Rect(Rect),
     /// A bounded area represented by three [`geo::Coord`] vertices.
-    Triangle(Triangle<'a>),
+    Triangle(Triangle),
 }
 
-impl<'a> Geometry<'a> {
+impl Geometry {
     /// Initialize a geometry from a geometry whose coordinates are in radians.
     ///
     /// # Errors
@@ -75,33 +77,33 @@ impl<'a> Geometry<'a> {
     ///
     /// let p = geo::point!(x: 0.0409980285, y: 0.852850182);
     /// let pe = geo::Geometry::Point(p);
-    /// let collection = Geometry::from_radians(&pe)?;
+    /// let collection = Geometry::from_radians(pe)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        geometry: &'a geo::Geometry<f64>,
+        geometry: geo::Geometry<f64>,
     ) -> Result<Self, InvalidGeometry> {
-        Ok(match *geometry {
+        Ok(match geometry {
             geo::Geometry::Point(point) => {
                 Self::Point(Point::from_radians(point)?)
             }
             geo::Geometry::Line(line) => Self::Line(Line::from_radians(line)?),
-            geo::Geometry::LineString(ref line) => {
+            geo::Geometry::LineString(line) => {
                 Self::LineString(LineString::from_radians(line)?)
             }
-            geo::Geometry::Polygon(ref polygon) => {
+            geo::Geometry::Polygon(polygon) => {
                 Self::Polygon(Polygon::from_radians(polygon)?)
             }
-            geo::Geometry::MultiPoint(ref points) => {
+            geo::Geometry::MultiPoint(points) => {
                 Self::MultiPoint(MultiPoint::from_radians(points)?)
             }
-            geo::Geometry::MultiLineString(ref lines) => {
+            geo::Geometry::MultiLineString(lines) => {
                 Self::MultiLineString(MultiLineString::from_radians(lines)?)
             }
-            geo::Geometry::MultiPolygon(ref polygons) => {
+            geo::Geometry::MultiPolygon(polygons) => {
                 Self::MultiPolygon(MultiPolygon::from_radians(polygons)?)
             }
-            geo::Geometry::GeometryCollection(ref geometries) => {
+            geo::Geometry::GeometryCollection(geometries) => {
                 Self::GeometryCollection(GeometryCollection::from_radians(
                     geometries,
                 )?)
@@ -166,8 +168,8 @@ impl<'a> Geometry<'a> {
     }
 }
 
-impl From<Geometry<'_>> for geo::Geometry<f64> {
-    fn from(value: Geometry<'_>) -> Self {
+impl From<Geometry> for geo::Geometry<f64> {
+    fn from(value: Geometry) -> Self {
         match value {
             Geometry::Point(point) => Self::Point(point.into()),
             Geometry::Line(line) => Self::Line(line.into()),
@@ -189,57 +191,47 @@ impl From<Geometry<'_>> for geo::Geometry<f64> {
     }
 }
 
-impl ToCells for Geometry<'_> {
-    fn max_cells_count(&self, resolution: Resolution) -> usize {
+impl ToCells for Geometry {
+    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
         match *self {
-            Self::Point(ref point) => point.max_cells_count(resolution),
-            Self::Line(ref line) => line.max_cells_count(resolution),
-            Self::LineString(ref line) => line.max_cells_count(resolution),
-            Self::Polygon(ref polygon) => polygon.max_cells_count(resolution),
-            Self::MultiPoint(ref points) => points.max_cells_count(resolution),
-            Self::MultiLineString(ref lines) => {
-                lines.max_cells_count(resolution)
-            }
+            Self::Point(ref point) => point.max_cells_count(config),
+            Self::Line(ref line) => line.max_cells_count(config),
+            Self::LineString(ref line) => line.max_cells_count(config),
+            Self::Polygon(ref polygon) => polygon.max_cells_count(config),
+            Self::MultiPoint(ref points) => points.max_cells_count(config),
+            Self::MultiLineString(ref lines) => lines.max_cells_count(config),
             Self::MultiPolygon(ref polygons) => {
-                polygons.max_cells_count(resolution)
+                polygons.max_cells_count(config)
             }
             Self::GeometryCollection(ref geometries) => {
-                geometries.max_cells_count(resolution)
+                geometries.max_cells_count(config)
             }
-            Self::Rect(ref rect) => rect.max_cells_count(resolution),
-            Self::Triangle(ref triangle) => {
-                triangle.max_cells_count(resolution)
-            }
+            Self::Rect(ref rect) => rect.max_cells_count(config),
+            Self::Triangle(ref triangle) => triangle.max_cells_count(config),
         }
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         match *self {
-            Self::Point(ref point) => Box::new(point.to_cells(resolution)),
-            Self::Line(ref line) => Box::new(line.to_cells(resolution)),
-            Self::LineString(ref line) => Box::new(line.to_cells(resolution)),
-            Self::Polygon(ref polygon) => {
-                Box::new(polygon.to_cells(resolution))
-            }
-            Self::MultiPoint(ref points) => {
-                Box::new(points.to_cells(resolution))
-            }
+            Self::Point(ref point) => Box::new(point.to_cells(config)),
+            Self::Line(ref line) => Box::new(line.to_cells(config)),
+            Self::LineString(ref line) => Box::new(line.to_cells(config)),
+            Self::Polygon(ref polygon) => Box::new(polygon.to_cells(config)),
+            Self::MultiPoint(ref points) => Box::new(points.to_cells(config)),
             Self::MultiLineString(ref lines) => {
-                Box::new(lines.to_cells(resolution))
+                Box::new(lines.to_cells(config))
             }
             Self::MultiPolygon(ref polygons) => {
-                Box::new(polygons.to_cells(resolution))
+                Box::new(polygons.to_cells(config))
             }
             Self::GeometryCollection(ref geometries) => {
-                Box::new(geometries.to_cells(resolution))
+                Box::new(geometries.to_cells(config))
             }
-            Self::Rect(ref rect) => Box::new(rect.to_cells(resolution)),
-            Self::Triangle(ref triangle) => {
-                Box::new(triangle.to_cells(resolution))
-            }
+            Self::Rect(ref rect) => Box::new(rect.to_cells(config)),
+            Self::Triangle(ref triangle) => Box::new(triangle.to_cells(config)),
         }
     }
 }

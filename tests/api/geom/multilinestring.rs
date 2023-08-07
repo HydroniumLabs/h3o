@@ -1,6 +1,6 @@
 use geo::line_string;
 use h3o::{
-    geom::{MultiLineString, ToCells},
+    geom::{MultiLineString, PolyfillConfig, ToCells},
     Resolution,
 };
 
@@ -23,7 +23,7 @@ fn multilinestring_degs() -> geo::MultiLineString {
 #[test]
 fn from_radians() {
     let lines = multilinestring_rads();
-    let result = MultiLineString::from_radians(&lines);
+    let result = MultiLineString::from_radians(lines);
 
     assert!(result.is_ok());
 }
@@ -52,7 +52,7 @@ fn invalid() {
 #[test]
 fn into_geo() {
     let lines = multilinestring_rads();
-    let geom = MultiLineString::from_radians(&lines).expect("geom");
+    let geom = MultiLineString::from_radians(lines).expect("geom");
     let result = geo::MultiLineString::from(geom);
     let expected = multilinestring_rads();
 
@@ -63,8 +63,9 @@ fn into_geo() {
 fn to_cells() {
     let geom =
         MultiLineString::from_degrees(multilinestring_degs()).expect("geom");
-    let bound = geom.max_cells_count(Resolution::Two);
-    let result = geom.to_cells(Resolution::Two).count();
+    let config = PolyfillConfig::new(Resolution::Two);
+    let bound = geom.max_cells_count(config);
+    let result = geom.to_cells(config).count();
 
     assert!(result <= bound);
 }

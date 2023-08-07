@@ -1,5 +1,9 @@
 use super::Point;
-use crate::{error::InvalidGeometry, geom::ToCells, CellIndex, Resolution};
+use crate::{
+    error::InvalidGeometry,
+    geom::{PolyfillConfig, ToCells},
+    CellIndex,
+};
 use std::boxed::Box;
 
 /// A collection of [`geo::Point`]s.
@@ -24,16 +28,15 @@ impl MultiPoint {
     ///     (-2.1489548115593986, 0.8584581881195188),
     ///     (-1.382430711985295,  0.7628836324009612),
     /// ].into();
-    /// let points = MultiPoint::from_radians(&points)?;
+    /// let points = MultiPoint::from_radians(points)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        points: &geo::MultiPoint<f64>,
+        points: geo::MultiPoint<f64>,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             points
-                .iter()
-                .copied()
+                .into_iter()
                 .map(Point::from_radians)
                 .collect::<Result<Vec<_>, _>>()?,
         ))
@@ -79,18 +82,14 @@ impl From<MultiPoint> for geo::MultiPoint<f64> {
 }
 
 impl ToCells for MultiPoint {
-    fn max_cells_count(&self, _resolution: Resolution) -> usize {
+    fn max_cells_count(&self, _config: PolyfillConfig) -> usize {
         self.0.len()
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        Box::new(
-            self.0
-                .iter()
-                .flat_map(move |point| point.to_cells(resolution)),
-        )
+        Box::new(self.0.iter().flat_map(move |point| point.to_cells(config)))
     }
 }

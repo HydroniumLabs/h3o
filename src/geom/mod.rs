@@ -37,4 +37,4 @@ pub use geometry::{
     MultiPoint, MultiPolygon, Point, Polygon, Rect, Triangle,
 };
 pub use to_geo::ToGeo;
-pub use to_h3::ToCells;
+pub use to_h3::{ContainmentMode, PolyfillConfig, ToCells};

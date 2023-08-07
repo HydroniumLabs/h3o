@@ -1,5 +1,5 @@
 use h3o::{
-    geom::{Point, ToCells},
+    geom::{Point, PolyfillConfig, ToCells},
     Resolution,
 };
 
@@ -44,8 +44,9 @@ fn into_geo() {
 #[test]
 fn to_cells() {
     let geom = Point::from_degrees(point_degs()).expect("geom");
-    let bound = geom.max_cells_count(Resolution::Two);
-    let result = geom.to_cells(Resolution::Two).count();
+    let config = PolyfillConfig::new(Resolution::Two);
+    let bound = geom.max_cells_count(config);
+    let result = geom.to_cells(config).count();
 
     assert!(result <= bound);
 }
@@ -58,7 +59,7 @@ fn h3ronpy_25() {
     let cells: Vec<_> =
         h3o::geom::Geometry::from_degrees(geo::Geometry::Point(pt))
             .unwrap()
-            .to_cells(Resolution::Eight)
+            .to_cells(PolyfillConfig::new(Resolution::Eight))
             .collect();
 
     //  Using h3-py v3.7.x:

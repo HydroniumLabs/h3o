@@ -1,6 +1,6 @@
 use geo::point;
 use h3o::{
-    geom::{MultiPoint, ToCells},
+    geom::{MultiPoint, PolyfillConfig, ToCells},
     Resolution,
 };
 
@@ -21,7 +21,7 @@ fn multipoint_degs() -> geo::MultiPoint {
 #[test]
 fn from_radians() {
     let points = multipoint_rads();
-    let result = MultiPoint::from_radians(&points);
+    let result = MultiPoint::from_radians(points);
 
     assert!(result.is_ok());
 }
@@ -48,7 +48,7 @@ fn invalid() {
 #[test]
 fn into_geo() {
     let points = multipoint_rads();
-    let geom = MultiPoint::from_radians(&points).expect("geom");
+    let geom = MultiPoint::from_radians(points).expect("geom");
     let result = geo::MultiPoint::from(geom);
     let expected = multipoint_rads();
 
@@ -59,8 +59,9 @@ fn into_geo() {
 fn to_cells() {
     let points = multipoint_degs();
     let geom = MultiPoint::from_degrees(&points).expect("geom");
-    let bound = geom.max_cells_count(Resolution::Two);
-    let result = geom.to_cells(Resolution::Two).count();
+    let config = PolyfillConfig::new(Resolution::Two);
+    let bound = geom.max_cells_count(config);
+    let result = geom.to_cells(config).count();
 
     assert!(result <= bound);
 }

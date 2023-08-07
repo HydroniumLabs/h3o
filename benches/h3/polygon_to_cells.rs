@@ -1,7 +1,7 @@
 use super::utils::load_polygon;
 use criterion::{black_box, BatchSize, Bencher, BenchmarkId, Criterion};
 use h3o::{
-    geom::{Polygon, ToCells},
+    geom::{ContainmentMode, PolyfillConfig, Polygon, ToCells},
     Resolution,
 };
 use std::os::raw::c_int;
@@ -48,14 +48,104 @@ pub fn bench_transmeridian(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn bench_polyfill_mode(c: &mut Criterion) {
+    let mut group = c.benchmark_group("polyfillMode");
+    let config = PolyfillConfig::new(Resolution::Eleven);
+
+    let polygon = load_polygon("Paris");
+    group.bench_function("h3o/Centroid/Full", |b| {
+        let config = config.containment_mode(ContainmentMode::ContainsCentroid);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+    group.bench_function("h3o/Intersects/Full", |b| {
+        let config =
+            config.containment_mode(ContainmentMode::IntersectsBoundary);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+    group.bench_function("h3o/Contains/Full", |b| {
+        let config = config.containment_mode(ContainmentMode::ContainsBoundary);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+
+    let polygon = load_polygon("Rabi");
+    group.bench_function("h3o/Centroid/Transmeridian", |b| {
+        let config = config.containment_mode(ContainmentMode::ContainsCentroid);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+    group.bench_function("h3o/Intersects/Transmeridian", |b| {
+        let config =
+            config.containment_mode(ContainmentMode::IntersectsBoundary);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+    group.bench_function("h3o/Contains/Transmeridian", |b| {
+        let config = config.containment_mode(ContainmentMode::ContainsBoundary);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+
+    let config = PolyfillConfig::new(Resolution::Seven);
+    let polygon = load_polygon("Holes");
+    group.bench_function("h3o/Centroid/Holes", |b| {
+        let config = config.containment_mode(ContainmentMode::ContainsCentroid);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+    group.bench_function("h3o/Intersects/Holes", |b| {
+        let config =
+            config.containment_mode(ContainmentMode::IntersectsBoundary);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+    group.bench_function("h3o/Contains/Holes", |b| {
+        let config = config.containment_mode(ContainmentMode::ContainsBoundary);
+        b.iter(|| {
+            black_box(&polygon)
+                .to_cells(black_box(config))
+                .for_each(drop)
+        })
+    });
+
+    group.finish();
+}
+
 // -----------------------------------------------------------------------------
 
 fn bench_h3o(b: &mut Bencher<'_>, polygon: &Polygon, resolution: u8) {
     let resolution = Resolution::try_from(resolution).expect("resolution");
+    let config = PolyfillConfig::new(resolution);
 
     b.iter(|| {
         black_box(polygon)
-            .to_cells(black_box(resolution))
+            .to_cells(black_box(config))
             .for_each(drop)
     });
 }

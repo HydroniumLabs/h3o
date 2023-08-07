@@ -1,5 +1,7 @@
 use crate::{
-    error::InvalidGeometry, geom::ToCells, CellIndex, LatLng, Resolution,
+    error::InvalidGeometry,
+    geom::{PolyfillConfig, ToCells},
+    CellIndex, LatLng, Resolution,
 };
 use geo::Coord;
 use std::boxed::Box;
@@ -87,15 +89,15 @@ impl From<Line> for geo::Line<f64> {
 }
 
 impl ToCells for Line {
-    fn max_cells_count(&self, resolution: Resolution) -> usize {
-        cells_count(self.0, resolution)
+    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
+        cells_count(self.0, config.resolution)
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        Box::new(to_cells(self.0, resolution))
+        Box::new(to_cells(self.0, config.resolution))
     }
 }
 

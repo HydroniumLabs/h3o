@@ -1,16 +1,16 @@
 use crate::{
     error::InvalidGeometry,
-    geom::{Polygon, ToCells},
-    CellIndex, Resolution,
+    geom::{PolyfillConfig, Polygon, ToCells},
+    CellIndex,
 };
 use std::boxed::Box;
 
 /// An axis-aligned bounded 2D rectangle whose area is defined by minimum and
 /// maximum [`geo::Coord`]s.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Rect<'a>(Polygon<'a>);
+pub struct Rect(Polygon);
 
-impl Rect<'_> {
+impl Rect {
     /// Initialize a new rectangle from a rect whose coordinates are in radians.
     ///
     /// # Errors
@@ -58,21 +58,21 @@ impl Rect<'_> {
     }
 }
 
-impl From<Rect<'_>> for geo::Rect<f64> {
-    fn from(value: Rect<'_>) -> Self {
+impl From<Rect> for geo::Rect<f64> {
+    fn from(value: Rect) -> Self {
         value.0.bbox()
     }
 }
 
-impl ToCells for Rect<'_> {
-    fn max_cells_count(&self, resolution: Resolution) -> usize {
-        self.0.max_cells_count(resolution)
+impl ToCells for Rect {
+    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
+        self.0.max_cells_count(config)
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        self.0.to_cells(resolution)
+        self.0.to_cells(config)
     }
 }

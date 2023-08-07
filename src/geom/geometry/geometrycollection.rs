@@ -1,12 +1,16 @@
 use super::Geometry;
-use crate::{error::InvalidGeometry, geom::ToCells, CellIndex, Resolution};
+use crate::{
+    error::InvalidGeometry,
+    geom::{PolyfillConfig, ToCells},
+    CellIndex,
+};
 use std::boxed::Box;
 
 /// A collection of [`geo::Geometry`].
 #[derive(Clone, Debug, PartialEq)]
-pub struct GeometryCollection<'a>(Vec<Geometry<'a>>);
+pub struct GeometryCollection(Vec<Geometry>);
 
-impl<'a> GeometryCollection<'a> {
+impl GeometryCollection {
     /// Initialize a collection of geometries from geometries whose coordinates
     /// are in radians.
     ///
@@ -23,15 +27,15 @@ impl<'a> GeometryCollection<'a> {
     /// let p = geo::point!(x: 0.0409980285, y: 0.852850182);
     /// let pe = geo::Geometry::Point(p);
     /// let gc = geo::GeometryCollection::new_from(vec![pe]);
-    /// let collection = GeometryCollection::from_radians(&gc)?;
+    /// let collection = GeometryCollection::from_radians(gc)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        geometries: &'a geo::GeometryCollection<f64>,
+        geometries: geo::GeometryCollection<f64>,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             geometries
-                .iter()
+                .into_iter()
                 .map(Geometry::from_radians)
                 .collect::<Result<Vec<_>, _>>()?,
         ))
@@ -68,28 +72,28 @@ impl<'a> GeometryCollection<'a> {
     }
 }
 
-impl From<GeometryCollection<'_>> for geo::GeometryCollection<f64> {
-    fn from(value: GeometryCollection<'_>) -> Self {
+impl From<GeometryCollection> for geo::GeometryCollection<f64> {
+    fn from(value: GeometryCollection) -> Self {
         Self(value.0.into_iter().map(Into::into).collect())
     }
 }
 
-impl ToCells for GeometryCollection<'_> {
-    fn max_cells_count(&self, resolution: Resolution) -> usize {
+impl ToCells for GeometryCollection {
+    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
         self.0
             .iter()
-            .map(|geometry| geometry.max_cells_count(resolution))
+            .map(|geometry| geometry.max_cells_count(config))
             .sum()
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         Box::new(
             self.0
                 .iter()
-                .flat_map(move |geometry| geometry.to_cells(resolution)),
+                .flat_map(move |geometry| geometry.to_cells(config)),
         )
     }
 }

@@ -1,6 +1,6 @@
 use geo::polygon;
 use h3o::{
-    geom::{MultiPolygon, ToCells},
+    geom::{MultiPolygon, PolyfillConfig, ToCells},
     Resolution,
 };
 
@@ -49,7 +49,7 @@ fn multipolygon_degs() -> geo::MultiPolygon {
 #[test]
 fn from_radians() {
     let polygons = multipolygon_rads();
-    let result = MultiPolygon::from_radians(&polygons);
+    let result = MultiPolygon::from_radians(polygons);
 
     assert!(result.is_ok());
 }
@@ -77,7 +77,7 @@ fn invalid() {
 #[test]
 fn into_geo() {
     let polygons = multipolygon_rads();
-    let geom = MultiPolygon::from_radians(&polygons).expect("geom");
+    let geom = MultiPolygon::from_radians(polygons).expect("geom");
     let result = geo::MultiPolygon::from(geom);
     let expected = multipolygon_rads();
 
@@ -87,8 +87,9 @@ fn into_geo() {
 #[test]
 fn to_cells() {
     let geom = MultiPolygon::from_degrees(multipolygon_degs()).expect("geom");
-    let bound = geom.max_cells_count(Resolution::Two);
-    let result = geom.to_cells(Resolution::Two).count();
+    let config = PolyfillConfig::new(Resolution::Two);
+    let bound = geom.max_cells_count(config);
+    let result = geom.to_cells(config).count();
 
     assert!(result <= bound);
 }

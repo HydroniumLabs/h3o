@@ -1,8 +1,9 @@
 use geo::polygon;
 use h3o::{
-    geom::{Polygon, ToCells},
+    geom::{ContainmentMode, PolyfillConfig, Polygon, ToCells},
     Resolution,
 };
+use std::{fs::File, io::BufReader, path::PathBuf};
 
 fn polygon_rads() -> geo::Polygon {
     polygon!(
@@ -49,7 +50,7 @@ fn polygon_degs() -> geo::Polygon {
 #[test]
 fn from_radians() {
     let polygon = polygon_rads();
-    let result = Polygon::from_radians(&polygon);
+    let result = Polygon::from_radians(polygon);
 
     assert!(result.is_ok());
 }
@@ -95,7 +96,7 @@ fn invalid_line() {
 #[test]
 fn into_geo() {
     let shape = polygon_rads();
-    let geom = Polygon::from_radians(&shape).expect("geom");
+    let geom = Polygon::from_radians(shape).expect("geom");
     let result = geo::Polygon::from(geom);
     let expected = polygon_rads();
 
@@ -105,8 +106,141 @@ fn into_geo() {
 #[test]
 fn to_cells() {
     let geom = Polygon::from_degrees(polygon_degs()).expect("geom");
-    let bound = geom.max_cells_count(Resolution::Two);
-    let result = geom.to_cells(Resolution::Two).count();
+    let config = PolyfillConfig::new(Resolution::Two);
+    let bound = geom.max_cells_count(config);
+    let result = geom.to_cells(config).count();
 
     assert!(result <= bound);
+}
+
+#[test]
+fn to_cells_paris_centroid() {
+    let geom = load_polygon("Paris");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Eight)
+                .containment_mode(ContainmentMode::ContainsCentroid),
+        )
+        .count();
+
+    assert_eq!(result, 164, "Paris/mode=Centroid");
+}
+
+#[test]
+fn to_cells_paris_contains() {
+    let geom = load_polygon("Paris");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Eight)
+                .containment_mode(ContainmentMode::ContainsBoundary),
+        )
+        .count();
+
+    assert_eq!(result, 118, "Paris/mode=Contains");
+}
+
+#[test]
+fn to_cells_paris_intersects() {
+    let geom = load_polygon("Paris");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Eight)
+                .containment_mode(ContainmentMode::IntersectsBoundary),
+        )
+        .count();
+
+    assert_eq!(result, 203, "Paris/mode=Intersects");
+}
+
+#[test]
+fn to_cells_rabi_centroid() {
+    let geom = load_polygon("Rabi");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Eight)
+                .containment_mode(ContainmentMode::ContainsCentroid),
+        )
+        .count();
+
+    assert_eq!(result, 163, "Rabi/mode=Centroid");
+}
+
+#[test]
+fn to_cells_rabi_contains() {
+    let geom = load_polygon("Rabi");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Eight)
+                .containment_mode(ContainmentMode::ContainsBoundary),
+        )
+        .count();
+
+    assert_eq!(result, 132, "Rabi/mode=Contains");
+}
+
+#[test]
+fn to_cells_rabi_intersects() {
+    let geom = load_polygon("Rabi");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Eight)
+                .containment_mode(ContainmentMode::IntersectsBoundary),
+        )
+        .count();
+
+    assert_eq!(result, 193, "Rabi/mode=Intersects");
+}
+
+#[test]
+fn to_cells_holes_centroid() {
+    let geom = load_polygon("Holes");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Four)
+                .containment_mode(ContainmentMode::ContainsCentroid),
+        )
+        .count();
+
+    assert_eq!(result, 233, "Holes/mode=Centroid");
+}
+
+#[test]
+fn to_cells_holes_contains() {
+    let geom = load_polygon("Holes");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Four)
+                .containment_mode(ContainmentMode::ContainsBoundary),
+        )
+        .count();
+
+    assert_eq!(result, 170, "Holes/mode=Contains");
+}
+
+#[test]
+fn to_cells_holes_intersects() {
+    let geom = load_polygon("Holes");
+    let result = geom
+        .to_cells(
+            PolyfillConfig::new(Resolution::Four)
+                .containment_mode(ContainmentMode::IntersectsBoundary),
+        )
+        .count();
+
+    assert_eq!(result, 285, "Holes/mode=Intersects");
+}
+
+//------------------------------------------------------------------------------
+
+pub fn load_polygon(name: &str) -> h3o::geom::Polygon {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let filepath = format!("dataset/{name}/shape.geojson");
+    path.push(filepath);
+
+    let file = File::open(path).expect("open test dataset");
+    let reader = BufReader::new(file);
+
+    let geojson = geojson::GeoJson::from_reader(reader).expect("GeoJSON");
+    let geometry = h3o::geom::Geometry::try_from(&geojson).expect("geometry");
+    h3o::geom::Polygon::try_from(geometry).expect("polygon")
 }

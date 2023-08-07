@@ -1,6 +1,10 @@
 use super::line;
-use crate::{error::InvalidGeometry, geom::ToCells, CellIndex, Resolution};
-use std::{borrow::Cow, boxed::Box};
+use crate::{
+    error::InvalidGeometry,
+    geom::{PolyfillConfig, ToCells},
+    CellIndex,
+};
+use std::boxed::Box;
 
 /// An ordered collection of two or more [`geo::Coord`]s, representing a
 /// path between locations.
@@ -9,9 +13,9 @@ use std::{borrow::Cow, boxed::Box};
 /// that [`grid_path_cells`](CellIndex::grid_path_cells), which means that on
 /// error `max_cells_count` returns 0 and `to_cells` an empty iterator.
 #[derive(Clone, Debug, PartialEq)]
-pub struct LineString<'a>(Cow<'a, geo::LineString<f64>>);
+pub struct LineString(geo::LineString<f64>);
 
-impl<'a> LineString<'a> {
+impl LineString {
     /// Initialize a new line from a line whose coordinates are in radians.
     ///
     /// # Errors
@@ -28,13 +32,13 @@ impl<'a> LineString<'a> {
     ///     geo::coord! { x: -0.009526982062241713, y: 0.8285232894553574 },
     ///     geo::coord! { x: 0.04142734140306332, y: 0.8525145186317127 },
     /// ]);
-    /// let line = LineString::from_radians(&line_string)?;
+    /// let line = LineString::from_radians(line_string)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        line: &'a geo::LineString<f64>,
+        line: geo::LineString<f64>,
     ) -> Result<Self, InvalidGeometry> {
-        Self::check_coords(line).map(|_| Self(Cow::Borrowed(line)))
+        Self::check_coords(&line).map(|_| Self(line))
     }
 
     /// Initialize a new line from a line whose coordinates are in degrees.
@@ -63,7 +67,7 @@ impl<'a> LineString<'a> {
             coord.x = coord.x.to_radians();
             coord.y = coord.y.to_radians();
         }
-        Self::check_coords(&line).map(|_| Self(Cow::Owned(line)))
+        Self::check_coords(&line).map(|_| Self(line))
     }
 
     // Check that the line's coordinates are finite.
@@ -79,28 +83,28 @@ impl<'a> LineString<'a> {
     }
 }
 
-impl From<LineString<'_>> for geo::LineString<f64> {
-    fn from(value: LineString<'_>) -> Self {
-        value.0.into_owned()
+impl From<LineString> for geo::LineString<f64> {
+    fn from(value: LineString) -> Self {
+        value.0
     }
 }
 
-impl ToCells for LineString<'_> {
-    fn max_cells_count(&self, resolution: Resolution) -> usize {
+impl ToCells for LineString {
+    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
         self.0
             .lines()
-            .map(|line| line::cells_count(line, resolution))
+            .map(|line| line::cells_count(line, config.resolution))
             .sum()
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         Box::new(
             self.0
                 .lines()
-                .flat_map(move |line| line::to_cells(line, resolution)),
+                .flat_map(move |line| line::to_cells(line, config.resolution)),
         )
     }
 }

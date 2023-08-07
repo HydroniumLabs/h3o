@@ -1,5 +1,5 @@
 use h3o::{
-    geom::{ToCells, Triangle},
+    geom::{PolyfillConfig, ToCells, Triangle},
     Resolution,
 };
 
@@ -56,8 +56,9 @@ fn into_geo() {
 #[test]
 fn to_cells() {
     let geom = Triangle::from_degrees(triangle_degs()).expect("geom");
-    let bound = geom.max_cells_count(Resolution::Two);
-    let result = geom.to_cells(Resolution::Two).count();
+    let config = PolyfillConfig::new(Resolution::Two);
+    let bound = geom.max_cells_count(config);
+    let result = geom.to_cells(config).count();
 
     assert!(result <= bound);
 }

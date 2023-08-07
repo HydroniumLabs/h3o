@@ -1,5 +1,5 @@
 use h3o::{
-    geom::{LineString, ToCells},
+    geom::{LineString, PolyfillConfig, ToCells},
     Resolution,
 };
 
@@ -20,7 +20,7 @@ fn linestring_degs() -> geo::LineString {
 #[test]
 fn from_radians() {
     let line = linestring_rads();
-    let result = LineString::from_radians(&line);
+    let result = LineString::from_radians(line);
 
     assert!(result.is_ok());
 }
@@ -45,7 +45,7 @@ fn invalid() {
 #[test]
 fn into_geo() {
     let line = linestring_rads();
-    let geom = LineString::from_radians(&line).expect("geom");
+    let geom = LineString::from_radians(line).expect("geom");
     let result = geo::LineString::from(geom);
     let expected = linestring_rads();
 
@@ -55,8 +55,9 @@ fn into_geo() {
 #[test]
 fn to_cells() {
     let geom = LineString::from_degrees(linestring_degs()).expect("geom");
-    let bound = geom.max_cells_count(Resolution::Two);
-    let result = geom.to_cells(Resolution::Two).count();
+    let config = PolyfillConfig::new(Resolution::Two);
+    let bound = geom.max_cells_count(config);
+    let result = geom.to_cells(config).count();
 
     assert!(result <= bound);
 }

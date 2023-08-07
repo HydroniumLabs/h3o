@@ -1,16 +1,16 @@
 use crate::{
     error::InvalidGeometry,
-    geom::{Polygon, ToCells},
-    CellIndex, Resolution,
+    geom::{PolyfillConfig, Polygon, ToCells},
+    CellIndex,
 };
 use geo::CoordsIter;
 use std::boxed::Box;
 
 /// A bounded 2D area whose three vertices are defined by [`geo::Coord`]s.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Triangle<'a>(Polygon<'a>);
+pub struct Triangle(Polygon);
 
-impl Triangle<'_> {
+impl Triangle {
     /// Initialize a new triangle from a triangle whose coordinates are in
     /// radians.
     ///
@@ -66,8 +66,8 @@ impl Triangle<'_> {
     }
 }
 
-impl From<Triangle<'_>> for geo::Triangle<f64> {
-    fn from(value: Triangle<'_>) -> Self {
+impl From<Triangle> for geo::Triangle<f64> {
+    fn from(value: Triangle) -> Self {
         let coords = value.0.exterior();
         // 3 vertex + 1 to close the loop.
         debug_assert_eq!(coords.coords_count(), 4);
@@ -76,15 +76,15 @@ impl From<Triangle<'_>> for geo::Triangle<f64> {
     }
 }
 
-impl ToCells for Triangle<'_> {
-    fn max_cells_count(&self, resolution: Resolution) -> usize {
-        self.0.max_cells_count(resolution)
+impl ToCells for Triangle {
+    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
+        self.0.max_cells_count(config)
     }
 
     fn to_cells(
         &self,
-        resolution: Resolution,
+        config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        self.0.to_cells(resolution)
+        self.0.to_cells(config)
     }
 }

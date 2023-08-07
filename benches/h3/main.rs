@@ -157,6 +157,7 @@ criterion_group!(
     max_polygon_to_cells_size::bench,
     polygon_to_cells::bench_full,
     polygon_to_cells::bench_transmeridian,
+    polygon_to_cells::bench_polyfill_mode,
 );
 
 #[cfg(feature = "geo")]
