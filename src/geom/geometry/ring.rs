@@ -20,7 +20,7 @@ impl<'a> Ring<'a> {
     pub fn from_radians(
         mut ring: Cow<'a, geo::LineString<f64>>,
     ) -> Result<Self, InvalidGeometry> {
-        let is_transmeridian = ring_is_transmeridian(&ring);
+        let is_transmeridian = ring_is_transmeridian(&ring, PI);
         if is_transmeridian {
             for coord in ring.to_mut().coords_mut() {
                 coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
@@ -40,12 +40,19 @@ impl<'a> Ring<'a> {
     pub fn from_degrees(
         mut ring: geo::LineString<f64>,
     ) -> Result<Self, InvalidGeometry> {
-        let is_transmeridian = ring_is_transmeridian(&ring);
+        let is_transmeridian = ring_is_transmeridian(&ring, 180.);
         let geom = {
-            for coord in ring.coords_mut() {
-                coord.x = f64::from(u8::from(coord.x < 0.))
-                    .mul_add(TWO_PI, coord.x.to_radians());
-                coord.y = coord.y.to_radians();
+            if is_transmeridian {
+                for coord in ring.coords_mut() {
+                    coord.x = f64::from(u8::from(coord.x < 0.))
+                        .mul_add(TWO_PI, coord.x.to_radians());
+                    coord.y = coord.y.to_radians();
+                }
+            } else {
+                for coord in ring.coords_mut() {
+                    coord.x = coord.x.to_radians();
+                    coord.y = coord.y.to_radians();
+                }
             }
             Cow::Owned(ring)
         };
@@ -79,10 +86,13 @@ impl<'a> Ring<'a> {
     }
 }
 
-// Check for arcs > 180 degrees longitude, flagging as transmeridian.
-fn ring_is_transmeridian(ring: &geo::LineString<f64>) -> bool {
+// Check for arcs > 180 degrees (π radians) longitude to flag as transmeridian.
+fn ring_is_transmeridian(
+    ring: &geo::LineString<f64>,
+    arc_threshold: f64,
+) -> bool {
     ring.lines()
-        .any(|line| (line.start.x - line.end.x).abs() > PI)
+        .any(|line| (line.start.x - line.end.x).abs() > arc_threshold)
 }
 
 impl From<Ring<'_>> for geo::LineString<f64> {
