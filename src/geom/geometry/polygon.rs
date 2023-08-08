@@ -270,8 +270,8 @@ impl ToCells for Polygon {
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         let contains = match config.containment {
             ContainmentMode::ContainsCentroid => contains_centroid,
-            ContainmentMode::ContainsBoundary => contains_boundary,
-            ContainmentMode::IntersectsBoundary => intersects_or_contains,
+            ContainmentMode::ContainsBoundary
+            | ContainmentMode::IntersectsBoundary => intersects_or_contains,
         };
 
         // Set used for dedup.
@@ -281,7 +281,7 @@ impl ToCells for Polygon {
         let mut scratchpad = [0; 7];
 
         // First, compute the outline.
-        let outlines = self.hex_outline(
+        let mut outlines = self.hex_outline(
             config.resolution,
             &mut seen,
             &mut scratchpad,
@@ -298,6 +298,11 @@ impl ToCells for Polygon {
         );
         let mut next_gen = Vec::with_capacity(candidates.len() * 7);
         let mut new_seen = HashSet::with_capacity(seen.len());
+
+        if config.containment == ContainmentMode::ContainsBoundary {
+            outlines.retain(|&cell| !intersects_boundary(self, cell));
+            candidates.retain(|&cell| !intersects_boundary(self, cell));
+        }
 
         // Last step: inward propagation from the outermost layers.
         let inward_propagation = std::iter::from_fn(move || {
