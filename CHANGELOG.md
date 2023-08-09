@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.4.0] - 2023-08-09
+
 ### Changed
 
 - `to_cells` and `max_cells_count` now takes a `PolyfillConfig` as input.
