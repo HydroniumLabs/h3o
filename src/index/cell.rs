@@ -1363,7 +1363,7 @@ impl CellIndex {
     pub fn to_local_ij(self, origin: Self) -> Result<LocalIJ, LocalIjError> {
         let lijk = self.to_local_ijk(origin)?;
         let coord = CoordIJ::from(&lijk.coord);
-        Ok(LocalIJ::new_unchecked(lijk.anchor, coord.i, coord.j))
+        Ok(LocalIJ::new(lijk.anchor, coord))
     }
 
     /// Returns the next cell, in term of ordering.

@@ -20,7 +20,7 @@ use super::{CoordIJ, CoordIJK};
 use crate::{
     error::{HexGridError, LocalIjError},
     index::bits,
-    BaseCell, CellIndex, Direction, Resolution, CCW, DEFAULT_CELL_INDEX,
+    BaseCell, CellIndex, Direction, Resolution, CCW, CW, DEFAULT_CELL_INDEX,
 };
 use std::{fmt, num::NonZeroU8};
 
@@ -69,8 +69,12 @@ impl TryFrom<LocalIJK> for CellIndex {
         // We need to find the correct base cell offset (if any) for this H3
         // index; start with the passed in base cell and resolution res ijk
         // coordinates in that base cell's coordinate system.
-        let ijk =
-            bits::directions_bits_from_ijk(value.coord, &mut bits, resolution);
+        let ijk = checked_directions_bits_from_ijk(
+            value.coord,
+            &mut bits,
+            resolution,
+        )
+        .ok_or_else(|| HexGridError::new("IJ coordinates overflow"))?;
 
         // Lookup the correct base cell.
         let mut dir = Direction::try_from(ijk)?;
@@ -181,6 +185,41 @@ impl TryFrom<LocalIJK> for CellIndex {
     }
 }
 
+/// Set the directions of a cell index (in-place) from finest resolution up.
+///
+/// IJK coordinates are adjusted during the traversal so that, at the end, they
+/// should match the IJK of the base cell in the coordinate system of the
+/// current base cell.
+///
+/// Returns the adjusted `IJK` coordinates.
+#[allow(clippy::inline_always)] // 4-5% boost, up to 13% at resolution 1.
+#[inline(always)]
+pub fn checked_directions_bits_from_ijk(
+    mut ijk: CoordIJK,
+    bits: &mut u64,
+    resolution: Resolution,
+) -> Option<CoordIJK> {
+    for res in Resolution::range(Resolution::One, resolution).rev() {
+        let last_ijk = ijk;
+        let last_center = if res.is_class3() {
+            // Rotate CCW.
+            ijk = ijk.checked_up_aperture7::<{ CCW }>()?;
+            ijk.down_aperture7::<{ CCW }>()
+        } else {
+            // Rotate CW.
+            ijk = ijk.checked_up_aperture7::<{ CW }>()?;
+            ijk.down_aperture7::<{ CW }>()
+        };
+
+        let diff = (last_ijk - last_center).normalize();
+        let direction = Direction::try_from(diff).expect("unit IJK coordinate");
+        // SAFETY: `res` is in [resolution; 1], thus valid.
+        *bits = bits::set_direction(*bits, direction.into(), res);
+    }
+
+    Some(ijk)
+}
+
 // -----------------------------------------------------------------------------
 
 /// `IJ` coordinates anchored by an origin.
@@ -188,74 +227,18 @@ impl TryFrom<LocalIJK> for CellIndex {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LocalIJ {
     /// Anchor cell.
-    anchor: CellIndex,
+    pub anchor: CellIndex,
     /// `IJ` coordinates.
-    coord: CoordIJ,
+    pub coord: CoordIJ,
 }
 
 impl LocalIJ {
-    /// Returns the anchor cell.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use h3o::CellIndex;
-    ///
-    /// let anchor = CellIndex::try_from(0x823147fffffffff)?;
-    /// let index = CellIndex::try_from(0x8230e7fffffffff)?;
-    /// let localij = index.to_local_ij(anchor)?;
-    /// assert_eq!(localij.anchor(), anchor);
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    #[must_use]
-    pub const fn anchor(&self) -> CellIndex {
-        self.anchor
-    }
-
-    /// Return the `i` component of the `IJ` coordinate.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use h3o::CellIndex;
-    ///
-    /// let index = CellIndex::try_from(0x8230e7fffffffff)?;
-    /// let localij = index.to_local_ij(CellIndex::try_from(0x823147fffffffff)?)?;
-    /// assert_eq!(localij.i(), -1);
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    #[must_use]
-    pub const fn i(&self) -> i32 {
-        self.coord.i
-    }
-
-    /// Return the `j` component of the `IJ` coordinate.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use h3o::CellIndex;
-    ///
-    /// let index = CellIndex::try_from(0x8230e7fffffffff)?;
-    /// let localij = index.to_local_ij(CellIndex::try_from(0x823147fffffffff)?)?;
-    /// assert_eq!(localij.j(), -2);
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    #[must_use]
-    pub const fn j(&self) -> i32 {
-        self.coord.j
-    }
-
     /// Initialize a new `LocalIJ` from its components.
     ///
     /// Could be used to build invalid local IJ coordinate, only used for tests.
-    #[doc(hidden)]
     #[must_use]
-    pub const fn new_unchecked(anchor: CellIndex, i: i32, j: i32) -> Self {
-        Self {
-            anchor,
-            coord: CoordIJ { i, j },
-        }
+    pub const fn new(anchor: CellIndex, coord: CoordIJ) -> Self {
+        Self { anchor, coord }
     }
 }
 
@@ -265,7 +248,7 @@ impl TryFrom<LocalIJ> for CellIndex {
     fn try_from(value: LocalIJ) -> Result<Self, Self::Error> {
         let local_ijk = LocalIJK {
             anchor: value.anchor,
-            coord: CoordIJK::from(value.coord),
+            coord: CoordIJK::try_from(value.coord)?,
         };
         Self::try_from(local_ijk)
     }

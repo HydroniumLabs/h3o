@@ -73,7 +73,7 @@ impl FaceIJK {
 
         // Build the index from finest resolution up.
         self.coord =
-            bits::directions_bits_from_ijk(self.coord, &mut bits, resolution);
+            directions_bits_from_ijk(self.coord, &mut bits, resolution);
 
         // Lookup the correct base cell.
         let rotation = self.base_cell_rotation();
@@ -525,6 +525,41 @@ impl FaceIJK {
 
         adjusted_resolution
     }
+}
+
+/// Set the directions of a cell index (in-place) from finest resolution up.
+///
+/// IJK coordinates are adjusted during the traversal so that, at the end, they
+/// should match the IJK of the base cell in the coordinate system of the
+/// current base cell.
+///
+/// Returns the adjusted `IJK` coordinates.
+#[allow(clippy::inline_always)] // 4-5% boost, up to 13% at resolution 1.
+#[inline(always)]
+fn directions_bits_from_ijk(
+    mut ijk: CoordIJK,
+    bits: &mut u64,
+    resolution: Resolution,
+) -> CoordIJK {
+    for res in Resolution::range(Resolution::One, resolution).rev() {
+        let last_ijk = ijk;
+        let last_center = if res.is_class3() {
+            // Rotate CCW.
+            ijk = ijk.up_aperture7::<{ CCW }>();
+            ijk.down_aperture7::<{ CCW }>()
+        } else {
+            // Rotate CW.
+            ijk = ijk.up_aperture7::<{ CW }>();
+            ijk.down_aperture7::<{ CW }>()
+        };
+
+        let diff = (last_ijk - last_center).normalize();
+        let direction = Direction::try_from(diff).expect("unit IJK coordinate");
+        // SAFETY: `res` is in [resolution; 1], thus valid.
+        *bits = bits::set_direction(*bits, direction.into(), res);
+    }
+
+    ijk
 }
 
 // -----------------------------------------------------------------------------

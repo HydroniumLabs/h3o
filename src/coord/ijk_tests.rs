@@ -1,10 +1,10 @@
 use super::*;
-use crate::{LatLng, Resolution};
+use crate::{LatLng, Resolution, CCW, CW};
 
 #[test]
 fn from_ij_zero() {
     let ij = CoordIJ::new(0, 0);
-    let ijk = CoordIJK::from(ij);
+    let ijk = CoordIJK::try_from(ij).expect("valid IJ");
 
     assert_eq!(ijk, CoordIJK::new(0, 0, 0), "ijk zero");
 }
@@ -14,7 +14,7 @@ fn from_ij_roundtrip() {
     for direction in Direction::iter() {
         let ijk = CoordIJK::new(0, 0, 0).neighbor(direction);
         let ij = CoordIJ::from(&ijk);
-        let recovered = CoordIJK::from(ij);
+        let recovered = CoordIJK::try_from(ij).expect("valid IJ");
 
         assert_eq!(ijk, recovered, "roundtrip for direction {direction:?}");
     }
@@ -122,4 +122,84 @@ fn from_hex2d() {
 
         assert_eq!(result, expected, "resolution {resolution}");
     }
+}
+
+#[test]
+fn test_checked_up_aperture7_ccw() {
+    let ijk = CoordIJK::new(0, 0, 0);
+    assert!(ijk.checked_up_aperture7::<{ CCW }>().is_some());
+
+    let ijk = CoordIJK::new(i32::MAX, 0, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CCW }>().is_none(),
+        "i + i overflows"
+    );
+
+    let ijk = CoordIJK::new(i32::MAX / 2, 0, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CCW }>().is_none(),
+        "i * 3 overflows"
+    );
+
+    let ijk = CoordIJK::new(0, i32::MAX, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CCW }>().is_none(),
+        "j + j overflows"
+    );
+
+    // This input should be invalid because j < 0
+    let ijk = CoordIJK::new(i32::MAX / 3, -2, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CCW }>().is_none(),
+        "(i * 3) - j overflows"
+    );
+
+    let ijk = CoordIJK::new(i32::MAX / 3, i32::MAX / 2, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CCW }>().is_none(),
+        "i + (j * 2) overflows"
+    );
+
+    let ijk = CoordIJK::new(-1, 0, 0);
+    assert!(ijk.checked_up_aperture7::<{ CCW }>().is_some());
+}
+
+#[test]
+fn test_checked_up_aperture7_cw() {
+    let ijk = CoordIJK::new(0, 0, 0);
+    assert!(ijk.checked_up_aperture7::<{ CW }>().is_some());
+
+    let ijk = CoordIJK::new(i32::MAX, 0, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CW }>().is_none(),
+        "i + i overflows"
+    );
+
+    let ijk = CoordIJK::new(0, i32::MAX, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CW }>().is_none(),
+        "j + j overflows"
+    );
+
+    let ijk = CoordIJK::new(0, i32::MAX / 2, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CW }>().is_none(),
+        "3 * j overflows"
+    );
+
+    let ijk = CoordIJK::new(i32::MAX / 2, i32::MAX / 3, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CW }>().is_none(),
+        "(i * 2) + j overflows"
+    );
+
+    // This input should be invalid because i < 0
+    let ijk = CoordIJK::new(-2, i32::MAX / 3, 0);
+    assert!(
+        ijk.checked_up_aperture7::<{ CW }>().is_none(),
+        "(j * 3) - i overflows"
+    );
+
+    let ijk = CoordIJK::new(-1, 0, 0);
+    assert!(ijk.checked_up_aperture7::<{ CW }>().is_some());
 }

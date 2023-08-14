@@ -92,6 +92,12 @@ test = false
 doc = false
 
 [[bin]]
+name = "local_ij"
+path = "fuzz_targets/local_ij.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "polygon_to_cells"
 path = "fuzz_targets/polygon_to_cells.rs"
 test = false

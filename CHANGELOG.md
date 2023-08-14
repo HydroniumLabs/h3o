@@ -14,6 +14,16 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Removed
+
+- `LocalIJ::anchor`, `LocalIJ::i` and `LocalIJ::j` no longer exists (fields are
+  public now).
+
+### Changed
+
+- `CoordIJ` is now public
+- `LocalIJ::new_unchecked` is replaced by `LocalIJ::new`
+
 ## [0.4.0] - 2023-08-09
 
 ### Changed

@@ -21,9 +21,9 @@ fn to_local_ij() {
     let index = CellIndex::try_from(0x8230e7fffffffff).expect("index");
     let result = index.to_local_ij(anchor).expect("localij");
 
-    assert_eq!(result.anchor(), anchor);
-    assert_eq!(result.i(), -1);
-    assert_eq!(result.j(), -2);
+    assert_eq!(result.anchor, anchor);
+    assert_eq!(result.coord.i, -1);
+    assert_eq!(result.coord.j, -2);
 
     let result =
         index.to_local_ij(anchor.parent(Resolution::One).expect("parent"));

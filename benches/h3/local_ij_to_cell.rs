@@ -1,6 +1,6 @@
 use super::constants::HEXAGONS;
 use criterion::{black_box, BenchmarkId, Criterion};
-use h3o::{CellIndex, LocalIJ};
+use h3o::{CellIndex, CoordIJ, LocalIJ};
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("localIjToCell");
@@ -11,7 +11,7 @@ pub fn bench(c: &mut Criterion) {
             index,
             |b, &index| {
                 let anchor = CellIndex::try_from(index).expect("anchor");
-                let coord = LocalIJ::new_unchecked(anchor, -4, -3);
+                let coord = LocalIJ::new(anchor, CoordIJ::new(-4, -3));
                 b.iter(|| CellIndex::try_from(black_box(coord)))
             },
         );

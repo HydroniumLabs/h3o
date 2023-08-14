@@ -32,15 +32,20 @@ pub struct CoordIJ {
 
 impl CoordIJ {
     /// Initializes a new `IJ` coordinate with the specified component values.
+    #[must_use]
     pub const fn new(i: i32, j: i32) -> Self {
         Self { i, j }
     }
 }
 
-impl From<CoordIJ> for CoordIJK {
+impl TryFrom<CoordIJ> for CoordIJK {
+    type Error = HexGridError;
+
     // Returns the `IJK` coordinates corresponding to the `IJ` one.
-    fn from(value: CoordIJ) -> Self {
-        Self::new(value.i, value.j, 0).normalize()
+    fn try_from(value: CoordIJ) -> Result<Self, Self::Error> {
+        Self::new(value.i, value.j, 0)
+            .checked_normalize()
+            .ok_or_else(|| HexGridError::new("IJ coordinates overflow"))
     }
 }
 
@@ -97,6 +102,19 @@ impl CoordIJK {
         self
     }
 
+    /// Normalizes by setting the components to the smallest possible values.
+    ///
+    /// Guard against overflow (to be used when input comes from user).
+    fn checked_normalize(mut self) -> Option<Self> {
+        let min = cmp::min(self.i, cmp::min(self.j, self.k));
+
+        self.i = self.i.checked_sub(min)?;
+        self.j = self.j.checked_sub(min)?;
+        self.k = self.k.checked_sub(min)?;
+
+        Some(self)
+    }
+
     pub fn distance(&self, other: &Self) -> i32 {
         let diff = (self - other).normalize();
 
@@ -116,6 +134,27 @@ impl CoordIJK {
         };
 
         Self::new(i.round() as i32, j.round() as i32, 0).normalize()
+    }
+
+    /// Returns the normalized `IJK` coordinates of the indexing parent of a
+    /// cell in an aperture 7 grid.
+    #[allow(clippy::cast_possible_truncation)] // On purpose.
+    pub fn checked_up_aperture7<const CCW: bool>(&self) -> Option<Self> {
+        let CoordIJ { i, j } = self.into();
+
+        let (i, j) = if CCW {
+            (
+                f64::from(i.checked_mul(3)?.checked_sub(j)?) / 7.,
+                f64::from(j.checked_mul(2)?.checked_add(i)?) / 7.,
+            )
+        } else {
+            (
+                f64::from(i.checked_mul(2)?.checked_add(j)?) / 7.,
+                f64::from(j.checked_mul(3)?.checked_sub(i)?) / 7.,
+            )
+        };
+
+        Self::new(i.round() as i32, j.round() as i32, 0).checked_normalize()
     }
 
     /// Returns the normalized `IJK` coordinates of the hex centered on the

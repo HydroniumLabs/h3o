@@ -2,8 +2,8 @@
 //! implementation.
 
 use h3o::{
-    BaseCell, Boundary, CellIndex, DirectedEdgeIndex, Face, LatLng, LocalIJ,
-    Resolution, Vertex, VertexIndex,
+    BaseCell, Boundary, CellIndex, CoordIJ, DirectedEdgeIndex, Face, LatLng,
+    LocalIJ, Resolution, Vertex, VertexIndex,
 };
 use std::{ffi::CString, fmt::Debug, os::raw::c_int};
 
@@ -160,7 +160,7 @@ pub fn cell_to_local_ij(
     let res = unsafe {
         h3ron_h3_sys::cellToLocalIj(origin.into(), index.into(), 0, &mut out)
     };
-    (res == 0).then(|| LocalIJ::new_unchecked(origin, out.i, out.j))
+    (res == 0).then(|| LocalIJ::new(origin, CoordIJ::new(out.i, out.j)))
 }
 
 /// Expose `cellToParent`.
@@ -776,11 +776,11 @@ pub fn latlng_to_cell(ll: &LatLng, resolution: Resolution) -> CellIndex {
 pub fn local_ij_to_cell(local_ij: LocalIJ) -> Option<CellIndex> {
     let mut out: u64 = 0;
     let ij = h3ron_h3_sys::CoordIJ {
-        i: local_ij.i(),
-        j: local_ij.j(),
+        i: local_ij.coord.i,
+        j: local_ij.coord.j,
     };
     let res = unsafe {
-        h3ron_h3_sys::localIjToCell(local_ij.anchor().into(), &ij, 0, &mut out)
+        h3ron_h3_sys::localIjToCell(local_ij.anchor.into(), &ij, 0, &mut out)
     };
 
     (res == 0).then(|| CellIndex::try_from(out).expect("H3 index"))

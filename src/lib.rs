@@ -247,7 +247,7 @@ mod resolution;
 
 pub use base_cell::BaseCell;
 pub use boundary::Boundary;
-pub use coord::{LatLng, LocalIJ};
+pub use coord::{CoordIJ, LatLng, LocalIJ};
 pub use direction::Direction;
 pub use face::{Face, FaceSet};
 pub use index::{
