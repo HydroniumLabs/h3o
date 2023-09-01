@@ -7,10 +7,9 @@ use crate::{
     },
     grid,
     index::{bits, IndexMode},
-    resolution, BaseCell, Boundary, DirectedEdgeIndex, Direction, Edge,
-    ExtendedResolution, FaceSet, LatLng, LocalIJ, Resolution, Vertex,
-    VertexIndex, CCW, CW, DEFAULT_CELL_INDEX, DIRECTION_BITSIZE,
-    EARTH_RADIUS_KM, NUM_HEX_VERTS, NUM_PENT_VERTS,
+    BaseCell, Boundary, DirectedEdgeIndex, Direction, Edge, ExtendedResolution,
+    FaceSet, LatLng, LocalIJ, Resolution, Vertex, VertexIndex, CCW, CW,
+    DEFAULT_CELL_INDEX, EARTH_RADIUS_KM, NUM_HEX_VERTS, NUM_PENT_VERTS,
 };
 use either::Either;
 use std::{
@@ -202,7 +201,7 @@ impl CellIndex {
     /// ```
     #[must_use]
     pub const fn base_cell(self) -> BaseCell {
-        let value = bits::get_base_cell(self.0.get());
+        let value = h3o_bit::get_base_cell(self.0.get());
         // SAFETY: `CellIndex` only contains valid base cell (invariant).
         BaseCell::new_unchecked(value)
     }
@@ -342,9 +341,9 @@ impl CellIndex {
         let base = self.base_cell();
 
         let resolution = usize::from(bits::get_resolution(bits));
-        let unused_count = usize::from(resolution::MAX) - resolution;
-        let unused_bitsize = unused_count * DIRECTION_BITSIZE;
-        let dirs_mask = (1 << (resolution * DIRECTION_BITSIZE)) - 1;
+        let unused_count = usize::from(h3o_bit::MAX_RESOLUTION) - resolution;
+        let unused_bitsize = unused_count * h3o_bit::DIRECTION_BITSIZE;
+        let dirs_mask = (1 << (resolution * h3o_bit::DIRECTION_BITSIZE)) - 1;
         let dirs = (bits >> unused_bitsize) & dirs_mask;
 
         // Pentagonal cells always have all directions but the base one set to
@@ -744,7 +743,7 @@ impl CellIndex {
     /// ```
     pub fn base_cells() -> impl Iterator<Item = Self> {
         (0..BaseCell::count()).map(|base_cell| {
-            Self::new_unchecked(bits::set_base_cell(
+            Self::new_unchecked(h3o_bit::set_base_cell(
                 DEFAULT_CELL_INDEX,
                 base_cell,
             ))
@@ -1391,10 +1390,10 @@ impl CellIndex {
         // Find the first non-IJ direction (e.g. can be ++ w/o carry).
         // First in term of bit offset, then convert to resolution offset.
         let bitpos = (bits ^ IJ_MASK).trailing_zeros() as usize;
-        let respos = bitpos / DIRECTION_BITSIZE;
+        let respos = bitpos / h3o_bit::DIRECTION_BITSIZE;
 
         // Clear directions affected by the carry propagation.
-        let mask = !((1 << (respos * DIRECTION_BITSIZE)) - 1);
+        let mask = !((1 << (respos * h3o_bit::DIRECTION_BITSIZE)) - 1);
         bits &= mask;
 
         // Restore unused direction.
@@ -1403,7 +1402,7 @@ impl CellIndex {
         // If the carry stopped before the base cell, we simply increment.
         if respos < usize::from(resolution) {
             // Everything is ready, we can increment now.
-            let one = 1 << (res_offset + respos * DIRECTION_BITSIZE);
+            let one = 1 << (res_offset + respos * h3o_bit::DIRECTION_BITSIZE);
             bits += one;
             // Skip deleted sub-sequence.
             return Some(Self::try_from(bits).unwrap_or_else(|_| {
@@ -1415,7 +1414,7 @@ impl CellIndex {
         // We moved onto another base cell.
         let base_cell = u8::from(self.base_cell());
         (base_cell != 121)
-            .then(|| bits::set_base_cell(bits, base_cell + 1))
+            .then(|| h3o_bit::set_base_cell(bits, base_cell + 1))
             .map(Self::new_unchecked)
     }
 
@@ -1441,10 +1440,10 @@ impl CellIndex {
         // Find the first non-zero direction (e.g. can be -- w/o carry).
         // First in term of bit offset, then convert to resolution offset.
         let bitpos = bits.trailing_zeros() as usize;
-        let respos = bitpos / DIRECTION_BITSIZE;
+        let respos = bitpos / h3o_bit::DIRECTION_BITSIZE;
 
         // Set directions affected by the carry propagation.
-        let mask = (1 << (respos * DIRECTION_BITSIZE)) - 1;
+        let mask = (1 << (respos * h3o_bit::DIRECTION_BITSIZE)) - 1;
         bits |= 0o666666666666666 & mask;
 
         // Restore unused direction.
@@ -1453,7 +1452,7 @@ impl CellIndex {
         // If the carry stopped before the base cell, we simply decrement.
         if respos < usize::from(resolution) {
             // Everything is ready, we can decrement now.
-            let one = 1 << (res_offset + respos * DIRECTION_BITSIZE);
+            let one = 1 << (res_offset + respos * h3o_bit::DIRECTION_BITSIZE);
             bits -= one;
             // Skip deleted sub-sequence.
             return Some(Self::try_from(bits).unwrap_or_else(|_| {
@@ -1465,7 +1464,7 @@ impl CellIndex {
         // We moved onto another base cell.
         let base_cell = u8::from(self.base_cell());
         (base_cell != 0)
-            .then(|| bits::set_base_cell(bits, base_cell - 1))
+            .then(|| h3o_bit::set_base_cell(bits, base_cell - 1))
             .map(Self::new_unchecked)
     }
 
@@ -1724,8 +1723,8 @@ impl Ord for CellIndex {
         // cells in the bit layout, thus has more weight).
         //
         // By ignoring the resolution bits we get the right ordering.
-        (bits::clr_resolution(self.0.get()))
-            .cmp(&bits::clr_resolution(other.0.get()))
+        (h3o_bit::clr_resolution(self.0.get()))
+            .cmp(&h3o_bit::clr_resolution(other.0.get()))
     }
 }
 
@@ -1828,7 +1827,7 @@ impl TryFrom<u64> for CellIndex {
             return Err(Self::Error::new(Some(value), "invalid index mode"));
         }
 
-        let base = BaseCell::try_from(bits::get_base_cell(value))
+        let base = BaseCell::try_from(h3o_bit::get_base_cell(value))
             .map_err(|_| Self::Error::new(Some(value), "invalid base cell"))?;
 
         // Resolution is always valid: coded on 4 bits, valid range is [0; 15].
@@ -1838,8 +1837,8 @@ impl TryFrom<u64> for CellIndex {
         //
         // We expect every bit to be 1 in the tail (because unused cells are
         // represented by `0b111`), i.e. every bit set to 0 after a NOT.
-        let unused_count = usize::from(resolution::MAX) - resolution;
-        let unused_bitsize = unused_count * DIRECTION_BITSIZE;
+        let unused_count = usize::from(h3o_bit::MAX_RESOLUTION) - resolution;
+        let unused_bitsize = unused_count * h3o_bit::DIRECTION_BITSIZE;
         let unused_mask = (1 << unused_bitsize) - 1;
         if (!value) & unused_mask != 0 {
             return Err(Self::Error::new(
@@ -1849,7 +1848,7 @@ impl TryFrom<u64> for CellIndex {
         }
 
         // Check that we have `resolution` valid cells (no unused ones).
-        let dirs_mask = (1 << (resolution * DIRECTION_BITSIZE)) - 1;
+        let dirs_mask = (1 << (resolution * h3o_bit::DIRECTION_BITSIZE)) - 1;
         let dirs = (value >> unused_bitsize) & dirs_mask;
         if has_unused_direction(dirs) {
             return Err(Self::Error::new(
@@ -1862,7 +1861,7 @@ impl TryFrom<u64> for CellIndex {
         if base.is_pentagon() && resolution != 0 {
             // Move directions to the front, so that we can count leading
             // zeroes.
-            let offset = 64 - (resolution * DIRECTION_BITSIZE);
+            let offset = 64 - (resolution * h3o_bit::DIRECTION_BITSIZE);
 
             // Find the position of the first bit set, if it's a multiple of 3
             // that means we have a K axe as the first non-center direction,

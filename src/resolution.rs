@@ -1,10 +1,5 @@
-use crate::{
-    error, index::bits, BaseCell, CellIndex, DIRECTION_BITSIZE, NUM_PENTAGONS,
-};
+use crate::{error, index::bits, BaseCell, CellIndex, NUM_PENTAGONS};
 use std::{ffi::c_int, fmt, iter::DoubleEndedIterator, str::FromStr};
-
-/// Maximum supported H3 resolution.
-pub const MAX: u8 = 15;
 
 /// Cell resolution, from 0 to 15.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -378,7 +373,7 @@ impl Resolution {
 
         BaseCell::iter().filter_map(move |base_cell| {
             base_cell.is_pentagon().then(|| {
-                let bits = bits::set_base_cell(TEMPLATE, base_cell.into());
+                let bits = h3o_bit::set_base_cell(TEMPLATE, base_cell.into());
                 let bits = bits::set_resolution(bits, self);
 
                 CellIndex::new_unchecked(bits::set_unused(bits, self))
@@ -393,26 +388,15 @@ impl Resolution {
     /// The value must be a valid resolution.
     #[allow(unsafe_code)]
     pub(crate) const fn new_unchecked(value: u8) -> Self {
-        assert!(value <= MAX, "resolution out of range");
+        assert!(value <= h3o_bit::MAX_RESOLUTION, "resolution out of range");
         // SAFETY: range is checked above!
         unsafe { std::mem::transmute::<u8, Self>(value) }
-    }
-
-    /// Returns the bitmask to select the direction at this resolution from an
-    /// H3 index.
-    ///
-    /// # Safety
-    ///
-    /// The resolution shouldn't be zero.
-    pub(crate) fn direction_mask(self) -> u64 {
-        debug_assert!(self != Self::Zero, "res 0 means no directions");
-        0b111 << self.direction_offset()
     }
 
     /// Returns the bit offset of the direction at this resolution in an H3
     /// index.
     pub(crate) fn direction_offset(self) -> usize {
-        usize::from(MAX - u8::from(self)) * DIRECTION_BITSIZE
+        h3o_bit::direction_offset(self.into()).into()
     }
 }
 

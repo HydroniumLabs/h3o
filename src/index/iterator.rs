@@ -3,7 +3,7 @@ use crate::{
     coord::{CoordCube, CoordIJK, LocalIJK},
     error::{CompactionError, LocalIjError},
     index::bits,
-    Direction, Resolution, DIRECTION_BITSIZE,
+    Direction, Resolution,
 };
 use std::cmp::max;
 
@@ -127,7 +127,7 @@ fn get_starting_state(index: CellIndex, resolution: Resolution) -> u64 {
     // directions.
     if range != 0 {
         // Mask with the right number of bit to cover the directions.
-        let mask = (1 << (range * DIRECTION_BITSIZE)) - 1;
+        let mask = (1 << (range * h3o_bit::DIRECTION_BITSIZE)) - 1;
         // Mask offset required to clear the directions.
         let offset = resolution.direction_offset();
 
@@ -325,7 +325,7 @@ impl Iterator for Compact {
                 // (shifted and negated) and applies the new values.
                 let diff =
                     usize::from(u8::from(self.resolution) - u8::from(res));
-                let mask = (1_u64 << (diff * DIRECTION_BITSIZE)) - 1;
+                let mask = (1_u64 << (diff * h3o_bit::DIRECTION_BITSIZE)) - 1;
                 let offset = self.resolution.direction_offset();
                 let new_dirs = (0x0000_1b6d_b6db_6db6 & mask) << offset;
                 // SAFETY: this bit twiddling produces a valid cell index.

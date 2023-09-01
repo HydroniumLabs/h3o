@@ -60,7 +60,7 @@ impl TryFrom<LocalIJK> for CellIndex {
             let new_base_cell = origin_base_cell
                 .neighbor(dir)
                 .ok_or(Self::Error::Pentagon)?;
-            return Ok(Self::new_unchecked(bits::set_base_cell(
+            return Ok(Self::new_unchecked(h3o_bit::set_base_cell(
                 bits,
                 new_base_cell.into(),
             )));
@@ -178,7 +178,7 @@ impl TryFrom<LocalIJK> for CellIndex {
 
         let base_cell = base_cell
             .ok_or_else(|| HexGridError::new("cannot resolve base cell"))?;
-        Ok(Self::new_unchecked(bits::set_base_cell(
+        Ok(Self::new_unchecked(h3o_bit::set_base_cell(
             bits,
             base_cell.into(),
         )))

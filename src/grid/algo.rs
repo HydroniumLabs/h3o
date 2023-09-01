@@ -66,7 +66,7 @@ pub fn neighbor_rotations(
     // (i.e. no early exit from the loop).
     let new_rotations = if res == Resolution::Zero {
         if let Some(base_cell) = old_base_cell.neighbor(direction) {
-            current = bits::set_base_cell(current, base_cell.into());
+            current = h3o_bit::set_base_cell(current, base_cell.into());
             old_base_cell.neighbor_rotation(direction)
         } else {
             // Adjust for the deleted k vertex at the base cell level.
@@ -74,7 +74,7 @@ pub fn neighbor_rotations(
             let base_cell = old_base_cell
                 .neighbor(Direction::IK)
                 .expect("pentagon neighbor");
-            current = bits::set_base_cell(current, base_cell.into());
+            current = h3o_bit::set_base_cell(current, base_cell.into());
 
             // Perform the adjustment for the k-subsequence we're skipping
             // over.
@@ -88,7 +88,8 @@ pub fn neighbor_rotations(
     };
 
     // SAFETY: cell index always contain a valid base cell.
-    let new_base_cell = BaseCell::new_unchecked(bits::get_base_cell(current));
+    let new_base_cell =
+        BaseCell::new_unchecked(h3o_bit::get_base_cell(current));
     if new_base_cell.is_pentagon() {
         let mut already_adjusted_k_subsequence = false;
 

@@ -266,9 +266,6 @@ pub const VERSION_MINOR: u8 = unwrap!(as_u8(env!("CARGO_PKG_VERSION_MINOR")));
 /// H3O patch version number.
 pub const VERSION_PATCH: u8 = unwrap!(as_u8(env!("CARGO_PKG_VERSION_PATCH")));
 
-/// Size, in bits, of a direction (range [0; 6].
-const DIRECTION_BITSIZE: usize = 3;
-
 /// An icosahedron has 20 faces.
 const NUM_ICOSA_FACES: usize = 20;
 // The number of vertices in a hexagon.

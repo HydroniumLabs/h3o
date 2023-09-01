@@ -63,7 +63,7 @@ impl FaceIJK {
         // Handle resolution 0 (base cell).
         if resolution == Resolution::Zero {
             let rotation = self.base_cell_rotation();
-            return CellIndex::new_unchecked(bits::set_base_cell(
+            return CellIndex::new_unchecked(h3o_bit::set_base_cell(
                 bits,
                 rotation.base_cell.into(),
             ));
@@ -77,7 +77,7 @@ impl FaceIJK {
 
         // Lookup the correct base cell.
         let rotation = self.base_cell_rotation();
-        bits = bits::set_base_cell(bits, rotation.base_cell.into());
+        bits = h3o_bit::set_base_cell(bits, rotation.base_cell.into());
 
         // Rotate if necessary to get canonical base cell orientation
         // for this base cell
