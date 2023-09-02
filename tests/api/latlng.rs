@@ -103,3 +103,18 @@ fn to_cell_icosahedron_center() {
 
     assert_eq!(result, expected);
 }
+
+#[cfg(feature = "geo")]
+#[test]
+fn latlng_from_geo_coord() {
+    let coord = geo::geometry::Coord {
+        x: 23.03222744086644,
+        y: 28.173218757257807,
+    };
+    // Geo coord are interpreted as degrees.
+    let expected =
+        LatLng::new(28.173218757257807, 23.03222744086644).expect("ll");
+    let result = LatLng::try_from(coord).expect("ll from coord");
+
+    assert_eq!(result, expected);
+}

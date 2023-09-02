@@ -1,4 +1,5 @@
 use approx::{assert_relative_eq, relative_eq};
+use geo::{coord, point, polygon};
 use h3o::{geom::ToGeo, CellIndex, DirectedEdgeIndex, Resolution, VertexIndex};
 
 #[test]
@@ -83,7 +84,7 @@ fn from_cells() {
 }
 
 #[test]
-fn from_cell() {
+fn from_cell_as_degrees() {
     let index = CellIndex::try_from(0x89283470803ffff).expect("index");
     let json = r#"
         {
@@ -112,7 +113,23 @@ fn from_cell() {
 }
 
 #[test]
-fn from_directed_edge() {
+fn from_cell_as_radians() {
+    let index = CellIndex::try_from(0x89283470803ffff).expect("index");
+    let result = index.to_geom(false).expect("polygon");
+    let expected = polygon![
+        (x: -122.02648011977477_f64.to_radians(), y: 37.38558967035685_f64.to_radians()),
+        (x: -122.02540378194031_f64.to_radians(), y: 37.38727461225182_f64.to_radians()),
+        (x: -122.02665619162275_f64.to_radians(), y: 37.38879129032762_f64.to_radians()),
+        (x: -122.02898493935817_f64.to_radians(), y: 37.38862300294707_f64.to_radians()),
+        (x: -122.03006120911812_f64.to_radians(), y: 37.38693806029814_f64.to_radians()),
+        (x: -122.02880879921976_f64.to_radians(), y: 37.38542140578344_f64.to_radians()),
+    ];
+
+    assert_relative_eq!(result, expected, epsilon = 1e-6);
+}
+
+#[test]
+fn from_directed_edge_as_degrees() {
     let index =
         DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff).expect("index");
     let json = r#"
@@ -135,7 +152,26 @@ fn from_directed_edge() {
 }
 
 #[test]
-fn from_vertex() {
+fn from_directed_edge_as_radians() {
+    let index =
+        DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff).expect("index");
+    let result = index.to_geom(false).expect("line");
+    let expected = geo::Line {
+        start: coord! {
+            x: 0.004346277485193205_f64.to_radians(),
+            y: 51.5333297602599_f64.to_radians(),
+        },
+        end: coord! {
+            x: 0.005128094944356792_f64.to_radians(),
+            y: 51.53286048728922_f64.to_radians(),
+        },
+    };
+
+    assert_relative_eq!(result, expected, epsilon = 1e-6);
+}
+
+#[test]
+fn from_vertex_as_degrees() {
     let index = VertexIndex::try_from(0x2302_bfff_ffff_ffff).expect("index");
     let json = r#"
         {
@@ -152,6 +188,18 @@ fn from_vertex() {
         json.parse::<geojson::Geometry>().expect("geojson"),
     )
     .expect("expected");
+
+    assert_relative_eq!(result, expected, epsilon = 1e-6);
+}
+
+#[test]
+fn from_vertex_as_radians() {
+    let index = VertexIndex::try_from(0x2302_bfff_ffff_ffff).expect("index");
+    let result = index.to_geom(false).expect("point");
+    let expected = point! {
+        x: -74.64046816708004_f64.to_radians(),
+        y:  30.219492199828117_f64.to_radians()
+    };
 
     assert_relative_eq!(result, expected, epsilon = 1e-6);
 }

@@ -16,6 +16,13 @@ fn into_u8() {
     assert_eq!(u8::from(Direction::IJ), 6, "upper bound");
 }
 
+#[test]
+fn into_u64() {
+    assert_eq!(u64::from(Direction::Center), 0, "lower bound");
+    assert_eq!(u64::from(Direction::I), 4, "valid value");
+    assert_eq!(u64::from(Direction::IJ), 6, "upper bound");
+}
+
 // Directions are displayed as numerical value.
 #[test]
 fn display() {
