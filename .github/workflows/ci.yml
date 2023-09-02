@@ -116,7 +116,7 @@ jobs:
           use-tool-cache: true
       - name: Generate test result and coverage report
         run: |
-          cargo test -- -Z unstable-options --format json --report-time | cargo2junit > results.xml;
+          cargo test --features geo -- -Z unstable-options --format json --report-time | cargo2junit > results.xml;
           zip -0 cov.zip $(find . -name "$PROJECT_NAME*.gc*" -print);
           grcov cov.zip -s . -t lcov --llvm --ignore-not-existing --ignore "/*" -o lcov.info;
           rust-covfix -o lcov-fixed.info lcov.info
