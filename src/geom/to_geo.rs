@@ -99,7 +99,7 @@ where
                     }
                 });
                 polygon.interiors_mut(|interiors| {
-                    for interior in interiors.iter_mut() {
+                    for interior in &mut *interiors {
                         for coord in interior.coords_mut() {
                             coord.x = coord.x.to_radians();
                             coord.y = coord.y.to_radians();

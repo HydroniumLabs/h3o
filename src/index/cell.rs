@@ -1314,10 +1314,8 @@ impl CellIndex {
         // way.
         Ok(self
             .grid_disk_fast(1)
-            .fold(Some(false), |acc, item| {
-                item.map(|neighbor| {
-                    acc.unwrap_or_default() || index == neighbor
-                })
+            .try_fold(false, |acc, item| {
+                item.map(|neighbor| acc || index == neighbor)
             })
             .unwrap_or_else(|| {
                 self.grid_disk_safe(1).any(|neighbor| index == neighbor)

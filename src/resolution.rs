@@ -396,7 +396,7 @@ impl Resolution {
     /// Returns the bit offset of the direction at this resolution in an H3
     /// index.
     pub(crate) fn direction_offset(self) -> usize {
-        h3o_bit::direction_offset(self.into()).into()
+        h3o_bit::direction_offset(self.into())
     }
 }
 
