@@ -5,7 +5,7 @@ use crate::{
     CellIndex, LatLng, Resolution,
 };
 use ahash::{HashSet, HashSetExt};
-use geo::{coord, CoordsIter};
+use geo::{coord, Contains, CoordsIter};
 use std::{borrow::Cow, boxed::Box, cmp};
 
 type ContainmentPredicate = fn(polygon: &Polygon, cell: CellIndex) -> bool;
@@ -356,7 +356,9 @@ fn contains_centroid(polygon: &Polygon, cell: CellIndex) -> bool {
 }
 
 fn intersects_or_contains(polygon: &Polygon, cell: CellIndex) -> bool {
-    intersects_boundary(polygon, cell) || contains_boundary(polygon, cell)
+    intersects_boundary(polygon, cell)
+        || contains_boundary(polygon, cell)
+        || cell_contains_polygon(polygon, cell)
 }
 
 fn intersects_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
@@ -399,6 +401,25 @@ fn contains_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
             ring.intersects_boundary(Cow::Borrowed(&boundary))
                 || ring.contains_boundary(Cow::Borrowed(&boundary))
         })
+}
+
+fn cell_contains_polygon(polygon: &Polygon, cell: CellIndex) -> bool {
+    let mut boundary = geo::LineString(
+        cell.boundary()
+            .iter()
+            .copied()
+            .map(|ll| coord! { x: ll.lng_radians(), y: ll.lat_radians() })
+            .collect(),
+    );
+    boundary.close();
+
+    let boundary_polygon = geo::Polygon::new(boundary, vec![]);
+
+    polygon
+        .exterior
+        .geom()
+        .coords()
+        .all(|coord| boundary_polygon.contains(coord))
 }
 
 // ----------------------------------------------------------------------------
