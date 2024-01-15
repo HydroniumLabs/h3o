@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.5.0] - 2024-01-15
+
 ### Added
 
 - new containment mode, `Covers`, to handle small geometries within a cell.
