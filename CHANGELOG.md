@@ -14,6 +14,11 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- new containment mode, `Covers`, to handle small geometries within a cell.
+- clarification on the `IntersectsBoundary` mode.
+
 ### Removed
 
 - `LocalIJ::anchor`, `LocalIJ::i` and `LocalIJ::j` no longer exists (fields are

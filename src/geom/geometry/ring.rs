@@ -1,7 +1,10 @@
 use super::bbox;
-use crate::{error::InvalidGeometry, TWO_PI};
+use crate::{error::InvalidGeometry, LatLng, TWO_PI};
 use geo::{
-    algorithm::coordinate_position::{coord_pos_relative_to_ring, CoordPos},
+    algorithm::{
+        centroid::Centroid,
+        coordinate_position::{coord_pos_relative_to_ring, CoordPos},
+    },
     Contains, Coord, Intersects, Polygon,
 };
 use std::{borrow::Cow, f64::consts::PI};
@@ -64,6 +67,13 @@ impl Ring {
 
     pub fn geom(&self) -> &geo::LineString<f64> {
         self.geom.exterior()
+    }
+
+    pub fn centroid(&self) -> LatLng {
+        let centroid = self.geom.centroid().expect("centroid");
+
+        LatLng::from_radians(centroid.y(), centroid.x())
+            .expect("valid coordinate")
     }
 
     pub const fn bbox(&self) -> geo::Rect<f64> {

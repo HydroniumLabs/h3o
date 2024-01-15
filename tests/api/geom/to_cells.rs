@@ -1,7 +1,7 @@
 use ahash::HashSet;
 use geo::{coord, polygon, LineString};
 use h3o::{
-    geom::{PolyfillConfig, Polygon, ToCells},
+    geom::{ContainmentMode, PolyfillConfig, Polygon, ToCells},
     CellIndex, LatLng, Resolution,
 };
 use std::f64::consts::PI;
@@ -366,4 +366,38 @@ fn pentagon_shape() -> geo::Polygon<f64> {
         (x: coord.x + edge_length_2, y: coord.y - edge_length_2),
         (x: coord.x - edge_length_2, y: coord.y - edge_length_2)
     ]
+}
+
+#[test]
+fn fully_in_cell_contained_geometry() {
+    // Build a geometry that is fully contained in the target cell.
+    // The geometry does not touch the cells boundary
+    let ll = LatLng::from_radians(1., 2.).expect("ll");
+    let cell = ll.to_cell(Resolution::One);
+    let cell_ring: Vec<_> = cell
+        .center_child(Resolution::Four)
+        .expect("center_child")
+        .grid_disk_distances(2);
+    let coord_ring = cell_ring
+        .iter()
+        .filter(|(_, k)| *k == 2)
+        .next()
+        .expect("first k=2 of ring")
+        .0
+        .boundary()
+        .iter()
+        .copied()
+        .map(|ll| coord! {x: ll.lng_radians(), y:ll.lat_radians()})
+        .collect();
+    let shape = geo::Polygon::new(coord_ring, Vec::new());
+
+    // to cells
+    let polygon = Polygon::from_radians(shape).expect("polygon");
+    let config = PolyfillConfig::new(cell.resolution())
+        .containment_mode(ContainmentMode::Covers);
+    let count = polygon.max_cells_count(config);
+    let result = polygon.to_cells(config).count();
+
+    assert_eq!(count, 18);
+    assert_eq!(result, 1);
 }

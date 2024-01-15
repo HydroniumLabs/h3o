@@ -109,5 +109,13 @@ pub enum ContainmentMode {
     /// This guarantees a complete coverage of the polygon, but some cells may
     /// belong to two different polygons if they are adjacent/close enough. Some
     /// cells may cover area outside of the polygon.
+    ///
+    /// Note that if the geometry is fully contained within a cell, this mode
+    /// returns nothing (because there are no boundaries intersection).
     IntersectsBoundary,
+
+    /// This mode behaves the same as IntersectsBoundary, but also handles the
+    /// case where the geometry is being covered by a cell without intersecting
+    /// with its boundaries. In such cases, the covering cell is returned.
+    Covers,
 }

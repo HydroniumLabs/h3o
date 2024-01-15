@@ -271,7 +271,8 @@ impl ToCells for Polygon {
         let contains = match config.containment {
             ContainmentMode::ContainsCentroid => contains_centroid,
             ContainmentMode::ContainsBoundary
-            | ContainmentMode::IntersectsBoundary => intersects_or_contains,
+            | ContainmentMode::IntersectsBoundary
+            | ContainmentMode::Covers => intersects_or_contains,
         };
 
         // Set used for dedup.
@@ -287,6 +288,13 @@ impl ToCells for Polygon {
             &mut scratchpad,
             contains,
         );
+
+        if outlines.is_empty() && config.containment == ContainmentMode::Covers
+        {
+            return Box::new(std::iter::once(
+                self.exterior.centroid().to_cell(config.resolution),
+            ));
+        }
 
         // Next, compute the outermost layer of inner cells to seed the
         // propagation step.
