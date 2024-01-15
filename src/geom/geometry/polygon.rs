@@ -159,7 +159,7 @@ impl Polygon {
             .interiors()
             .chain(std::iter::once(self.exterior()))
             .flat_map(|ring| get_edge_cells(ring, resolution))
-            .filter_map(|cell| already_seen.insert(cell).then_some(cell))
+            .filter(|cell| already_seen.insert(*cell))
             .collect::<Vec<_>>();
         // Reset the `already_seen` set: content can't be trusted because we
         // `get_edge_cells` is based on a rough approximation.

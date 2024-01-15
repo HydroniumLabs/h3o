@@ -29,7 +29,7 @@ impl Point {
     pub fn from_radians(
         point: geo::Point<f64>,
     ) -> Result<Self, InvalidGeometry> {
-        Self::check_coords(&point).map(|_| Self(point))
+        Self::check_coords(&point).map(|()| Self(point))
     }
 
     /// Initialize a new point from a point whose coordinates are in degrees.

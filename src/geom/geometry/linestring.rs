@@ -38,7 +38,7 @@ impl LineString {
     pub fn from_radians(
         line: geo::LineString<f64>,
     ) -> Result<Self, InvalidGeometry> {
-        Self::check_coords(&line).map(|_| Self(line))
+        Self::check_coords(&line).map(|()| Self(line))
     }
 
     /// Initialize a new line from a line whose coordinates are in degrees.
@@ -67,7 +67,7 @@ impl LineString {
             coord.x = coord.x.to_radians();
             coord.y = coord.y.to_radians();
         }
-        Self::check_coords(&line).map(|_| Self(line))
+        Self::check_coords(&line).map(|()| Self(line))
     }
 
     // Check that the line's coordinates are finite.

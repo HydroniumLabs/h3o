@@ -35,7 +35,7 @@ impl Line {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(line: geo::Line<f64>) -> Result<Self, InvalidGeometry> {
-        Self::check_coords(&line).map(|_| Self(line))
+        Self::check_coords(&line).map(|()| Self(line))
     }
 
     /// Initialize a new line from a line whose coordinates are in degrees.

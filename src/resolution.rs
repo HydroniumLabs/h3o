@@ -371,14 +371,14 @@ impl Resolution {
         // mode = CELL, resolution = 0, all children at 0.
         const TEMPLATE: u64 = 0x0800_0000_0000_0000;
 
-        BaseCell::iter().filter_map(move |base_cell| {
-            base_cell.is_pentagon().then(|| {
+        BaseCell::iter()
+            .filter(move |&base_cell| base_cell.is_pentagon())
+            .map(move |base_cell| {
                 let bits = h3o_bit::set_base_cell(TEMPLATE, base_cell.into());
                 let bits = bits::set_resolution(bits, self);
 
                 CellIndex::new_unchecked(bits::set_unused(bits, self))
             })
-        })
     }
 
     /// Initializes a new `Resolution` using a value that may be out of range.

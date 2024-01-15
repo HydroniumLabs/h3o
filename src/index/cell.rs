@@ -792,12 +792,11 @@ impl CellIndex {
         let template = bits::set_mode(self.0.get(), IndexMode::DirectedEdge);
         let deleted_edge = self.is_pentagon().then_some(1);
 
-        Edge::iter().filter_map(move |edge| {
-            (Some(u8::from(edge)) != deleted_edge).then(|| {
-                // SAFETY: loop bound ensure valid edge value.
+        Edge::iter()
+            .filter(move |&edge| (Some(u8::from(edge)) != deleted_edge))
+            .map(move |edge| {
                 DirectedEdgeIndex::new_unchecked(bits::set_edge(template, edge))
             })
-        })
     }
 
     /// Get the specified vertex of this cell.
