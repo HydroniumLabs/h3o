@@ -36,7 +36,7 @@ auto_ops = { version = "0.3", default-features = false }
 konst = { version = "0.3", default-features = false, features = ["parsing"] }
 either = { version = "1.0", default-features = false }
 float_eq = { version = "1.0", default-features = false }
-geo = { version = "0.26", optional = true, default-features = false }
+geo = { version = "0.27", optional = true, default-features = false }
 geojson = { version = "0.24", optional = true, default-features = false, features = ["geo-types"] }
 h3o-bit = { version = "0.1", default-features = false }
 polyfit-rs = { version = "0.2", optional = true, default-features = false }
@@ -46,7 +46,7 @@ serde_repr = { version = "0.1", optional = true, default-features = false }
 [dev-dependencies]
 approx = { version = "0.5", default-features = false }
 criterion = { version = "0.5", default-features = false, features = ["plotters", "cargo_bench_support", "html_reports"] }
-h3ron-h3-sys = { version = "0.16", default-features = false }
+h3ron-h3-sys = { version = "0.17", default-features = false }
 
 [lib]
 # doctests are good for docs, but unfortunately they are slow.
