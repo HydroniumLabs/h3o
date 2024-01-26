@@ -368,14 +368,7 @@ fn intersects_or_contains(polygon: &Polygon, cell: CellIndex) -> bool {
 }
 
 fn intersects_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
-    let mut boundary = geo::LineString(
-        cell.boundary()
-            .iter()
-            .copied()
-            .map(|ll| coord! { x: ll.lng_radians(), y: ll.lat_radians() })
-            .collect(),
-    );
-    boundary.close();
+    let boundary = compute_cell_ring(cell);
 
     let intersects_enveloppe = polygon
         .exterior
@@ -390,14 +383,7 @@ fn intersects_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
 }
 
 fn contains_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
-    let mut boundary = geo::LineString(
-        cell.boundary()
-            .iter()
-            .copied()
-            .map(|ll| coord! { x: ll.lng_radians(), y: ll.lat_radians() })
-            .collect(),
-    );
-    boundary.close();
+    let boundary = compute_cell_ring(cell);
 
     let within_enveloppe =
         polygon.exterior.contains_boundary(Cow::Borrowed(&boundary));
@@ -502,4 +488,17 @@ fn line_hex_estimate(line: &geo::Line<f64>, resolution: Resolution) -> u64 {
     let estimate = dist_ceil as u64;
 
     cmp::max(estimate, 1)
+}
+
+/// Returns the ring corresponding to the cell's boundary.
+fn compute_cell_ring(cell: CellIndex) -> Ring {
+    let mut boundary = geo::LineString(
+        cell.boundary()
+            .iter()
+            .copied()
+            .map(|ll| coord! { x: ll.lng_radians(), y: ll.lat_radians() })
+            .collect(),
+    );
+    boundary.close();
+    Ring::from_radians(boundary).expect("cell boundary is a valiud geometry")
 }

@@ -112,44 +112,45 @@ impl Ring {
 
     pub fn intersects_boundary(
         &self,
-        mut cell_boundary: Cow<'_, geo::LineString<f64>>,
+        mut cell_boundary: Cow<'_, Self>,
     ) -> bool {
-        if self.is_transmeridian {
-            for coord in cell_boundary.to_mut().coords_mut() {
-                coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
-            }
-        }
+        self.fixup_cell_boundary(&mut cell_boundary);
 
-        let cell_bbox = bbox::compute_from_ring(&cell_boundary)
-            .expect("cell boundary is a valid geometry");
-
-        if !self.bbox.intersects(&cell_bbox) {
+        if !self.bbox.intersects(&cell_boundary.bbox) {
             return false;
         }
 
         cell_boundary
+            .geom
+            .exterior()
             .lines()
             .any(|line| line.intersects(self.geom.exterior()))
     }
 
-    pub fn contains_boundary(
-        &self,
-        mut cell_boundary: Cow<'_, geo::LineString<f64>>,
-    ) -> bool {
-        if self.is_transmeridian {
-            for coord in cell_boundary.to_mut().coords_mut() {
-                coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
-            }
-        }
+    pub fn contains_boundary(&self, mut cell_boundary: Cow<'_, Self>) -> bool {
+        self.fixup_cell_boundary(&mut cell_boundary);
 
-        let cell_bbox = bbox::compute_from_ring(&cell_boundary)
-            .expect("cell boundary is a valid geometry");
-
-        if !self.bbox.contains(&cell_bbox) {
+        if !self.bbox.contains(&cell_boundary.bbox) {
             return false;
         }
 
-        self.geom.contains(cell_boundary.as_ref())
+        self.geom.contains(&cell_boundary.geom)
+    }
+
+    /// If the cell is not transmeridian but the ring, we need to translate the
+    /// cell boundaries.
+    fn fixup_cell_boundary(&self, cell_boundary: &mut Cow<'_, Self>) {
+        if self.is_transmeridian && !cell_boundary.is_transmeridian {
+            cell_boundary.to_mut().geom.exterior_mut(|boundary| {
+                for coord in boundary.coords_mut() {
+                    coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
+                }
+            });
+            // Don't forget to fixup the pre-computed bbox as well!
+            cell_boundary.to_mut().bbox =
+                bbox::compute_from_ring(cell_boundary.geom.exterior())
+                    .expect("cell boundary is a valid geometry");
+        }
     }
 }
 

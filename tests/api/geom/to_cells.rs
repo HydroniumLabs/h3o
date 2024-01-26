@@ -401,3 +401,20 @@ fn fully_in_cell_contained_geometry() {
     assert_eq!(count, 18);
     assert_eq!(result, 1);
 }
+
+// https://github.com/HydroniumLabs/h3o/issues/21
+#[test]
+fn issue_21() {
+    let poly = polygon![
+        (x: 156.0, y: 6.0),
+        (x: 156.0, y: 3.0),
+        (x: 159.0, y: 3.0),
+        (x: 159.0, y: 6.0),
+        (x: 156.0, y: 6.0),
+    ];
+    let shape = Polygon::from_degrees(poly).unwrap();
+    let config = PolyfillConfig::new(Resolution::Zero)
+        .containment_mode(ContainmentMode::Covers);
+    let count = shape.to_cells(config).count();
+    assert_eq!(count, 1);
+}
