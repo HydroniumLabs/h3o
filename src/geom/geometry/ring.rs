@@ -1,5 +1,7 @@
 use super::bbox;
 use crate::{error::InvalidGeometry, LatLng, TWO_PI};
+use alloc::{borrow::Cow, vec::Vec};
+use core::f64::consts::PI;
 use geo::{
     algorithm::{
         centroid::Centroid,
@@ -7,7 +9,6 @@ use geo::{
     },
     Contains, Coord, Intersects, Polygon,
 };
-use std::{borrow::Cow, f64::consts::PI};
 
 /// A closed ring and its bounding box.
 #[derive(Clone, Debug, PartialEq)]

@@ -4,7 +4,7 @@ use crate::{
     geom::{PolyfillConfig, ToCells},
     CellIndex,
 };
-use std::boxed::Box;
+use alloc::{boxed::Box, vec::Vec};
 
 /// A collection of [`geo::Point`]s.
 #[derive(Clone, Debug, PartialEq)]

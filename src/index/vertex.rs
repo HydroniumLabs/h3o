@@ -3,7 +3,7 @@ use crate::{
     coord::FaceIJK, error, CellIndex, Direction, LatLng, NUM_HEX_VERTS,
     NUM_PENT_VERTS,
 };
-use std::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
+use core::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
 
 /// Maximum value for a cell vertex.
 const MAX: u8 = 5;

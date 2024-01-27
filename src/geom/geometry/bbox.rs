@@ -96,7 +96,7 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let estimate = estimate as usize;
 
-    std::cmp::max(estimate, 1)
+    core::cmp::max(estimate, 1)
 }
 
 fn get_min_max(value: f64, min: f64, max: f64) -> (f64, f64) {

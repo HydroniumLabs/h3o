@@ -1,5 +1,5 @@
 use crate::{error, index::bits, BaseCell, CellIndex, NUM_PENTAGONS};
-use std::{ffi::c_int, fmt, iter::DoubleEndedIterator, str::FromStr};
+use core::{ffi::c_int, fmt, iter::DoubleEndedIterator, str::FromStr};
 
 /// Cell resolution, from 0 to 15.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -132,7 +132,7 @@ impl Resolution {
     ) -> impl Iterator<Item = Self> + DoubleEndedIterator {
         (u8::from(start)..=u8::from(end))
             // SAFETY: values between two resolutions are valid resolutions.
-            .map(|value| unsafe { std::mem::transmute::<u8, Self>(value) })
+            .map(|value| unsafe { core::mem::transmute::<u8, Self>(value) })
     }
 
     /// Returns the average hexagon area, in square radians, at this
@@ -390,7 +390,7 @@ impl Resolution {
     pub(crate) const fn new_unchecked(value: u8) -> Self {
         assert!(value <= h3o_bit::MAX_RESOLUTION, "resolution out of range");
         // SAFETY: range is checked above!
-        unsafe { std::mem::transmute::<u8, Self>(value) }
+        unsafe { core::mem::transmute::<u8, Self>(value) }
     }
 
     /// Returns the bit offset of the direction at this resolution in an H3

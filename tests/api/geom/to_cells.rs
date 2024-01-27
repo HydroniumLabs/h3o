@@ -1,4 +1,4 @@
-use ahash::HashSet;
+use alloc::collections::BTreeSet;
 use geo::{coord, polygon, LineString};
 use h3o::{
     geom::{ContainmentMode, PolyfillConfig, Polygon, ToCells},
@@ -30,7 +30,7 @@ macro_rules! world_test {
             ];
             let poly1 = Polygon::from_radians(shape1).expect("poly 1");
             let count1 = poly1.max_cells_count(config);
-            let cells1 = poly1.to_cells(config).collect::<HashSet<_>>();
+            let cells1 = poly1.to_cells(config).collect::<BTreeSet<_>>();
 
             assert_eq!(count1, $expected);
             assert!(count1 >= cells1.len());
@@ -44,7 +44,7 @@ macro_rules! world_test {
             ];
             let poly2 = Polygon::from_radians(shape2).expect("poly 2");
             let count2 = poly2.max_cells_count(config);
-            let cells2 = poly2.to_cells(config).collect::<HashSet<_>>();
+            let cells2 = poly2.to_cells(config).collect::<BTreeSet<_>>();
 
             assert_eq!(count2, $expected);
             assert!(count2 >= cells2.len());
@@ -258,9 +258,9 @@ macro_rules! exhaustive_test {
                 let shape = geo::Polygon::new(ring, Vec::new());
                 let polygon = Polygon::from_radians(shape).expect("polygon");
 
-                let result = polygon.to_cells(config).collect::<HashSet<_>>();
+                let result = polygon.to_cells(config).collect::<BTreeSet<_>>();
                 let expected =
-                    index.children(resolution).collect::<HashSet<_>>();
+                    index.children(resolution).collect::<BTreeSet<_>>();
                 assert_eq!(
                     result, expected,
                     "cell {index} at given resolution"
@@ -269,8 +269,9 @@ macro_rules! exhaustive_test {
                 let next_res = Resolution::try_from($resolution + 1)
                     .expect("next resolution");
                 let config = PolyfillConfig::new(next_res);
-                let result = polygon.to_cells(config).collect::<HashSet<_>>();
-                let expected = index.children(next_res).collect::<HashSet<_>>();
+                let result = polygon.to_cells(config).collect::<BTreeSet<_>>();
+                let expected =
+                    index.children(next_res).collect::<BTreeSet<_>>();
                 assert_eq!(result, expected, "cell {index} at next resolution");
             }
         }

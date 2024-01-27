@@ -3,8 +3,8 @@ use crate::{
     geom::{PolyfillConfig, ToCells},
     CellIndex, LatLng, Resolution,
 };
+use alloc::{boxed::Box, vec::Vec};
 use geo::Coord;
-use std::boxed::Box;
 
 /// A line segment made up of exactly two [`geo::Coord`]s.
 ///

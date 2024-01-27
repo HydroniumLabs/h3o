@@ -3,7 +3,8 @@ use crate::{
     geom::{PolyfillConfig, ToCells},
     CellIndex, TWO_PI,
 };
-use std::{boxed::Box, f64::consts::PI};
+use alloc::boxed::Box;
+use core::f64::consts::PI;
 
 mod bbox;
 mod geometrycollection;

@@ -1,8 +1,23 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 //! The `h3o` library implements the H3 geospatial indexing system.
 //!
 //! H3 is a geospatial indexing system using a hexagonal grid that can be
 //! (approximately) subdivided into finer and finer hexagonal grids, combining
 //! the benefits of a hexagonal grid with S2's hierarchical subdivisions.
+//!
+//! ## Crate features
+//!
+//! * **std** -
+//! When enabled, this will cause `h3o` to use the standard library. In terms of
+//! APIs, `std` causes error types to implement the `std::error::Error` trait.
+//! Enabling `std` will also result in performance optimizations.
+//!
+//! * **geo** -
+//! When enabled, you'll be able to convert lists of H3 cell indexes from and
+//! into geometric shapes. Also enables the `GeoJSON` support. Requires `std`.
+//!
+//! * **serde** -
+//! When enabled, H3 index types (cell, vertex and edge) derive serde traits.
 //!
 //! ## H3 to H3O mapping
 //!
@@ -119,7 +134,6 @@
 //! | `greatCircleDistanceRads`   | [`LatLng::distance_rads`]          |
 
 // Lints {{{
-
 #![deny(
     nonstandard_style,
     rust_2018_idioms,
@@ -230,8 +244,9 @@
     // Too many irrelevant warning (about internal invariants).
     clippy::missing_panics_doc,
 )]
-
 // }}}
+
+extern crate alloc;
 
 use konst::{primitive::parse_u8 as as_u8, result::unwrap_ctx as unwrap};
 
@@ -246,6 +261,13 @@ pub mod geom;
 mod grid;
 mod index;
 mod resolution;
+
+#[cfg(not(feature = "std"))]
+#[path = "math-libm.rs"]
+mod math;
+#[cfg(feature = "std")]
+#[path = "math-std.rs"]
+mod math;
 
 pub use base_cell::BaseCell;
 pub use boundary::Boundary;
@@ -290,7 +312,7 @@ const NUM_PENTAGONS: u8 = 12;
 const DEFAULT_CELL_INDEX: u64 = 0x0800_1fff_ffff_ffff;
 
 // 2π
-const TWO_PI: f64 = 2. * std::f64::consts::PI;
+const TWO_PI: f64 = 2. * core::f64::consts::PI;
 
 // -----------------------------------------------------------------------------
 

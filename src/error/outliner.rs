@@ -1,4 +1,4 @@
-use std::{error::Error, fmt};
+use core::fmt;
 
 /// Errors occurring during the outline computation of a set of cell indices.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -21,8 +21,9 @@ impl fmt::Display for OutlinerError {
     }
 }
 
-impl Error for OutlinerError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
+#[cfg(feature = "std")]
+impl std::error::Error for OutlinerError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
 }

@@ -3,8 +3,8 @@ use crate::{
     geom::{PolyfillConfig, Polygon, ToCells},
     CellIndex,
 };
+use alloc::boxed::Box;
 use geo::CoordsIter;
-use std::boxed::Box;
 
 /// A bounded 2D area whose three vertices are defined by [`geo::Coord`]s.
 #[derive(Clone, Debug, PartialEq)]

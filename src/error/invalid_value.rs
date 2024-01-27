@@ -1,4 +1,4 @@
-use std::{error::Error, fmt};
+use core::fmt;
 
 // Macro to declare type-specific InvalidValue error type.
 macro_rules! invalid_value_error {
@@ -33,8 +33,9 @@ macro_rules! invalid_value_error {
             }
         }
 
-        impl Error for $error {
-            fn source(&self) -> Option<&(dyn Error + 'static)> {
+        #[cfg(feature = "std")]
+        impl std::error::Error for $error {
+            fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
                 None
             }
         }

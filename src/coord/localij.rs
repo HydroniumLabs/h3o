@@ -22,7 +22,7 @@ use crate::{
     index::bits,
     BaseCell, CellIndex, Direction, Resolution, CCW, CW, DEFAULT_CELL_INDEX,
 };
-use std::{fmt, num::NonZeroU8};
+use core::{fmt, num::NonZeroU8};
 
 // -----------------------------------------------------------------------------
 

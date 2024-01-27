@@ -3,7 +3,7 @@ use crate::{
     geom::{PolyfillConfig, ToCells},
     CellIndex, LatLng,
 };
-use std::boxed::Box;
+use alloc::boxed::Box;
 
 /// A single point in 2D space.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -89,6 +89,6 @@ impl ToCells for Point {
         config: PolyfillConfig,
     ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         let ll = LatLng::try_from(*self).expect("valid coordinate");
-        Box::new(std::iter::once(ll.to_cell(config.resolution)))
+        Box::new(core::iter::once(ll.to_cell(config.resolution)))
     }
 }

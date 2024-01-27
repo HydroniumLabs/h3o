@@ -1,4 +1,4 @@
-use std::{error::Error, fmt};
+use core::fmt;
 
 /// Errors related to the geometries.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -19,8 +19,9 @@ impl fmt::Display for InvalidGeometry {
     }
 }
 
-impl Error for InvalidGeometry {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
+#[cfg(feature = "std")]
+impl std::error::Error for InvalidGeometry {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
 }

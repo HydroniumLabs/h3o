@@ -4,7 +4,7 @@ use crate::{
     geom::{PolyfillConfig, ToCells},
     CellIndex,
 };
-use std::boxed::Box;
+use alloc::boxed::Box;
 
 /// An ordered collection of two or more [`geo::Coord`]s, representing a
 /// path between locations.

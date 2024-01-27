@@ -1,6 +1,15 @@
 use crate::{CellIndex, Direction};
+use alloc::collections::VecDeque;
+
+#[cfg(feature = "std")]
 use ahash::{HashSet, HashSetExt};
-use std::collections::VecDeque;
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeSet;
+
+#[cfg(not(feature = "std"))]
+type Set<K> = BTreeSet<K>;
+#[cfg(feature = "std")]
+type Set<K> = HashSet<K>;
 
 /// Direction to the next ring.
 const NEXT_RING_DIRECTION: Direction = Direction::I;
@@ -32,7 +41,7 @@ pub struct DiskDistancesSafe {
     k: u32,
 
     /// Already visited neighbors.
-    seen: HashSet<CellIndex>,
+    seen: Set<CellIndex>,
     /// Next set of neighbors to visit.
     candidates: VecDeque<(CellIndex, u32)>,
 }
@@ -49,7 +58,10 @@ impl DiskDistancesSafe {
         candidates.push_back((origin, 0));
         Self {
             k,
-            seen: HashSet::with_capacity(size),
+            #[cfg(feature = "std")]
+            seen: Set::with_capacity(size),
+            #[cfg(not(feature = "std"))]
+            seen: Set::new(),
             candidates,
         }
     }

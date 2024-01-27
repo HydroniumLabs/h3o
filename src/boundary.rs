@@ -1,5 +1,5 @@
 use crate::LatLng;
-use std::{fmt, ops::Deref};
+use core::{fmt, ops::Deref};
 
 /// Maximum number of cell boundary vertices.
 ///
@@ -42,14 +42,14 @@ impl Deref for Boundary {
 
 impl fmt::Display for Boundary {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "[{}]",
-            self.iter()
-                .map(ToString::to_string)
-                .collect::<Vec<_>>()
-                .join("-")
-        )
+        write!(f, "[",)?;
+        for (i, ll) in self.iter().enumerate() {
+            if i != 0 {
+                write!(f, "-")?;
+            }
+            write!(f, "{ll}")?;
+        }
+        write!(f, "]",)
     }
 }
 

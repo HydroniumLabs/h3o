@@ -3,14 +3,16 @@ use super::{
     RES0_U_GNOMONIC, SQRT7_POWERS,
 };
 use crate::{
-    error::InvalidLatLng, face, CellIndex, Face, Resolution, EARTH_RADIUS_KM,
-    TWO_PI,
+    error::InvalidLatLng,
+    face,
+    math::{acos, asin, atan2, cos, mul_add, sin, sqrt, tan},
+    CellIndex, Face, Resolution, EARTH_RADIUS_KM, TWO_PI,
 };
-use float_eq::float_eq;
-use std::{
+use core::{
     f64::consts::{FRAC_PI_2, PI},
     fmt,
 };
+use float_eq::float_eq;
 
 /// Epsilon of ~0.1mm in degrees.
 const EPSILON_DEG: f64 = 0.000000001;
@@ -153,15 +155,16 @@ impl LatLng {
     /// ```
     #[must_use]
     pub fn distance_rads(self, other: Self) -> f64 {
-        let sin_lat = ((other.lat - self.lat) / 2.).sin();
-        let sin_lng = ((other.lng - self.lng) / 2.).sin();
+        let sin_lat = sin((other.lat - self.lat) / 2.);
+        let sin_lng = sin((other.lng - self.lng) / 2.);
 
-        let a = sin_lat.mul_add(
+        let a = mul_add(
             sin_lat,
-            self.lat.cos() * other.lat.cos() * sin_lng * sin_lng,
+            sin_lat,
+            cos(self.lat) * cos(other.lat) * sin_lng * sin_lng,
         );
 
-        2. * a.sqrt().atan2((1. - a).sqrt())
+        2. * atan2(sqrt(a), sqrt(1. - a))
     }
 
     /// The great circle distance, in kilometers, between two spherical
@@ -231,7 +234,7 @@ impl LatLng {
 
         let r = {
             // cos(r) = 1 - 2 * sin^2(r/2) = 1 - 2 * (sqd / 4) = 1 - sqd/2
-            let r = (1. - distance / 2.).acos();
+            let r = acos(1. - distance / 2.);
 
             if r < EPSILON {
                 return Vec2d::new(0., 0.);
@@ -239,7 +242,7 @@ impl LatLng {
 
             // Perform gnomonic scaling of `r` (`tan(r)`) and scale for current
             // resolution length `u`.
-            (r.tan() / RES0_U_GNOMONIC) * SQRT7_POWERS[usize::from(resolution)]
+            (tan(r) / RES0_U_GNOMONIC) * SQRT7_POWERS[usize::from(resolution)]
         };
 
         let theta = {
@@ -255,7 +258,7 @@ impl LatLng {
         };
 
         // Convert to local x, y.
-        Vec2d::new(r * theta.cos(), r * theta.sin())
+        Vec2d::new(r * cos(theta), r * sin(theta))
     }
 
     /// Finds the closest icosahedral face from the current coordinate.
@@ -290,12 +293,12 @@ impl LatLng {
     /// Computes the azimuth to `other` from `self`, in radians.
     #[must_use]
     pub(crate) fn azimuth(self, other: &Self) -> f64 {
-        (other.lat.cos() * (other.lng - self.lng).sin()).atan2(
-            self.lat.cos().mul_add(
-                other.lat.sin(),
-                -self.lat.sin()
-                    * other.lat.cos()
-                    * (other.lng - self.lng).cos(),
+        atan2(
+            cos(other.lat) * sin(other.lng - self.lng),
+            mul_add(
+                cos(self.lat),
+                sin(other.lat),
+                -sin(self.lat) * cos(other.lat) * cos(other.lng - self.lng),
             ),
         )
     }
@@ -319,14 +322,14 @@ impl LatLng {
                 self.lat - distance // Due South.
             }
         } else {
-            self.lat
-                .sin()
-                .mul_add(
-                    distance.cos(),
-                    self.lat.cos() * distance.sin() * azimuth.cos(),
+            asin(
+                mul_add(
+                    sin(self.lat),
+                    cos(distance),
+                    cos(self.lat) * sin(distance) * cos(azimuth),
                 )
-                .clamp(-1., 1.)
-                .asin()
+                .clamp(-1., 1.),
+            )
         };
 
         // Handle poles.
@@ -341,11 +344,11 @@ impl LatLng {
             self.lng
         } else {
             let sinlng =
-                (azimuth.sin() * distance.sin() / lat.cos()).clamp(-1., 1.);
-            let coslng = self.lat.sin().mul_add(-lat.sin(), distance.cos())
-                / self.lat.cos()
-                / lat.cos();
-            self.lng + sinlng.atan2(coslng)
+                (sin(azimuth) * sin(distance) / cos(lat)).clamp(-1., 1.);
+            let coslng = mul_add(sin(self.lat), sin(-lat), cos(distance))
+                / cos(self.lat)
+                / cos(lat);
+            self.lng + atan2(sinlng, coslng)
         };
 
         // XXX: make sure longitudes are in the proper bounds.
@@ -401,11 +404,11 @@ impl From<LatLng> for Vec3d {
     /// Computes the 3D coordinate on unit sphere from the latitude and
     /// longitude.
     fn from(value: LatLng) -> Self {
-        let r = value.lat.cos();
+        let r = cos(value.lat);
 
-        let z = value.lat.sin();
-        let x = value.lng.cos() * r;
-        let y = value.lng.sin() * r;
+        let z = sin(value.lat);
+        let x = cos(value.lng) * r;
+        let y = sin(value.lng) * r;
 
         Self::new(x, y, z)
     }

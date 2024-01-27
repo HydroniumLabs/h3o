@@ -1,5 +1,5 @@
 use crate::{CellIndex, Resolution};
-use std::boxed::Box;
+use alloc::boxed::Box;
 
 /// A trait to convert a geometry (or a collection of geometries) into a list of
 /// cell indexes of the specified resolution.

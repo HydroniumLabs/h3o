@@ -14,7 +14,12 @@ use super::{
     to_positive_angle, CoordIJK, AP7_ROT_RADS, EPSILON, RES0_U_GNOMONIC,
     SQRT7_POWERS,
 };
-use crate::{face, resolution::ExtendedResolution, Face, LatLng};
+use crate::{
+    face,
+    math::{abs, atan, atan2, hypot, mul_add},
+    resolution::ExtendedResolution,
+    Face, LatLng,
+};
 use float_eq::float_eq;
 
 /// sin(60')
@@ -48,7 +53,7 @@ impl Vec2d {
 
     /// Calculates the magnitude.
     pub fn magnitude(self) -> f64 {
-        self.x.hypot(self.y)
+        hypot(self.x, self.y)
     }
 
     /// Finds the intersection between two lines.
@@ -65,14 +70,15 @@ impl Vec2d {
             y: line2.1.y - line2.0.y,
         };
 
-        let t = s2
-            .x
-            .mul_add(line1.0.y - line2.0.y, -s2.y * (line1.0.x - line2.0.x))
-            / (-s2.x).mul_add(s1.y, s1.x * s2.y);
+        let t = mul_add(
+            s2.x,
+            line1.0.y - line2.0.y,
+            -s2.y * (line1.0.x - line2.0.x),
+        ) / mul_add(-s2.x, s1.y, s1.x * s2.y);
 
         Self {
-            x: t.mul_add(s1.x, line1.0.x),
-            y: t.mul_add(s1.y, line1.0.y),
+            x: mul_add(t, s1.x, line1.0.x),
+            y: mul_add(t, s1.y, line1.0.y),
         }
     }
 
@@ -111,11 +117,11 @@ impl Vec2d {
             }
 
             // Perform inverse gnomonic scaling of `r`.
-            (r * RES0_U_GNOMONIC).atan()
+            atan(r * RES0_U_GNOMONIC)
         };
 
         let theta = {
-            let mut theta = self.y.atan2(self.x);
+            let mut theta = atan2(self.y, self.x);
 
             // Adjust theta for Class III.
             // If a substrate grid, then it's already adjusted for Class III.
@@ -139,8 +145,8 @@ impl From<Vec2d> for CoordIJK {
         // Quantize into the IJ system and then normalize.
         let k = 0;
 
-        let a1 = value.x.abs();
-        let a2 = value.y.abs();
+        let a1 = abs(value.x);
+        let a2 = abs(value.y);
 
         // First do a reverse conversion.
         let x2 = a2 / SIN60;
@@ -168,8 +174,8 @@ impl From<Vec2d> for CoordIJK {
             }
         } else if r1 < 2. / 3. {
             let j = m2 + i32::from(r2 >= (1. - r1));
-            let i = m1
-                + i32::from(2.0_f64.mul_add(r1, -1.) >= r2 || r2 >= (1. - r1));
+            let i =
+                m1 + i32::from(mul_add(2.0, r1, -1.) >= r2 || r2 >= (1. - r1));
             (i, j)
         } else {
             let i = m1 + 1;

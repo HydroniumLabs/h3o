@@ -2,7 +2,7 @@ use crate::{
     coord::CoordIJK, error, CellIndex, Edge, Vertex, NUM_HEX_VERTS,
     NUM_PENT_VERTS,
 };
-use std::{fmt, num::NonZeroU8};
+use core::{fmt, num::NonZeroU8};
 
 /// Maximum value for a direction.
 const MAX: u8 = 6;
@@ -111,7 +111,7 @@ impl Direction {
     pub(crate) const fn new_unchecked(value: u8) -> Self {
         assert!(value <= MAX, "direction out of range");
         // SAFETY: range checked above.
-        unsafe { std::mem::transmute::<u8, Self>(value) }
+        unsafe { core::mem::transmute::<u8, Self>(value) }
     }
 
     /// Returns a direction rotated `count` time, by 60 degrees step.

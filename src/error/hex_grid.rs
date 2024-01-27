@@ -1,4 +1,4 @@
-use std::{error::Error, fmt};
+use core::fmt;
 
 /// Errors related to the `IJK` coordinate system and its variants (e.g.
 /// [`LocalIJ`](crate::LocalIJ)).
@@ -20,8 +20,9 @@ impl fmt::Display for HexGridError {
     }
 }
 
-impl Error for HexGridError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
+#[cfg(feature = "std")]
+impl std::error::Error for HexGridError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
 }

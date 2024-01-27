@@ -3,7 +3,7 @@ use crate::{
     coord::FaceIJK, error, grid, Boundary, CellIndex, Direction,
     EARTH_RADIUS_KM,
 };
-use std::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
+use core::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
 
 /// Minimum value for a cell edge.
 const MIN: u8 = 1;

@@ -9,12 +9,16 @@
 //! a unique address consisting of the minimal positive `IJK` components; this
 //! always results in at most two non-zero components.
 
-#![allow(clippy::use_self)] // False positive with `auto_ops::impl_op_ex`
-
 use super::{CoordCube, Vec2d, SQRT3_2};
-use crate::{error::HexGridError, Direction};
-use auto_ops::impl_op_ex;
-use std::{cmp, fmt};
+use crate::{
+    error::HexGridError,
+    math::{mul_add, round},
+    Direction,
+};
+use core::{
+    cmp, fmt,
+    ops::{Add, MulAssign, Sub},
+};
 
 // -----------------------------------------------------------------------------
 
@@ -116,7 +120,7 @@ impl CoordIJK {
     }
 
     pub fn distance(&self, other: &Self) -> i32 {
-        let diff = (self - other).normalize();
+        let diff = (*self - *other).normalize();
 
         cmp::max(diff.i.abs(), cmp::max(diff.j.abs(), diff.k.abs()))
     }
@@ -133,7 +137,7 @@ impl CoordIJK {
             (f64::from(2 * i + j) / 7., f64::from(3 * j - i) / 7.)
         };
 
-        Self::new(i.round() as i32, j.round() as i32, 0).normalize()
+        Self::new(round(i) as i32, round(j) as i32, 0).normalize()
     }
 
     /// Returns the normalized `IJK` coordinates of the indexing parent of a
@@ -154,7 +158,7 @@ impl CoordIJK {
             )
         };
 
-        Self::new(i.round() as i32, j.round() as i32, 0).checked_normalize()
+        Self::new(round(i) as i32, round(j) as i32, 0).checked_normalize()
     }
 
     /// Returns the normalized `IJK` coordinates of the hex centered on the
@@ -194,7 +198,7 @@ impl CoordIJK {
     /// Returns the normalized `IJK` coordinates of the hex in the specified
     /// direction from the current position.
     pub fn neighbor(&self, direction: Direction) -> Self {
-        (self + direction.coordinate()).normalize()
+        (*self + direction.coordinate()).normalize()
     }
 
     /// Returns the `IJK` coordinates after a 60 degrees rotation.
@@ -213,27 +217,41 @@ impl CoordIJK {
     }
 }
 
-impl_op_ex!(+ |lhs: &CoordIJK, rhs: &CoordIJK| -> CoordIJK {
-    CoordIJK{
-        i: lhs.i + rhs.i,
-        j: lhs.j + rhs.j,
-        k: lhs.k + rhs.k,
-    }
-});
+// -----------------------------------------------------------------------------
 
-impl_op_ex!(-|lhs: &CoordIJK, rhs: &CoordIJK| -> CoordIJK {
-    CoordIJK {
-        i: lhs.i - rhs.i,
-        j: lhs.j - rhs.j,
-        k: lhs.k - rhs.k,
-    }
-});
+impl Add for CoordIJK {
+    type Output = Self;
 
-impl_op_ex!(*= |lhs: &mut CoordIJK, rhs: i32| {
-    lhs.i *= rhs;
-    lhs.j *= rhs;
-    lhs.k *= rhs;
-});
+    fn add(self, other: Self) -> Self {
+        Self {
+            i: self.i + other.i,
+            j: self.j + other.j,
+            k: self.k + other.k,
+        }
+    }
+}
+
+impl Sub for CoordIJK {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            i: self.i - other.i,
+            j: self.j - other.j,
+            k: self.k - other.k,
+        }
+    }
+}
+
+impl MulAssign<i32> for CoordIJK {
+    fn mul_assign(&mut self, rhs: i32) {
+        self.i *= rhs;
+        self.j *= rhs;
+        self.k *= rhs;
+    }
+}
+
+// -----------------------------------------------------------------------------
 
 impl From<CoordIJK> for Vec2d {
     // Returns the center point in 2D cartesian coordinates of a hex.
@@ -241,7 +259,7 @@ impl From<CoordIJK> for Vec2d {
         let i = f64::from(value.i - value.k);
         let j = f64::from(value.j - value.k);
 
-        Self::new(0.5_f64.mul_add(-j, i), j * SQRT3_2)
+        Self::new(mul_add(0.5, -j, i), j * SQRT3_2)
     }
 }
 

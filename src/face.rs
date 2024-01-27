@@ -4,7 +4,7 @@ use crate::{
     coord::{CoordIJK, LatLng, Vec3d},
     error, NUM_ICOSA_FACES,
 };
-use std::fmt;
+use core::fmt;
 
 // -----------------------------------------------------------------------------
 
@@ -143,14 +143,14 @@ impl FaceSet {
 
 impl fmt::Display for FaceSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "[{}]",
-            self.iter()
-                .map(|face| face.to_string())
-                .collect::<Vec<_>>()
-                .join("-")
-        )
+        write!(f, "[",)?;
+        for (i, face) in self.iter().enumerate() {
+            if i != 0 {
+                write!(f, "-")?;
+            }
+            write!(f, "{face}")?;
+        }
+        write!(f, "]",)
     }
 }
 

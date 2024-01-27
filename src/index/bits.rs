@@ -2,7 +2,7 @@
 
 use super::IndexMode;
 use crate::{Direction, Edge, Resolution, Vertex};
-use std::{cmp, num::NonZeroU8};
+use core::{cmp, num::NonZeroU8};
 
 /// Offset (in bits) of the mode in an H3 index.
 const MODE_OFFSET: usize = 59;

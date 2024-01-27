@@ -2,8 +2,9 @@ use super::VertexGraph;
 use crate::{
     error::OutlinerError, CellIndex, DirectedEdgeIndex, LatLng, VertexIndex,
 };
+use alloc::vec::Vec;
+use core::convert::Infallible;
 use geo::{Coord, Line, LineString, MultiPolygon, Point, Polygon};
-use std::convert::Infallible;
 
 /// A trait to trace the outline of an H3 object.
 pub trait ToGeo

@@ -1,5 +1,6 @@
 use super::{Geometry, GeometryCollection};
 use crate::error::InvalidGeometry;
+use alloc::vec::Vec;
 
 impl TryFrom<&geojson::Geometry> for Geometry {
     type Error = InvalidGeometry;

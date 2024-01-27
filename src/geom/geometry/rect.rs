@@ -3,7 +3,7 @@ use crate::{
     geom::{PolyfillConfig, Polygon, ToCells},
     CellIndex,
 };
-use std::boxed::Box;
+use alloc::boxed::Box;
 
 /// An axis-aligned bounded 2D rectangle whose area is defined by minimum and
 /// maximum [`geo::Coord`]s.

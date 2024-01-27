@@ -1,3 +1,5 @@
+use crate::math::mul_add;
+
 /// 3D floating-point vector.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3d {
@@ -21,7 +23,7 @@ impl Vec3d {
         let y_diff = self.y - other.y;
         let z_diff = self.z - other.z;
 
-        x_diff.mul_add(x_diff, y_diff.mul_add(y_diff, z_diff * z_diff))
+        mul_add(x_diff, x_diff, mul_add(y_diff, y_diff, z_diff * z_diff))
     }
 }
 

@@ -1,4 +1,5 @@
 use super::CoordIJK;
+use crate::math::{abs, round};
 
 /// Cube coordinates.
 ///
@@ -29,11 +30,11 @@ impl CoordCube {
 
         #[allow(clippy::cast_possible_truncation)] // on purpose
         let (mut ri, mut rj, mut rk) =
-            { (i.round() as i32, j.round() as i32, k.round() as i32) };
+            { (round(i) as i32, round(j) as i32, round(k) as i32) };
 
-        let i_diff = (f64::from(ri) - i).abs();
-        let j_diff = (f64::from(rj) - j).abs();
-        let k_diff = (f64::from(rk) - k).abs();
+        let i_diff = abs(f64::from(ri) - i);
+        let j_diff = abs(f64::from(rj) - j);
+        let k_diff = abs(f64::from(rk) - k);
 
         // Round, maintaining valid cube coords.
         if i_diff > j_diff && i_diff > k_diff {

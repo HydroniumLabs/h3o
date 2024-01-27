@@ -1,4 +1,7 @@
-use crate::LatLng;
+use crate::{
+    math::{atan, sqrt, tan},
+    LatLng,
+};
 
 /// A triangle on unit sphere.
 pub struct Triangle {
@@ -43,5 +46,5 @@ fn area_from_edges(mut a: f64, mut b: f64, mut c: f64) -> f64 {
     c = (s - c) / 2.;
     s /= 2.;
 
-    4. * ((s.tan() * a.tan() * b.tan() * c.tan()).sqrt()).atan()
+    4. * atan(sqrt(tan(s) * tan(a) * tan(b) * tan(c)))
 }

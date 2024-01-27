@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- add `no_std` support (`std` is still enabled by default though)
+
 ## [0.5.1] - 2024-01-27
 
 ### Fixed

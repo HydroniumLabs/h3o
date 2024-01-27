@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 
 /// H3 index modes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]

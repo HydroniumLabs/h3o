@@ -11,13 +11,13 @@ use crate::{
     FaceSet, LatLng, LocalIJ, Resolution, Vertex, VertexIndex, CCW, CW,
     DEFAULT_CELL_INDEX, EARTH_RADIUS_KM, NUM_HEX_VERTS, NUM_PENT_VERTS,
 };
-use either::Either;
-use std::{
+use core::{
     cmp::Ordering,
     fmt, iter,
     num::{NonZeroU64, NonZeroU8},
     str::FromStr,
 };
+use either::Either;
 
 /// Lookup table for number of children for hexagonal cells.
 // 7.pow(resolution_delta)

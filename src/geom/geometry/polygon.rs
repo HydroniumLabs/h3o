@@ -4,11 +4,21 @@ use crate::{
     geom::{ContainmentMode, PolyfillConfig, ToCells},
     CellIndex, LatLng, Resolution,
 };
-use ahash::{HashSet, HashSetExt};
+use alloc::{borrow::Cow, boxed::Box, vec::Vec};
+use core::cmp;
 use geo::{coord, CoordsIter};
-use std::{borrow::Cow, boxed::Box, cmp};
+
+#[cfg(feature = "std")]
+use ahash::{HashSet, HashSetExt};
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeSet;
 
 type ContainmentPredicate = fn(polygon: &Polygon, cell: CellIndex) -> bool;
+
+#[cfg(not(feature = "std"))]
+type Set<K> = BTreeSet<K>;
+#[cfg(feature = "std")]
+type Set<K> = HashSet<K>;
 
 /// A bounded two-dimensional area.
 #[derive(Clone, Debug, PartialEq)]
@@ -147,7 +157,7 @@ impl Polygon {
     fn hex_outline(
         &self,
         resolution: Resolution,
-        already_seen: &mut HashSet<CellIndex>,
+        already_seen: &mut Set<CellIndex>,
         scratchpad: &mut [u64],
         contains: ContainmentPredicate,
     ) -> Vec<CellIndex> {
@@ -157,7 +167,7 @@ impl Polygon {
         // Compute the set of cells making the outlines of the polygon.
         let outlines = self
             .interiors()
-            .chain(std::iter::once(self.exterior()))
+            .chain(core::iter::once(self.exterior()))
             .flat_map(|ring| get_edge_cells(ring, resolution))
             .filter(|cell| already_seen.insert(*cell))
             .collect::<Vec<_>>();
@@ -192,7 +202,7 @@ impl Polygon {
     fn outermost_inner_cells(
         &self,
         outlines: &[CellIndex],
-        already_seen: &mut HashSet<CellIndex>,
+        already_seen: &mut Set<CellIndex>,
         scratchpad: &mut [u64],
         contains: ContainmentPredicate,
     ) -> Vec<CellIndex> {
@@ -276,7 +286,7 @@ impl ToCells for Polygon {
         };
 
         // Set used for dedup.
-        let mut seen = HashSet::new();
+        let mut seen = Set::new();
         // Scratchpad memory to store a cell and its immediate neighbors.
         // Cell itself + at most 6 neighbors = 7.
         let mut scratchpad = [0; 7];
@@ -291,7 +301,7 @@ impl ToCells for Polygon {
 
         if outlines.is_empty() && config.containment == ContainmentMode::Covers
         {
-            return Box::new(std::iter::once(
+            return Box::new(core::iter::once(
                 self.exterior.centroid().to_cell(config.resolution),
             ));
         }
@@ -305,7 +315,10 @@ impl ToCells for Polygon {
             contains,
         );
         let mut next_gen = Vec::with_capacity(candidates.len() * 7);
-        let mut new_seen = HashSet::with_capacity(seen.len());
+        #[cfg(not(feature = "std"))]
+        let mut new_seen = Set::new();
+        #[cfg(feature = "std")]
+        let mut new_seen = Set::with_capacity(seen.len());
 
         if config.containment == ContainmentMode::ContainsBoundary {
             outlines.retain(|&cell| !intersects_boundary(self, cell));
@@ -313,7 +326,7 @@ impl ToCells for Polygon {
         }
 
         // Last step: inward propagation from the outermost layers.
-        let inward_propagation = std::iter::from_fn(move || {
+        let inward_propagation = core::iter::from_fn(move || {
             if candidates.is_empty() {
                 return None;
             }
@@ -337,10 +350,10 @@ impl ToCells for Polygon {
 
             let curr_gen = candidates.clone();
 
-            std::mem::swap(&mut next_gen, &mut candidates);
+            core::mem::swap(&mut next_gen, &mut candidates);
             next_gen.clear();
 
-            std::mem::swap(&mut new_seen, &mut seen);
+            core::mem::swap(&mut new_seen, &mut seen);
             new_seen.clear();
 
             Some(curr_gen.into_iter())

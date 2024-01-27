@@ -2,7 +2,7 @@ use crate::{
     coord::{CoordIJK, FaceIJK},
     error, Direction, Face, NUM_PENTAGONS, NUM_PENT_VERTS,
 };
-use std::fmt;
+use core::fmt;
 
 /// Maximum value for a base cell.
 pub const MAX: u8 = 121;

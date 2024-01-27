@@ -5,7 +5,8 @@ use crate::{
     index::bits,
     Direction, Resolution,
 };
-use std::cmp::max;
+use alloc::vec::Vec;
+use core::cmp::max;
 
 /// Iterator over a children cell index at a given resolution.
 pub struct Children {
