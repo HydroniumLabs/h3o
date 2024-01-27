@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.5.1] - 2024-01-27
+
 ### Fixed
 
 - fix `to_cells` when dealing with transmeridian cells
