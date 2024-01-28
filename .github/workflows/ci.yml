@@ -82,3 +82,13 @@ jobs:
       - name: Install Rust toolchain
         run: rustup update stable
       - run: cargo publish --dry-run
+
+  no-std-build:
+    name: Make sure the code is no-std compatible
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        run: rustup update stable && rustup target add thumbv7em-none-eabihf
+      - run: cargo build --target=thumbv7em-none-eabihf --no-default-features
