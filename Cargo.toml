@@ -29,6 +29,7 @@ std = ["dep:ahash"]
 geo = ["dep:geo", "dep:geojson"]
 serde = ["dep:serde", "dep:serde_repr"]
 tools = ["polyfit-rs"]
+typed_floats = ["dep:typed_floats"]
 
 [dependencies]
 ahash = { version = "0.8", optional = true, default-features = false, features = ["std", "compile-time-rng"] }
@@ -43,6 +44,7 @@ libm = { version = "0.2", default-features = false }
 polyfit-rs = { version = "0.2", optional = true, default-features = false }
 serde = { version = "1.0", optional = true, default-features = false, features = ["derive"] }
 serde_repr = { version = "0.1", optional = true, default-features = false }
+typed_floats = { version = "0.7", optional = true, default-features = false }
 
 [dev-dependencies]
 approx = { version = "0.5", default-features = false }

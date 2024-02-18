@@ -118,3 +118,12 @@ fn latlng_from_geo_coord() {
 
     assert_eq!(result, expected);
 }
+
+#[cfg(feature = "typed_floats")]
+#[test]
+fn latlng_from_typed_floats() {
+    let lat = typed_floats::NonNaNFinite::<f64>::new(48.864716).unwrap();
+    let lng = typed_floats::NonNaNFinite::<f64>::new(2.349014).unwrap();
+
+    let _ = LatLng::from((lat, lng));
+}
