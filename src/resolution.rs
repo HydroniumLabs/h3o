@@ -126,10 +126,11 @@ impl Resolution {
     /// assert_eq!(res, vec![Resolution::Two, Resolution::One, Resolution::Zero]);
     /// ```
     #[allow(unsafe_code)]
+    #[must_use]
     pub fn range(
         start: Self,
         end: Self,
-    ) -> impl Iterator<Item = Self> + DoubleEndedIterator {
+    ) -> impl DoubleEndedIterator<Item = Self> {
         (u8::from(start)..=u8::from(end))
             // SAFETY: values between two resolutions are valid resolutions.
             .map(|value| unsafe { core::mem::transmute::<u8, Self>(value) })

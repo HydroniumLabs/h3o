@@ -450,7 +450,7 @@ mod typed_floats {
     type TFLatlng = (TFCoord, TFCoord);
 
     impl From<TFLatlng> for crate::LatLng {
-        fn from(latlng :TFLatlng) -> Self {
+        fn from(latlng: TFLatlng) -> Self {
             // SAFETY: `NonNaNFinite` guarantees that the values are finite.
             Self::new_unchecked(latlng.0.into(), latlng.1.into())
         }
