@@ -443,6 +443,20 @@ impl From<LatLng> for geo::Coord {
     }
 }
 
+#[cfg(feature = "typed_floats")]
+mod typed_floats {
+    // Types for readability
+    type TFCoord = typed_floats::NonNaNFinite<f64>;
+    type TFLatlng = (TFCoord, TFCoord);
+
+    impl From<TFLatlng> for crate::LatLng {
+        fn from(latlng :TFLatlng) -> Self {
+            // SAFETY: `NonNaNFinite` guarantees that the values are finite.
+            Self::new_unchecked(latlng.0.into(), latlng.1.into())
+        }
+    }
+}
+
 #[cfg(feature = "geo")]
 impl TryFrom<geo::Coord> for LatLng {
     type Error = InvalidLatLng;
