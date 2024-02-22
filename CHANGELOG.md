@@ -17,6 +17,7 @@ Possible sections are:
 ### Added
 
 - add `no_std` support (`std` is still enabled by default though)
+- add `typed_floats` support (disabled by default)
 
 ## [0.5.1] - 2024-01-27
 
