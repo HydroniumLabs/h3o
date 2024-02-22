@@ -1,6 +1,6 @@
 [package]
 name = "h3o"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Sylvain Laperche <sylvain.laperche@gmail.com>"]
 edition = "2021"
 description = "A Rust implementation of the H3 geospatial indexing system."
