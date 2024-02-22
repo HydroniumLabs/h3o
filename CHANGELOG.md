@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.5.2] - 2024-02-22
+
 ### Added
 
 - add `no_std` support (`std` is still enabled by default though)
