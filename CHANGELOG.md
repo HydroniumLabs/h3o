@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.6.0] - 2024-02-23
+
 ### Removed
 
 - remove public constants VERSION_MAJOR, VERSION_MINOR and VERSION_PATCH
