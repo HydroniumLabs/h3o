@@ -248,8 +248,6 @@
 
 extern crate alloc;
 
-use konst::{primitive::parse_u8 as as_u8, result::unwrap_ctx as unwrap};
-
 mod base_cell;
 mod boundary;
 mod coord;
@@ -282,13 +280,6 @@ pub use resolution::Resolution;
 use resolution::ExtendedResolution;
 
 // -----------------------------------------------------------------------------
-
-/// H3O major version number.
-pub const VERSION_MAJOR: u8 = unwrap!(as_u8(env!("CARGO_PKG_VERSION_MAJOR")));
-/// H3O minor version number.
-pub const VERSION_MINOR: u8 = unwrap!(as_u8(env!("CARGO_PKG_VERSION_MINOR")));
-/// H3O patch version number.
-pub const VERSION_PATCH: u8 = unwrap!(as_u8(env!("CARGO_PKG_VERSION_PATCH")));
 
 /// An icosahedron has 20 faces.
 const NUM_ICOSA_FACES: usize = 20;
