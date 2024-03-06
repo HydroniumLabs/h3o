@@ -383,11 +383,11 @@ fn intersects_or_contains(polygon: &Polygon, cell: CellIndex) -> bool {
 fn intersects_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
     let boundary = compute_cell_ring(cell);
 
-    let intersects_enveloppe = polygon
+    let intersects_envelope = polygon
         .exterior
         .intersects_boundary(Cow::Borrowed(&boundary));
 
-    intersects_enveloppe || {
+    intersects_envelope || {
         polygon
             .interiors
             .iter()
@@ -398,10 +398,10 @@ fn intersects_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
 fn contains_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
     let boundary = compute_cell_ring(cell);
 
-    let within_enveloppe =
+    let within_envelope =
         polygon.exterior.contains_boundary(Cow::Borrowed(&boundary));
 
-    within_enveloppe
+    within_envelope
         && !polygon.interiors.iter().any(|ring| {
             ring.intersects_boundary(Cow::Borrowed(&boundary))
                 || ring.contains_boundary(Cow::Borrowed(&boundary))

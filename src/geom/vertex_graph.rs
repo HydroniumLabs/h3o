@@ -80,7 +80,7 @@ impl VertexGraph {
 
             // Keep track of distortions vertices when necessary.
             if graph.is_class3 && cell.icosahedron_faces().len() > 1 {
-                graph.index_distorsions(cell, &vertexes);
+                graph.index_distortions(cell, &vertexes);
             }
 
             vertexes.clear();
@@ -145,7 +145,7 @@ impl VertexGraph {
     }
 
     /// Index distortions vertices that exists between topological ones.
-    fn index_distorsions(&mut self, cell: CellIndex, vertexes: &[VertexIndex]) {
+    fn index_distortions(&mut self, cell: CellIndex, vertexes: &[VertexIndex]) {
         // Boundary contains the every vertex (topological and distortions).
         let boundary = cell.boundary();
         let mut topological_idx = 0;

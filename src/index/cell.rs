@@ -501,7 +501,7 @@ impl CellIndex {
             Resolution::range(resolution, self.resolution())
                 .skip(1)
                 .map(|res| {
-                    // Thansk to the `skip(1)`, iteration cannot start below
+                    // Thanks to the `skip(1)`, iteration cannot start below
                     // resolution 1, thus the calls to pred always succeed.
                     // Moreover, the check at the start of the function ensure
                     // that we can get the parent at every iteration.
