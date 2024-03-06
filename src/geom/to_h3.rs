@@ -58,7 +58,7 @@ pub struct PolyfillConfig {
 }
 
 impl PolyfillConfig {
-    /// Instanciate a default configuration.
+    /// Instantiate a default configuration.
     #[must_use]
     pub const fn new(resolution: Resolution) -> Self {
         Self {
