@@ -321,8 +321,12 @@ impl ToCells for Polygon {
         let mut new_seen = Set::with_capacity(seen.len());
 
         if config.containment == ContainmentMode::ContainsBoundary {
-            outlines.retain(|&cell| !intersects_boundary(self, cell));
-            candidates.retain(|&cell| !intersects_boundary(self, cell));
+            outlines.retain(|&cell| {
+                !intersects_boundary(self, &compute_cell_ring(cell))
+            });
+            candidates.retain(|&cell| {
+                !intersects_boundary(self, &compute_cell_ring(cell))
+            });
         }
 
         // Last step: inward propagation from the outermost layers.
@@ -333,7 +337,7 @@ impl ToCells for Polygon {
 
             for &cell in &candidates {
                 debug_assert!(
-                    contains_boundary(self, cell),
+                    contains_boundary(self, &compute_cell_ring(cell)),
                     "cell index {cell} in polygon"
                 );
 
@@ -377,34 +381,33 @@ fn contains_centroid(polygon: &Polygon, cell: CellIndex) -> bool {
 }
 
 fn intersects_or_contains(polygon: &Polygon, cell: CellIndex) -> bool {
-    intersects_boundary(polygon, cell) || contains_boundary(polygon, cell)
+    let boundary = &compute_cell_ring(cell);
+
+    intersects_boundary(polygon, boundary)
+        || contains_boundary(polygon, boundary)
 }
 
-fn intersects_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
-    let boundary = compute_cell_ring(cell);
-
+fn intersects_boundary(polygon: &Polygon, boundary: &Ring) -> bool {
     let intersects_envelope = polygon
         .exterior
-        .intersects_boundary(Cow::Borrowed(&boundary));
+        .intersects_boundary(Cow::Borrowed(boundary));
 
     intersects_envelope || {
         polygon
             .interiors
             .iter()
-            .any(|ring| ring.intersects_boundary(Cow::Borrowed(&boundary)))
+            .any(|ring| ring.intersects_boundary(Cow::Borrowed(boundary)))
     }
 }
 
-fn contains_boundary(polygon: &Polygon, cell: CellIndex) -> bool {
-    let boundary = compute_cell_ring(cell);
-
+fn contains_boundary(polygon: &Polygon, boundary: &Ring) -> bool {
     let within_envelope =
-        polygon.exterior.contains_boundary(Cow::Borrowed(&boundary));
+        polygon.exterior.contains_boundary(Cow::Borrowed(boundary));
 
     within_envelope
         && !polygon.interiors.iter().any(|ring| {
-            ring.intersects_boundary(Cow::Borrowed(&boundary))
-                || ring.contains_boundary(Cow::Borrowed(&boundary))
+            ring.intersects_boundary(Cow::Borrowed(boundary))
+                || ring.contains_boundary(Cow::Borrowed(boundary))
         })
 }
 
@@ -513,5 +516,5 @@ fn compute_cell_ring(cell: CellIndex) -> Ring {
             .collect(),
     );
     boundary.close();
-    Ring::from_radians(boundary).expect("cell boundary is a valiud geometry")
+    Ring::from_radians(boundary).expect("cell boundary is a valid geometry")
 }
