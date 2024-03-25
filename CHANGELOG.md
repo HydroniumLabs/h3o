@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.6.1] - 2024-03-25
+
 ### Fixed
 
 - fix a bug in the antimeridian heuristic of `to_cells`
