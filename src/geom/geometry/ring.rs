@@ -150,7 +150,7 @@ fn fix_transmeridian(ring: &mut geo::LineString<f64>) -> bool {
         for coord in ring.coords_mut() {
             coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
         }
-        let count = Intersections::<_>::from_iter(ring.lines()).count();
+        let count = ring.lines().collect::<Intersections<_>>().count();
         if count > ring.lines().len() {
             // The "fixed" shaped is self-intersecting, revert the changes.
             for coord in ring.coords_mut() {

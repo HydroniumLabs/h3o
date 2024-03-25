@@ -82,8 +82,7 @@ impl TryFrom<LocalIJK> for CellIndex {
         // If `base_cell` is invalid, it must be because the origin base cell is
         // a pentagon, and because pentagon base cells do not border each other,
         // `base_cell` must not be a pentagon.
-        let index_on_pent =
-            base_cell.map(BaseCell::is_pentagon).unwrap_or_default();
+        let index_on_pent = base_cell.is_some_and(BaseCell::is_pentagon);
 
         if dir != Direction::Center {
             // If the index is in a warped direction, we need to unwarp the base

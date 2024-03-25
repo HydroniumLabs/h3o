@@ -76,8 +76,9 @@ impl BaseCell {
     pub(crate) fn is_cw_offset(self, face: Face) -> bool {
         self.metadata()
             .cw_offset_pent
-            .map(|(offset1, offset2)| offset1 == face || offset2 == face)
-            .unwrap_or_default()
+            .is_some_and(|(offset1, offset2)| {
+                offset1 == face || offset2 == face
+            })
     }
 
     /// Returns the number of 60° ccw rotations for that base cell's coordinate
