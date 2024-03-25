@@ -7,6 +7,7 @@ use geo::{
         centroid::Centroid,
         coordinate_position::{coord_pos_relative_to_ring, CoordPos},
     },
+    sweep::Intersections,
     Contains, Coord, Intersects, Polygon,
 };
 
@@ -24,12 +25,7 @@ impl Ring {
     pub fn from_radians(
         mut ring: geo::LineString<f64>,
     ) -> Result<Self, InvalidGeometry> {
-        let is_transmeridian = ring_is_transmeridian(&ring, PI);
-        if is_transmeridian {
-            for coord in ring.coords_mut() {
-                coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
-            }
-        }
+        let is_transmeridian = fix_transmeridian(&mut ring);
         let bbox = bbox::compute_from_ring(&ring)?;
 
         Ok(Self {
@@ -44,26 +40,11 @@ impl Ring {
     pub fn from_degrees(
         mut ring: geo::LineString<f64>,
     ) -> Result<Self, InvalidGeometry> {
-        let is_transmeridian = ring_is_transmeridian(&ring, 180.);
-        if is_transmeridian {
-            for coord in ring.coords_mut() {
-                coord.x = f64::from(u8::from(coord.x < 0.))
-                    .mul_add(TWO_PI, coord.x.to_radians());
-                coord.y = coord.y.to_radians();
-            }
-        } else {
-            for coord in ring.coords_mut() {
-                coord.x = coord.x.to_radians();
-                coord.y = coord.y.to_radians();
-            }
+        for coord in ring.coords_mut() {
+            coord.x = coord.x.to_radians();
+            coord.y = coord.y.to_radians();
         }
-        let bbox = bbox::compute_from_ring(&ring)?;
-
-        Ok(Self {
-            geom: Polygon::new(ring, Vec::new()),
-            bbox,
-            is_transmeridian,
-        })
+        Self::from_radians(ring)
     }
 
     pub fn geom(&self) -> &geo::LineString<f64> {
@@ -155,13 +136,31 @@ impl Ring {
     }
 }
 
-// Check for arcs > 180 degrees (π radians) longitude to flag as transmeridian.
-fn ring_is_transmeridian(
-    ring: &geo::LineString<f64>,
-    arc_threshold: f64,
-) -> bool {
-    ring.lines()
-        .any(|line| (line.start.x - line.end.x).abs() > arc_threshold)
+// Check for arcs > 180 degrees (π radians) longitude to flag as transmeridian
+// and fix the shape accordingly.
+fn fix_transmeridian(ring: &mut geo::LineString<f64>) -> bool {
+    let is_transmeridian = ring
+        .lines()
+        .any(|line| (line.start.x - line.end.x).abs() > PI);
+
+    // The heuristic above can be fooled by geometries with very long arcs.
+    // Make sure that the "corrected" geometry is not self-intersecting.
+    // This is not bullet-proof but will catch a bunch a false positives.
+    if is_transmeridian {
+        for coord in ring.coords_mut() {
+            coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
+        }
+        let count = Intersections::<_>::from_iter(ring.lines()).count();
+        if count > ring.lines().len() {
+            // The "fixed" shaped is self-intersecting, revert the changes.
+            for coord in ring.coords_mut() {
+                coord.x -= f64::from(u8::from(coord.x >= PI)) * TWO_PI;
+            }
+            return false;
+        }
+    }
+
+    is_transmeridian
 }
 
 impl From<Ring> for geo::LineString<f64> {

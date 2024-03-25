@@ -419,3 +419,20 @@ fn issue_21() {
     let count = shape.to_cells(config).count();
     assert_eq!(count, 1);
 }
+
+// https://github.com/HydroniumLabs/h3o/issues/23
+#[test]
+fn issue_23() {
+    let poly = polygon![
+        (x: 0.0, y: 5.0),
+        (x: 5.0, y: 5.0),
+        (x: 5.0, y: 0.0),
+        (x: -179.0, y: -90.0),
+        (x: 0.0, y: 5.0),
+    ];
+    let shape = Polygon::from_degrees(poly).unwrap();
+    let config = PolyfillConfig::new(Resolution::Six)
+        .containment_mode(ContainmentMode::Covers);
+    let count = shape.to_cells(config).count();
+    assert_eq!(count, 218_358);
+}
