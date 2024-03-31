@@ -22,6 +22,9 @@ const EPSILON_RAD: f64 = EPSILON_DEG * PI / 180.0;
 
 /// Latitude/longitude.
 ///
+/// The coordinate reference system (CRS) is sphere coordinates with the
+/// WGS84/EPSG:4326 authalic radius.
+///
 /// Note that the `Display` impl prints the values as degrees (10 decimals at
 /// most), while the `Debug` impl prints both degrees and radians.
 #[derive(Clone, Copy, Default)]
