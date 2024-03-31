@@ -1,6 +1,6 @@
 [package]
 name = "h3o"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Sylvain Laperche <sylvain.laperche@gmail.com>"]
 edition = "2021"
 description = "A Rust implementation of the H3 geospatial indexing system."
@@ -36,14 +36,14 @@ ahash = { version = "0.8", optional = true, default-features = false, features =
 arbitrary = { version = "1.0", optional = true, default-features = false }
 either = { version = "1.0", default-features = false }
 float_eq = { version = "1.0", default-features = false }
-geo = { version = "0.27", optional = true, default-features = false }
+geo = { version = "0.28", optional = true, default-features = false }
 geojson = { version = "0.24", optional = true, default-features = false, features = ["geo-types"] }
 h3o-bit = { version = "0.1", default-features = false }
 libm = { version = "0.2", default-features = false }
 polyfit-rs = { version = "0.2", optional = true, default-features = false }
 serde = { version = "1.0", optional = true, default-features = false, features = ["derive"] }
 serde_repr = { version = "0.1", optional = true, default-features = false }
-typed_floats = { version = "0.7", optional = true, default-features = false }
+typed_floats = { version = "1.0", optional = true, default-features = false }
 
 [dev-dependencies]
 approx = { version = "0.5", default-features = false }

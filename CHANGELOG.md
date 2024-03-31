@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- bump dependencies
+
 ## [0.6.1] - 2024-03-25
 
 ### Fixed
