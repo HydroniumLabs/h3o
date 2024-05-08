@@ -87,7 +87,7 @@ impl RingHierarchy {
     /// Consumes the hierarchy into a stream of Polygon.
     pub fn into_iter(mut self) -> impl Iterator<Item = Polygon<f64>> {
         type OuterRingIterator =
-            Peekable<alloc::vec::IntoIter<(usize, LineString<f64>)>>;
+            Peekable<vec::IntoIter<(usize, LineString<f64>)>>;
 
         // Outers ring at the current nesting level.
         let mut outers: Option<OuterRingIterator> = None;

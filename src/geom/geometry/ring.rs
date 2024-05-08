@@ -1,5 +1,5 @@
 use super::bbox;
-use crate::{error::InvalidGeometry, LatLng, TWO_PI};
+use crate::{error::InvalidGeometry, CellIndex, LatLng, TWO_PI};
 use alloc::{borrow::Cow, vec::Vec};
 use core::f64::consts::PI;
 use geo::{
@@ -7,6 +7,7 @@ use geo::{
         centroid::Centroid,
         coordinate_position::{coord_pos_relative_to_ring, CoordPos},
     },
+    coord,
     sweep::Intersections,
     Contains, Coord, Intersects, Polygon,
 };
@@ -45,6 +46,23 @@ impl Ring {
             coord.y = coord.y.to_radians();
         }
         Self::from_radians(ring)
+    }
+
+    /// Initialize a new ring from a cell boundary.
+    ///
+    /// The transmeridian check has already been done.
+    fn from_cell_boundary(
+        ring: geo::LineString<f64>,
+        is_transmeridian: bool,
+    ) -> Self {
+        let bbox = bbox::compute_from_ring(&ring)
+            .expect("cell boundary is a valid geometry");
+
+        Self {
+            geom: Polygon::new(ring, Vec::new()),
+            bbox,
+            is_transmeridian,
+        }
     }
 
     pub fn geom(&self) -> &geo::LineString<f64> {
@@ -119,8 +137,8 @@ impl Ring {
         self.geom.contains(&cell_boundary.geom)
     }
 
-    /// If the cell is not transmeridian but the ring, we need to translate the
-    /// cell boundaries.
+    /// If the cell is not transmeridian but the ring is, we need to translate
+    /// the cell boundaries.
     fn fixup_cell_boundary(&self, cell_boundary: &mut Cow<'_, Self>) {
         if self.is_transmeridian && !cell_boundary.is_transmeridian {
             cell_boundary.to_mut().geom.exterior_mut(|boundary| {
@@ -136,12 +154,54 @@ impl Ring {
     }
 }
 
+// -----------------------------------------------------------------------------
+
+// The boundary of a H3 cell.
+//
+// When the cell cross over the antimeridian, it is represented by two
+// projections, one westward and the other eastward.
+pub enum CellBoundary {
+    Regular(Ring),
+    Transmeridian(Ring, Ring),
+}
+
+impl From<CellIndex> for CellBoundary {
+    fn from(value: CellIndex) -> Self {
+        let mut boundary = geo::LineString(
+            value
+                .boundary()
+                .iter()
+                .copied()
+                .map(|ll| coord! { x: ll.lng_radians(), y: ll.lat_radians() })
+                .collect(),
+        );
+        boundary.close();
+
+        if is_transmeridian(&boundary) {
+            let mut fixed_east = boundary.clone();
+            for coord in fixed_east.coords_mut() {
+                coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
+            }
+            let mut fixed_west = boundary;
+            for coord in fixed_west.coords_mut() {
+                coord.x -= f64::from(u8::from(coord.x > 0.)) * TWO_PI;
+            }
+            Self::Transmeridian(
+                Ring::from_cell_boundary(fixed_east, true),
+                Ring::from_cell_boundary(fixed_west, true),
+            )
+        } else {
+            Self::Regular(Ring::from_cell_boundary(boundary, false))
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
 // Check for arcs > 180 degrees (π radians) longitude to flag as transmeridian
 // and fix the shape accordingly.
 fn fix_transmeridian(ring: &mut geo::LineString<f64>) -> bool {
-    let is_transmeridian = ring
-        .lines()
-        .any(|line| (line.start.x - line.end.x).abs() > PI);
+    let is_transmeridian = is_transmeridian(ring);
 
     // The heuristic above can be fooled by geometries with very long arcs.
     // Make sure that the "corrected" geometry is not self-intersecting.
@@ -161,6 +221,12 @@ fn fix_transmeridian(ring: &mut geo::LineString<f64>) -> bool {
     }
 
     is_transmeridian
+}
+
+// Check for arcs > 180 degrees (π radians) longitude to flag as transmeridian.
+fn is_transmeridian(ring: &geo::LineString<f64>) -> bool {
+    ring.lines()
+        .any(|line| (line.start.x - line.end.x).abs() > PI)
 }
 
 impl From<Ring> for geo::LineString<f64> {

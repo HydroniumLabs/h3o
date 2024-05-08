@@ -114,7 +114,7 @@ pub enum ContainmentMode {
     /// returns nothing (because there are no boundaries intersection).
     IntersectsBoundary,
 
-    /// This mode behaves the same as IntersectsBoundary, but also handles the
+    /// This mode behaves the same as `IntersectsBoundary`, but also handles the
     /// case where the geometry is being covered by a cell without intersecting
     /// with its boundaries. In such cases, the covering cell is returned.
     Covers,

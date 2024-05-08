@@ -1,7 +1,7 @@
 use alloc::collections::BTreeSet;
 use geo::{coord, polygon, LineString};
 use h3o::{
-    geom::{ContainmentMode, PolyfillConfig, Polygon, ToCells},
+    geom::{ContainmentMode, PolyfillConfig, Polygon, Rect, ToCells},
     CellIndex, LatLng, Resolution,
 };
 use std::f64::consts::PI;
@@ -434,5 +434,124 @@ fn issue_23() {
     let config = PolyfillConfig::new(Resolution::Six)
         .containment_mode(ContainmentMode::Covers);
     let count = shape.to_cells(config).count();
-    assert_eq!(count, 218_358);
+    assert_eq!(count, 218_375);
+}
+
+macro_rules! cell {
+    ($x: expr) => {{
+        CellIndex::try_from($x).expect("valid cell")
+    }};
+}
+
+// Case 1: Non-crossing shape on the west, intersecting with a crossing cell.
+//
+// antimeridian
+//      │ ___
+//      │/   \┌────────────┐
+//   +--+     │--+         │
+//  /   │     │   \        │
+//  \   │     │   /        │
+//   +  │     │  +         │
+//  /   │     │   \        │
+//  \   │     │   /        │
+//   +--+     │--+         │
+//      │\___/└────────────┘
+//      │
+#[test]
+fn bbox_tile_west() {
+    let bbox = geo::Rect::new(
+        coord! { x: -179.9986132979393, y: -16.890643703326294 },
+        coord! { x: -179.99932676553726, y: -16.889961012741797 },
+    );
+    let mut expected = vec![
+        cell!(0x8a9b4361e757fff),
+        cell!(0x8a9b4361e62ffff),
+        cell!(0x8a9b4361e75ffff),
+    ];
+
+    let shape = Rect::from_degrees(bbox).unwrap();
+    let config = PolyfillConfig::new(Resolution::Ten)
+        .containment_mode(ContainmentMode::Covers);
+    let mut result = shape.to_cells(config).collect::<Vec<_>>();
+
+    expected.sort_unstable();
+    result.sort_unstable();
+    assert_eq!(result, expected);
+}
+
+// Case 2: Non-crossing shape on the east, intersecting with a crossing cell.
+//
+//           antimeridian
+//                │ ___
+// ┌────────────┐ │/   \
+// │           +│-+     +--+
+// │          / │ │         \
+// │          \ │ │         /
+// │           +│ │        +
+// │          / │ │         \
+// │          \ │ │         /
+// │           +│-+     +--+
+// └────────────┘ │\___/
+//                │
+#[test]
+fn bbox_tile_east() {
+    let bbox = geo::Rect::new(
+        coord! { x: 179.9986132979393, y: -16.890643703326294 },
+        coord! { x: 179.99932676553726, y: -16.889961012741797 },
+    );
+    let mut expected = vec![
+        cell!(0x8a9b4361e297fff),
+        cell!(0x8a9b4361e2b7fff),
+        cell!(0x8a9b4361e667fff),
+        cell!(0x8a9b4361e74ffff),
+    ];
+
+    let shape = Rect::from_degrees(bbox).unwrap();
+    let config = PolyfillConfig::new(Resolution::Ten)
+        .containment_mode(ContainmentMode::Covers);
+    let mut result = shape.to_cells(config).collect::<Vec<_>>();
+
+    expected.sort_unstable();
+    result.sort_unstable();
+    assert_eq!(result, expected);
+}
+
+// Case 3: Crossing shape, intersecting with a crossing cell.
+//
+//       antimeridian
+//           │ ___
+//           │/   \
+//        + -+     +--+
+//  ┌────────┬──────────────┐
+//  │    \   │         /    │
+//  │     +  │        +     │
+//  │    /   │         \    │
+//  └────────┴──────────────┘
+//        + -+     +--+
+//           │\___/
+//           │
+#[test]
+fn bbox_transmeridian() {
+    let bbox = geo::Rect::new(
+        coord! { x: -179.9986132979393, y: -16.890643703326294 },
+        coord! { x: 179.9986132979393, y: -16.889961012741797 },
+    );
+    let mut expected = vec![
+        cell!(0x8a9b4361e757fff),
+        cell!(0x8a9b4361e62ffff),
+        cell!(0x8a9b4361e75ffff),
+        cell!(0x8a9b4361e297fff),
+        cell!(0x8a9b4361e2b7fff),
+        cell!(0x8a9b4361e667fff),
+        cell!(0x8a9b4361e74ffff),
+    ];
+
+    let shape = Rect::from_degrees(bbox).unwrap();
+    let config = PolyfillConfig::new(Resolution::Ten)
+        .containment_mode(ContainmentMode::Covers);
+    let mut result = shape.to_cells(config).collect::<Vec<_>>();
+
+    expected.sort_unstable();
+    result.sort_unstable();
+    assert_eq!(result, expected);
 }

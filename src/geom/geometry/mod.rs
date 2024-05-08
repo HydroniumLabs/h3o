@@ -19,7 +19,7 @@ mod rect;
 mod ring;
 mod triangle;
 
-use ring::Ring;
+use ring::{CellBoundary, Ring};
 
 pub use geometrycollection::GeometryCollection;
 pub use line::Line;
