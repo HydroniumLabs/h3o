@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.6.4] - 2024-05-10
+
 - fix `to_geom` when dealing with shapes crossing the prime meridian.
 
 ## [0.6.3] - 2024-05-09
