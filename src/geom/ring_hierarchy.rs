@@ -53,6 +53,13 @@ impl RingHierarchy {
     /// Builds a new hierarchy of rings.
     pub fn new(rings: Vec<LineString<f64>>) -> Self {
         let is_assigned = vec![false; rings.len()];
+        let is_transmeridian = rings
+            .iter()
+            .map(|ring| {
+                ring.lines()
+                    .any(|line| (line.start.x - line.end.x).abs() > 180.)
+            })
+            .collect::<Vec<_>>();
 
         // Compute the hierarchy matrix.
         let mut matrix = vec![false; rings.len() * rings.len()];
@@ -63,12 +70,18 @@ impl RingHierarchy {
                     continue;
                 }
 
-                let r1 = LineString::new(
-                    r1.coords().map(adjust_coordinate).collect(),
-                );
+                let (r1, r2) = if is_transmeridian[i] {
+                    (
+                        LineString::new(
+                            r1.coords().map(adjust_coordinate).collect(),
+                        ),
+                        adjust_coordinate(&r2.0[0]),
+                    )
+                } else {
+                    (r1.clone(), r2.0[0])
+                };
                 // We are guaranteed not to overlap, so just test the first
                 // point.
-                let r2 = adjust_coordinate(&r2.0[0]);
                 // Need to convert to Polygon to have the right `contains`
                 // algorithm.
                 if Polygon::new(r1, vec![]).contains(&r2) {
@@ -209,7 +222,7 @@ impl From<RingHierarchy> for MultiPolygon<f64> {
 // Adjusts coordinates to handle transmeridian crossing.
 fn adjust_coordinate(coord: &Coord) -> Coord {
     Coord {
-        x: f64::from(u8::from(coord.x < 0.) * 2).mul_add(180., coord.x),
+        x: f64::from(u8::from(coord.x < 0.)).mul_add(360., coord.x),
         y: coord.y,
     }
 }

@@ -517,6 +517,20 @@ fn issue_12() {
     assert!(set.to_geom(false).is_ok());
 }
 
+// This was a non-deterministic (due to hashing) bug in RingHierarchy.
+// The antimeredian handling was triggered outside of legit cases.
+#[test]
+fn non_deterministic_output() {
+    for _ in 0..10 {
+        let set = [0x871861318ffffff, 0x871861383ffffff]
+            .into_iter()
+            .map(|bits| CellIndex::try_from(bits).expect("cell index"));
+        let geom = set.to_geom(true).expect("geometry");
+
+        assert_eq!(geom.0.len(), 2);
+    }
+}
+
 macro_rules! grid_disk {
     ($name:ident, $base_cell:literal, $resolution:literal) => {
         #[test]
