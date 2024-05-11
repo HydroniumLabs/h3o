@@ -453,6 +453,34 @@ fn bug_h3_java_138() {
     assert_eq!(count, 14_697);
 }
 
+// https://github.com/uber/h3-py/issues/343
+#[test]
+fn bug_h3_python_343() {
+    let poly = polygon![
+        (x:-141.001, y:61.895),
+        (x:-140.996, y:61.895),
+        (x:-140.996, y:64.848),
+        (x:-141.001, y:64.848)
+    ];
+    let shape = Polygon::from_degrees(poly).unwrap();
+    let config = PolyfillConfig::new(Resolution::Nine)
+        .containment_mode(ContainmentMode::ContainsCentroid);
+    let count = shape.to_cells(config).count();
+    assert_eq!(count, 896);
+
+    let poly = polygon![
+        (x:-141.001, y:61.895),
+        (x:-140.996, y:61.895),
+        (x:-140.996, y:65.848),
+        (x:-141.001, y:65.848)
+    ];
+    let shape = Polygon::from_degrees(poly).unwrap();
+    let config = PolyfillConfig::new(Resolution::Nine)
+        .containment_mode(ContainmentMode::ContainsCentroid);
+    let count = shape.to_cells(config).count();
+    assert_eq!(count, 1167);
+}
+
 macro_rules! cell {
     ($x: expr) => {{
         CellIndex::try_from($x).expect("valid cell")
