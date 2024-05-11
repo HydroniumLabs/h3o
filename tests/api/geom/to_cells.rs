@@ -437,6 +437,22 @@ fn issue_23() {
     assert_eq!(count, 218_375);
 }
 
+// https://github.com/uber/h3-java/issues/138
+#[test]
+fn bug_h3_java_138() {
+    let poly = polygon![
+        (x:11.147991,y:64.758157),
+        (x:11.443969,y:64.758157),
+        (x:11.443969,y:64.845147),
+        (x:11.147991,y:64.845147)
+    ];
+    let shape = Polygon::from_degrees(poly).unwrap();
+    let config = PolyfillConfig::new(Resolution::Ten)
+        .containment_mode(ContainmentMode::ContainsCentroid);
+    let count = shape.to_cells(config).count();
+    assert_eq!(count, 14_697);
+}
+
 macro_rules! cell {
     ($x: expr) => {{
         CellIndex::try_from($x).expect("valid cell")
