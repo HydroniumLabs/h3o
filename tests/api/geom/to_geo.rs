@@ -609,11 +609,11 @@ fn assert_line_string_equivalent(
     assert!(line1.is_closed(), "line1 is a LinearRing");
     let mut coords1 = line1.coords().collect::<Vec<_>>();
     coords1.pop(); // Remove the duplicated coord that close the ring
-                   //
+
     assert!(line2.is_closed(), "line2 is a LinearRing");
     let mut coords2 = line2.coords().collect::<Vec<_>>();
     coords2.pop(); // Remove the duplicated coord that close the ring
-                   //
+
     assert_eq!(coords1.len(), coords2.len(), "size mismatch");
     let offset = coords2
         .iter()
