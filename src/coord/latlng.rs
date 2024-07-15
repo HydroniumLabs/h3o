@@ -1,6 +1,6 @@
 use super::{
     faceijk::FaceIJK, to_positive_angle, Vec2d, Vec3d, AP7_ROT_RADS, EPSILON,
-    RES0_U_GNOMONIC, SQRT7_POWERS,
+    INV_RES0_U_GNOMONIC, SQRT7_POWERS,
 };
 use crate::{
     error::InvalidLatLng,
@@ -245,7 +245,8 @@ impl LatLng {
 
             // Perform gnomonic scaling of `r` (`tan(r)`) and scale for current
             // resolution length `u`.
-            (tan(r) / RES0_U_GNOMONIC) * SQRT7_POWERS[usize::from(resolution)]
+            (tan(r) * INV_RES0_U_GNOMONIC)
+                * SQRT7_POWERS[usize::from(resolution)]
         };
 
         let theta = {

@@ -11,8 +11,8 @@
 //!   cell centers in the `ijk` coordinate system.
 
 use super::{
-    to_positive_angle, CoordIJK, AP7_ROT_RADS, EPSILON, RES0_U_GNOMONIC,
-    SQRT7_POWERS,
+    to_positive_angle, CoordIJK, AP7_ROT_RADS, EPSILON, INV_SQRT7_POWERS,
+    RES0_U_GNOMONIC,
 };
 use crate::{
     face,
@@ -22,8 +22,10 @@ use crate::{
 };
 use float_eq::float_eq;
 
-/// sin(60')
-const SIN60: f64 = 0.8660254037844386;
+/// 1/sin(60')
+const RSIN60: f64 = 1.1547005383792515;
+/// 1/3
+const ONE_THIRD: f64 = 0.3333333333333333;
 
 // -----------------------------------------------------------------------------
 
@@ -107,11 +109,11 @@ impl Vec2d {
             }
 
             // Scale for current resolution length `u`.
-            r /= SQRT7_POWERS[usize::from(resolution)];
+            r *= INV_SQRT7_POWERS[usize::from(resolution)];
 
             // Scale accordingly if this is a substrate grid.
             if is_substrate {
-                r /= 3.;
+                r *= ONE_THIRD;
                 // Substrate grid are always adjusted to the next class II.
                 debug_assert!(!resolution.is_class3());
             }
@@ -149,7 +151,7 @@ impl From<Vec2d> for CoordIJK {
         let a2 = abs(value.y);
 
         // First do a reverse conversion.
-        let x2 = a2 / SIN60;
+        let x2 = a2 * RSIN60;
         let x1 = a1 + x2 / 2.;
 
         // Check if we have the center of a hex.

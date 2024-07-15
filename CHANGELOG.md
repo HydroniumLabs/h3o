@@ -14,7 +14,13 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- Performance enhancement for aarch64, should not affect other platforms
+
 ## [0.6.4] - 2024-05-10
+
+### Fixed
 
 - fix `to_geom` when dealing with shapes crossing the prime meridian.
 
