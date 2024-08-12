@@ -222,7 +222,7 @@ impl From<RingHierarchy> for MultiPolygon<f64> {
 // Adjusts coordinates to handle transmeridian crossing.
 fn adjust_coordinate(coord: &Coord) -> Coord {
     Coord {
-        x: f64::from(u8::from(coord.x < 0.)).mul_add(360., coord.x),
+        x: f64::from(coord.x < 0.).mul_add(360., coord.x),
         y: coord.y,
     }
 }

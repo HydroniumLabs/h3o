@@ -82,7 +82,7 @@ impl Ring {
 
     pub fn contains_centroid(&self, mut coord: Coord<f64>) -> bool {
         if self.is_transmeridian {
-            coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
+            coord.x += f64::from(coord.x < 0.) * TWO_PI;
         }
 
         if !self.bbox.intersects(&coord) {
@@ -143,7 +143,7 @@ impl Ring {
         if self.is_transmeridian && !cell_boundary.is_transmeridian {
             cell_boundary.to_mut().geom.exterior_mut(|boundary| {
                 for coord in boundary.coords_mut() {
-                    coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
+                    coord.x += f64::from(coord.x < 0.) * TWO_PI;
                 }
             });
             // Don't forget to fixup the pre-computed bbox as well!
@@ -180,11 +180,11 @@ impl From<CellIndex> for CellBoundary {
         if is_transmeridian(&boundary) {
             let mut fixed_east = boundary.clone();
             for coord in fixed_east.coords_mut() {
-                coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
+                coord.x += f64::from(coord.x < 0.) * TWO_PI;
             }
             let mut fixed_west = boundary;
             for coord in fixed_west.coords_mut() {
-                coord.x -= f64::from(u8::from(coord.x > 0.)) * TWO_PI;
+                coord.x -= f64::from(coord.x > 0.) * TWO_PI;
             }
             Self::Transmeridian(
                 Ring::from_cell_boundary(fixed_east, true),
@@ -208,13 +208,13 @@ fn fix_transmeridian(ring: &mut geo::LineString<f64>) -> bool {
     // This is not bullet-proof but will catch a bunch a false positives.
     if is_transmeridian {
         for coord in ring.coords_mut() {
-            coord.x += f64::from(u8::from(coord.x < 0.)) * TWO_PI;
+            coord.x += f64::from(coord.x < 0.) * TWO_PI;
         }
         let count = ring.lines().collect::<Intersections<_>>().count();
         if count > ring.lines().len() {
             // The "fixed" shaped is self-intersecting, revert the changes.
             for coord in ring.coords_mut() {
-                coord.x -= f64::from(u8::from(coord.x >= PI)) * TWO_PI;
+                coord.x -= f64::from(coord.x >= PI) * TWO_PI;
             }
             return false;
         }
