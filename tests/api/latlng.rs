@@ -43,7 +43,7 @@ fn debug() {
 }
 
 #[test]
-#[allow(clippy::float_cmp)] // On purpose.
+#[allow(clippy::float_cmp, reason = "on purpose")]
 fn lat_lng() {
     let lat = 2.349014;
     let lng = 48.864716;

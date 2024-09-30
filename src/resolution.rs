@@ -4,7 +4,7 @@ use core::{ffi::c_int, fmt, iter::DoubleEndedIterator, str::FromStr};
 /// Cell resolution, from 0 to 15.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u8)]
-#[allow(clippy::exhaustive_enums)] // Not gonna change any time soon.
+#[allow(clippy::exhaustive_enums, reason = "not gonna change any time soon")]
 #[cfg_attr(
     feature = "serde",
     derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
@@ -125,7 +125,7 @@ impl Resolution {
     ///               .collect::<Vec<_>>();
     /// assert_eq!(res, vec![Resolution::Two, Resolution::One, Resolution::Zero]);
     /// ```
-    #[allow(unsafe_code)]
+    #[allow(unsafe_code, reason = "safe because of the iterator")]
     #[must_use]
     pub fn range(
         start: Self,
@@ -295,8 +295,10 @@ impl Resolution {
     /// let avg_edge_len = h3o::Resolution::Three.edge_length_m();
     /// ```
     #[must_use]
-    // I don't want to group digits of the decimal part.
-    #[allow(clippy::inconsistent_digit_grouping)]
+    #[allow(
+        clippy::inconsistent_digit_grouping,
+        reason = "don't want to group digits of the decimal part"
+    )]
     pub const fn edge_length_m(self) -> f64 {
         match self {
             Self::Zero => 1281256.0107413644,
@@ -387,7 +389,7 @@ impl Resolution {
     /// # Safety
     ///
     /// The value must be a valid resolution.
-    #[allow(unsafe_code)]
+    #[allow(unsafe_code, reason = "safe because assert")]
     pub(crate) const fn new_unchecked(value: u8) -> Self {
         assert!(value <= h3o_bit::MAX_RESOLUTION, "resolution out of range");
         // SAFETY: range is checked above!

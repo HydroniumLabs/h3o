@@ -86,14 +86,17 @@ pub fn hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
     let (width, length) = if d1 < d2 { (d1, d2) } else { (d2, d1) };
     // Derived constant based on: https://math.stackexchange.com/a/1921940
     // Clamped to 3 as higher values tend to rapidly drag the estimate to zero.
-    #[allow(clippy::suspicious_operation_groupings)] // False positive.
+    #[allow(clippy::suspicious_operation_groupings, reason = "false positive")]
     let area = (diagonal * diagonal) / (length / width);
 
     // Divide the two to get an estimate of the number of hexagons needed.
     let estimate = (area / pentagon_area_rads2).ceil();
 
-    // Truncate on purpose.
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "truncate on purpose"
+    )]
     let estimate = estimate as usize;
 
     core::cmp::max(estimate, 1)

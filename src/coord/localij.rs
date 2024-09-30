@@ -191,7 +191,10 @@ impl TryFrom<LocalIJK> for CellIndex {
 /// current base cell.
 ///
 /// Returns the adjusted `IJK` coordinates.
-#[allow(clippy::inline_always)] // 4-5% boost, up to 13% at resolution 1.
+#[allow(
+    clippy::inline_always,
+    reason = "4-5% boost, up to 13% at resolution 1"
+)]
 #[inline(always)]
 pub fn checked_directions_bits_from_ijk(
     mut ijk: CoordIJK,

@@ -5,8 +5,10 @@ macro_rules! invalid_value_error {
     ($name:literal, $error:ident, $value_type:ty) => {
         #[doc = concat!("Invalid ", $name, ".")]
         #[derive(Clone, Copy, Debug, PartialEq)]
-        // Value type may not be `Eq` (e.g. f64).
-        #[allow(clippy::derive_partial_eq_without_eq)]
+        #[allow(
+            clippy::derive_partial_eq_without_eq,
+            reason = "value type may not be `Eq` (e.g. f64)"
+        )]
         pub struct $error {
             /// The invalid value.
             pub value: $value_type,

@@ -163,7 +163,10 @@ impl Polygon {
     ) -> Vec<CellIndex> {
         // IIUC, the collect is necessary to consume the iterator and release
         // the mutable borrow on `already_seen`.
-        #[allow(clippy::needless_collect)]
+        #[allow(
+            clippy::needless_collect,
+            reason = "needed because mutable borrow"
+        )]
         // Compute the set of cells making the outlines of the polygon.
         let outlines = self
             .interiors()
@@ -441,8 +444,10 @@ fn get_edge_cells(
             let count = line_hex_estimate(&line, resolution);
 
             assert!(count <= 1 << f64::MANTISSA_DIGITS);
-            #[allow(clippy::cast_precision_loss)]
-            // Nope thanks to assert above.
+            #[allow(
+                clippy::cast_precision_loss,
+                reason = "cannot happen thanks to assert above"
+            )]
             (0..count).map(move |i| {
                 let i = i as f64;
                 let count = count as f64;
@@ -517,8 +522,11 @@ fn line_hex_estimate(line: &geo::Line<f64>, resolution: Resolution) -> u64 {
     let dist_ceil = (distance / pentagon_diameter).ceil();
     assert!(dist_ceil.is_finite());
 
-    // Truncate on purpose.
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "truncate on purpose"
+    )]
     let estimate = dist_ceil as u64;
 
     cmp::max(estimate, 1)

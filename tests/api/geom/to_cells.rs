@@ -13,7 +13,7 @@ const PI_2: f64 = PI / 2.;
 macro_rules! world_test {
     ($name:ident, $resolution: literal, $expected: literal) => {
         #[test]
-        #[allow(unused_comparisons)] // When `$exact_count` is 0.
+        #[allow(unused_comparisons, reason = "when `$exact_count` is 0")]
         fn $name() {
             let resolution =
                 Resolution::try_from($resolution).expect("resolution");
