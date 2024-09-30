@@ -517,6 +517,25 @@ fn issue_12() {
     assert!(set.to_geom(false).is_ok());
 }
 
+// See https://github.com/uber/h3/issues/917
+#[test]
+fn issue_917() {
+    let set = [
+        0x81ea3ffffffffff,
+        0x81eabffffffffff,
+        0x81eafffffffffff,
+        0x81eb3ffffffffff,
+        0x81eb7ffffffffff,
+        0x81ebbffffffffff,
+    ]
+    .into_iter()
+    .map(|bits| CellIndex::try_from(bits).expect("cell index"));
+
+    let geom = set.to_geom(false).expect("geometry");
+    assert_eq!(geom.0.len(), 1, "a single polygon");
+    assert!(geom.0[0].interiors().is_empty(), "no hole");
+}
+
 // This was a non-deterministic (due to hashing) bug in RingHierarchy.
 // The antimeredian handling was triggered outside of legit cases.
 #[test]

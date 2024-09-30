@@ -286,3 +286,20 @@ fn bug_h3_java_131() {
 
     assert!(CellIndex::compact(cells).is_ok());
 }
+
+// https://github.com/uber/h3/issues/915
+#[test]
+fn bug_h3_915() {
+    let expected = CellIndex::base_cells().collect::<Vec<_>>();
+    assert_eq!(expected.len(), 122);
+
+    let cells = CellIndex::base_cells()
+        .flat_map(|index| index.children(Resolution::One))
+        .collect::<Vec<_>>();
+    assert_eq!(cells.len(), 842);
+
+    let result = CellIndex::compact(cells)
+        .expect("compact")
+        .collect::<Vec<_>>();
+    assert_eq!(result, expected);
+}
