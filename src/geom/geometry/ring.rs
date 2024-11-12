@@ -15,8 +15,8 @@ use geo::{
 /// A closed ring and its bounding box.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ring {
-    geom: Polygon<f64>,
-    bbox: geo::Rect<f64>,
+    geom: Polygon,
+    bbox: geo::Rect,
     is_transmeridian: bool,
 }
 
@@ -24,7 +24,7 @@ impl Ring {
     /// Initialize a new ring from a closed `geo::LineString` whose coordinates
     /// are in radians.
     pub fn from_radians(
-        mut ring: geo::LineString<f64>,
+        mut ring: geo::LineString,
     ) -> Result<Self, InvalidGeometry> {
         let is_transmeridian = fix_transmeridian(&mut ring);
         let bbox = bbox::compute_from_ring(&ring)?;
@@ -39,7 +39,7 @@ impl Ring {
     /// Initialize a new ring from a closed `geo::LineString` whose coordinates
     /// are in degrees.
     pub fn from_degrees(
-        mut ring: geo::LineString<f64>,
+        mut ring: geo::LineString,
     ) -> Result<Self, InvalidGeometry> {
         for coord in ring.coords_mut() {
             coord.x = coord.x.to_radians();
@@ -52,7 +52,7 @@ impl Ring {
     ///
     /// The transmeridian check has already been done.
     fn from_cell_boundary(
-        ring: geo::LineString<f64>,
+        ring: geo::LineString,
         is_transmeridian: bool,
     ) -> Self {
         let bbox = bbox::compute_from_ring(&ring)
@@ -65,7 +65,7 @@ impl Ring {
         }
     }
 
-    pub fn geom(&self) -> &geo::LineString<f64> {
+    pub fn geom(&self) -> &geo::LineString {
         self.geom.exterior()
     }
 
@@ -76,11 +76,11 @@ impl Ring {
             .expect("valid coordinate")
     }
 
-    pub const fn bbox(&self) -> geo::Rect<f64> {
+    pub const fn bbox(&self) -> geo::Rect {
         self.bbox
     }
 
-    pub fn contains_centroid(&self, mut coord: Coord<f64>) -> bool {
+    pub fn contains_centroid(&self, mut coord: Coord) -> bool {
         if self.is_transmeridian {
             coord.x += f64::from(coord.x < 0.) * TWO_PI;
         }
@@ -200,7 +200,7 @@ impl From<CellIndex> for CellBoundary {
 
 // Check for arcs > 180 degrees (π radians) longitude to flag as transmeridian
 // and fix the shape accordingly.
-fn fix_transmeridian(ring: &mut geo::LineString<f64>) -> bool {
+fn fix_transmeridian(ring: &mut geo::LineString) -> bool {
     let is_transmeridian = is_transmeridian(ring);
 
     // The heuristic above can be fooled by geometries with very long arcs.
@@ -224,12 +224,12 @@ fn fix_transmeridian(ring: &mut geo::LineString<f64>) -> bool {
 }
 
 // Check for arcs > 180 degrees (π radians) longitude to flag as transmeridian.
-fn is_transmeridian(ring: &geo::LineString<f64>) -> bool {
+fn is_transmeridian(ring: &geo::LineString) -> bool {
     ring.lines()
         .any(|line| (line.start.x - line.end.x).abs() > PI)
 }
 
-impl From<Ring> for geo::LineString<f64> {
+impl From<Ring> for geo::LineString {
     fn from(value: Ring) -> Self {
         let (ring, _) = value.geom.into_inner();
         ring

@@ -33,7 +33,7 @@ impl Triangle {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        triangle: geo::Triangle<f64>,
+        triangle: geo::Triangle,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(Polygon::from_triangle(triangle)?))
     }
@@ -60,13 +60,13 @@ impl Triangle {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        triangle: geo::Triangle<f64>,
+        triangle: geo::Triangle,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(Polygon::from_degrees(triangle.to_polygon())?))
     }
 }
 
-impl From<Triangle> for geo::Triangle<f64> {
+impl From<Triangle> for geo::Triangle {
     fn from(value: Triangle) -> Self {
         let coords = value.0.exterior();
         // 3 vertex + 1 to close the loop.

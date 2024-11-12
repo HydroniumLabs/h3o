@@ -13,7 +13,7 @@ use alloc::boxed::Box;
 /// that [`grid_path_cells`](CellIndex::grid_path_cells), which means that on
 /// error `max_cells_count` returns 0 and `to_cells` an empty iterator.
 #[derive(Clone, Debug, PartialEq)]
-pub struct LineString(geo::LineString<f64>);
+pub struct LineString(geo::LineString);
 
 impl LineString {
     /// Initialize a new line from a line whose coordinates are in radians.
@@ -36,7 +36,7 @@ impl LineString {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        line: geo::LineString<f64>,
+        line: geo::LineString,
     ) -> Result<Self, InvalidGeometry> {
         Self::check_coords(&line).map(|()| Self(line))
     }
@@ -61,7 +61,7 @@ impl LineString {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        mut line: geo::LineString<f64>,
+        mut line: geo::LineString,
     ) -> Result<Self, InvalidGeometry> {
         for coord in line.coords_mut() {
             coord.x = coord.x.to_radians();
@@ -71,9 +71,7 @@ impl LineString {
     }
 
     // Check that the line's coordinates are finite.
-    fn check_coords(
-        line: &geo::LineString<f64>,
-    ) -> Result<(), InvalidGeometry> {
+    fn check_coords(line: &geo::LineString) -> Result<(), InvalidGeometry> {
         if !line.coords().all(|coord| super::coord_is_valid(*coord)) {
             return Err(InvalidGeometry::new(
                 "every coordinate of the line must be valid",
@@ -83,7 +81,7 @@ impl LineString {
     }
 }
 
-impl From<LineString> for geo::LineString<f64> {
+impl From<LineString> for geo::LineString {
     fn from(value: LineString) -> Self {
         value.0
     }

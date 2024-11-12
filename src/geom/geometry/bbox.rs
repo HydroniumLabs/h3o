@@ -7,9 +7,7 @@ use geo::{coord, LineString, Rect};
 /// - Does not support polygons with two adjacent points > 180 degrees of
 ///   longitude apart. These will be interpreted as crossing the antimeridian.
 /// - Does not currently support polygons containing a pole.
-pub fn compute_from_ring(
-    ring: &LineString<f64>,
-) -> Result<Rect, InvalidGeometry> {
+pub fn compute_from_ring(ring: &LineString) -> Result<Rect, InvalidGeometry> {
     // Closed ring have at least 4 coordinate (e.g. triangle).
     if ring.0.len() < 4 {
         return Err(InvalidGeometry::new(

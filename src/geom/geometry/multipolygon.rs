@@ -25,7 +25,7 @@ impl MultiPolygon {
     /// use geo::polygon;
     /// use h3o::geom::MultiPolygon;
     ///
-    /// let p: geo::Polygon<f64> = polygon![
+    /// let p: geo::Polygon = polygon![
     ///     (x: 0.6559997912129759, y: 0.9726707149994819),
     ///     (x: 0.6573835290630796, y: 0.9726707149994819),
     ///     (x: 0.6573835290630796, y: 0.9735034901250053),
@@ -37,7 +37,7 @@ impl MultiPolygon {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        polygons: geo::MultiPolygon<f64>,
+        polygons: geo::MultiPolygon,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             polygons
@@ -61,7 +61,7 @@ impl MultiPolygon {
     /// use geo::polygon;
     /// use h3o::geom::MultiPolygon;
     ///
-    /// let p: geo::Polygon<f64> = polygon![
+    /// let p: geo::Polygon = polygon![
     ///     (x: 37.58601939796671, y: 55.72992682544245),
     ///     (x: 37.66530173673016, y: 55.72992682544245),
     ///     (x: 37.66530173673016, y: 55.777641325418415),
@@ -73,7 +73,7 @@ impl MultiPolygon {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        polygons: geo::MultiPolygon<f64>,
+        polygons: geo::MultiPolygon,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             polygons
@@ -84,7 +84,7 @@ impl MultiPolygon {
     }
 }
 
-impl From<MultiPolygon> for geo::MultiPolygon<f64> {
+impl From<MultiPolygon> for geo::MultiPolygon {
     fn from(value: MultiPolygon) -> Self {
         Self(value.0.into_iter().map(Into::into).collect())
     }

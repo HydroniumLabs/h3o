@@ -7,7 +7,7 @@ use alloc::boxed::Box;
 
 /// A single point in 2D space.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Point(geo::Point<f64>);
+pub struct Point(geo::Point);
 
 impl Point {
     /// Initialize a new point from a point whose coordinates are in radians.
@@ -26,9 +26,7 @@ impl Point {
     /// let point = Point::from_radians(p)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
-    pub fn from_radians(
-        point: geo::Point<f64>,
-    ) -> Result<Self, InvalidGeometry> {
+    pub fn from_radians(point: geo::Point) -> Result<Self, InvalidGeometry> {
         Self::check_coords(&point).map(|()| Self(point))
     }
 
@@ -49,7 +47,7 @@ impl Point {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        mut point: geo::Point<f64>,
+        mut point: geo::Point,
     ) -> Result<Self, InvalidGeometry> {
         point.set_x(point.x().to_radians());
         point.set_y(point.y().to_radians());
@@ -57,7 +55,7 @@ impl Point {
     }
 
     // Check that the point's coordinates are finite.
-    fn check_coords(point: &geo::Point<f64>) -> Result<(), InvalidGeometry> {
+    fn check_coords(point: &geo::Point) -> Result<(), InvalidGeometry> {
         if !super::coord_is_valid(point.0) {
             return Err(InvalidGeometry::new("x and y must be valid"));
         }
@@ -65,7 +63,7 @@ impl Point {
     }
 }
 
-impl From<Point> for geo::Point<f64> {
+impl From<Point> for geo::Point {
     fn from(value: Point) -> Self {
         value.0
     }

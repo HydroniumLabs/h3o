@@ -24,7 +24,7 @@ impl MultiPoint {
     /// ```
     /// use h3o::geom::MultiPoint;
     ///
-    /// let points: geo::MultiPoint<f64> = vec![
+    /// let points: geo::MultiPoint = vec![
     ///     (-2.1489548115593986, 0.8584581881195188),
     ///     (-1.382430711985295,  0.7628836324009612),
     /// ].into();
@@ -32,7 +32,7 @@ impl MultiPoint {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        points: geo::MultiPoint<f64>,
+        points: geo::MultiPoint,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             points
@@ -55,7 +55,7 @@ impl MultiPoint {
     /// ```
     /// use h3o::geom::MultiPoint;
     ///
-    /// let points: geo::MultiPoint<f64> = vec![
+    /// let points: geo::MultiPoint = vec![
     ///     (-123.12604106668468, 49.18603106769609),
     ///     (-79.20744526602287,  43.71001239618482),
     /// ].into();
@@ -63,7 +63,7 @@ impl MultiPoint {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        points: &geo::MultiPoint<f64>,
+        points: &geo::MultiPoint,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             points
@@ -75,7 +75,7 @@ impl MultiPoint {
     }
 }
 
-impl From<MultiPoint> for geo::MultiPoint<f64> {
+impl From<MultiPoint> for geo::MultiPoint {
     fn from(value: MultiPoint) -> Self {
         Self(value.0.into_iter().map(Into::into).collect())
     }

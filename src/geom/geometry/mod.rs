@@ -82,7 +82,7 @@ impl Geometry {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        geometry: geo::Geometry<f64>,
+        geometry: geo::Geometry,
     ) -> Result<Self, InvalidGeometry> {
         Ok(match geometry {
             geo::Geometry::Point(point) => {
@@ -134,7 +134,7 @@ impl Geometry {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        geometry: geo::Geometry<f64>,
+        geometry: geo::Geometry,
     ) -> Result<Self, InvalidGeometry> {
         Ok(match geometry {
             geo::Geometry::Point(point) => {
@@ -169,7 +169,7 @@ impl Geometry {
     }
 }
 
-impl From<Geometry> for geo::Geometry<f64> {
+impl From<Geometry> for geo::Geometry {
     fn from(value: Geometry) -> Self {
         match value {
             Geometry::Point(point) => Self::Point(point.into()),

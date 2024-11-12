@@ -31,7 +31,7 @@ impl GeometryCollection {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        geometries: geo::GeometryCollection<f64>,
+        geometries: geo::GeometryCollection,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             geometries
@@ -61,7 +61,7 @@ impl GeometryCollection {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        geometries: geo::GeometryCollection<f64>,
+        geometries: geo::GeometryCollection,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             geometries
@@ -72,7 +72,7 @@ impl GeometryCollection {
     }
 }
 
-impl From<GeometryCollection> for geo::GeometryCollection<f64> {
+impl From<GeometryCollection> for geo::GeometryCollection {
     fn from(value: GeometryCollection) -> Self {
         Self(value.0.into_iter().map(Into::into).collect())
     }

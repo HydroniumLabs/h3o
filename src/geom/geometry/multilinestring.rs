@@ -29,7 +29,7 @@ impl MultiLineString {
     /// use geo::line_string;
     /// use h3o::geom::MultiLineString;
     ///
-    /// let line_string: geo::LineString<f64> = line_string![
+    /// let line_string: geo::LineString = line_string![
     ///     (x: 1.996408325715777, y: 0.534292570530397),
     ///     (x: 2.208424012168513, y: 0.7995167582816788),
     ///     (x: 2.1213562369319434, y: 0.5449632604075227),
@@ -39,7 +39,7 @@ impl MultiLineString {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        lines: geo::MultiLineString<f64>,
+        lines: geo::MultiLineString,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             lines
@@ -63,7 +63,7 @@ impl MultiLineString {
     /// use geo::line_string;
     /// use h3o::geom::MultiLineString;
     ///
-    /// let line_string: geo::LineString<f64> = line_string![
+    /// let line_string: geo::LineString = line_string![
     ///     (x: 114.385771248293,   y: 30.612709316587612),
     ///     (x: 126.53337527260373, y: 45.8089358995214),
     ///     (x: 121.54475921995464, y: 31.22409481103989),
@@ -73,7 +73,7 @@ impl MultiLineString {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        lines: geo::MultiLineString<f64>,
+        lines: geo::MultiLineString,
     ) -> Result<Self, InvalidGeometry> {
         Ok(Self(
             lines
@@ -84,7 +84,7 @@ impl MultiLineString {
     }
 }
 
-impl From<MultiLineString> for geo::MultiLineString<f64> {
+impl From<MultiLineString> for geo::MultiLineString {
     fn from(value: MultiLineString) -> Self {
         Self(value.0.into_iter().map(Into::into).collect())
     }

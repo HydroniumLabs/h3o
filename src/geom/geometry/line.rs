@@ -12,7 +12,7 @@ use geo::Coord;
 /// that [`grid_path_cells`](CellIndex::grid_path_cells), which means that on
 /// error `max_cells_count` returns 0 and `to_cells` an empty iterator.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Line(geo::Line<f64>);
+pub struct Line(geo::Line);
 
 impl Line {
     /// Initialize a new line from a line whose coordinates are in radians.
@@ -34,7 +34,7 @@ impl Line {
     /// let line = Line::from_radians(line)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
-    pub fn from_radians(line: geo::Line<f64>) -> Result<Self, InvalidGeometry> {
+    pub fn from_radians(line: geo::Line) -> Result<Self, InvalidGeometry> {
         Self::check_coords(&line).map(|()| Self(line))
     }
 
@@ -57,7 +57,7 @@ impl Line {
     /// let line = Line::from_degrees(line)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
-    pub fn from_degrees(line: geo::Line<f64>) -> Result<Self, InvalidGeometry> {
+    pub fn from_degrees(line: geo::Line) -> Result<Self, InvalidGeometry> {
         let line = geo::Line::new(
             Coord {
                 x: line.start.x.to_radians(),
@@ -72,7 +72,7 @@ impl Line {
     }
 
     // Check that the line's coordinates are finite.
-    fn check_coords(line: &geo::Line<f64>) -> Result<(), InvalidGeometry> {
+    fn check_coords(line: &geo::Line) -> Result<(), InvalidGeometry> {
         if !super::coord_is_valid(line.start)
             || !super::coord_is_valid(line.end)
         {
@@ -82,7 +82,7 @@ impl Line {
     }
 }
 
-impl From<Line> for geo::Line<f64> {
+impl From<Line> for geo::Line {
     fn from(value: Line) -> Self {
         value.0
     }
@@ -103,7 +103,7 @@ impl ToCells for Line {
 
 // ----------------------------------------------------------------------------
 
-pub fn cells_count(line: geo::Line<f64>, resolution: Resolution) -> usize {
+pub fn cells_count(line: geo::Line, resolution: Resolution) -> usize {
     let (start, end) = start_end_cells(&line, resolution);
     // Ideally, this should return an error but see comments in `to_cells`
     // below.
@@ -112,7 +112,7 @@ pub fn cells_count(line: geo::Line<f64>, resolution: Resolution) -> usize {
 }
 
 pub fn to_cells(
-    line: geo::Line<f64>,
+    line: geo::Line,
     resolution: Resolution,
 ) -> impl Iterator<Item = CellIndex> {
     let (start, end) = start_end_cells(&line, resolution);
@@ -138,7 +138,7 @@ pub fn to_cells(
 // Returns the cell indexes at the start and end of the line for the given
 // resolution.
 fn start_end_cells(
-    line: &geo::Line<f64>,
+    line: &geo::Line,
     resolution: Resolution,
 ) -> (CellIndex, CellIndex) {
     // TODO: precompute those at creation time?

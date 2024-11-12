@@ -42,7 +42,7 @@ impl Polygon {
     /// use geo::polygon;
     /// use h3o::geom::Polygon;
     ///
-    /// let p: geo::Polygon<f64> = polygon![
+    /// let p: geo::Polygon = polygon![
     ///     (x: 0.6559997912129759, y: 0.9726707149994819),
     ///     (x: 0.6573835290630796, y: 0.9726707149994819),
     ///     (x: 0.6573835290630796, y: 0.9735034901250053),
@@ -53,7 +53,7 @@ impl Polygon {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_radians(
-        polygon: geo::Polygon<f64>,
+        polygon: geo::Polygon,
     ) -> Result<Self, InvalidGeometry> {
         let (exterior, interiors) = polygon.into_inner();
         Ok(Self {
@@ -79,7 +79,7 @@ impl Polygon {
     /// use geo::polygon;
     /// use h3o::geom::Polygon;
     ///
-    /// let p: geo::Polygon<f64> = polygon![
+    /// let p: geo::Polygon = polygon![
     ///     (x: 37.58601939796671, y: 55.72992682544245),
     ///     (x: 37.66530173673016, y: 55.72992682544245),
     ///     (x: 37.66530173673016, y: 55.777641325418415),
@@ -90,7 +90,7 @@ impl Polygon {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn from_degrees(
-        polygon: geo::Polygon<f64>,
+        polygon: geo::Polygon,
     ) -> Result<Self, InvalidGeometry> {
         let (exterior, interiors) = polygon.into_inner();
         Ok(Self {
@@ -109,9 +109,7 @@ impl Polygon {
     ///
     /// [`InvalidGeometry`] if the rectangle is invalid (e.g. contains
     /// non-finite coordinates).
-    pub(super) fn from_rect(
-        rect: geo::Rect<f64>,
-    ) -> Result<Self, InvalidGeometry> {
+    pub(super) fn from_rect(rect: geo::Rect) -> Result<Self, InvalidGeometry> {
         let (exterior, interiors) = rect.to_polygon().into_inner();
         debug_assert!(interiors.is_empty());
 
@@ -130,7 +128,7 @@ impl Polygon {
     /// [`InvalidGeometry`] if the triangle is invalid (e.g. contains on-finite
     /// coordinates).
     pub(super) fn from_triangle(
-        triangle: geo::Triangle<f64>,
+        triangle: geo::Triangle,
     ) -> Result<Self, InvalidGeometry> {
         let (exterior, interiors) = triangle.to_polygon().into_inner();
         debug_assert!(interiors.is_empty());
@@ -141,15 +139,15 @@ impl Polygon {
         })
     }
 
-    pub(super) const fn bbox(&self) -> geo::Rect<f64> {
+    pub(super) const fn bbox(&self) -> geo::Rect {
         self.exterior.bbox()
     }
 
-    pub(super) fn exterior(&self) -> &geo::LineString<f64> {
+    pub(super) fn exterior(&self) -> &geo::LineString {
         self.exterior.geom()
     }
 
-    fn interiors(&self) -> impl Iterator<Item = &geo::LineString<f64>> {
+    fn interiors(&self) -> impl Iterator<Item = &geo::LineString> {
         self.interiors.iter().map(Ring::geom)
     }
 
@@ -226,7 +224,7 @@ impl Polygon {
     }
 }
 
-impl From<Polygon> for geo::Polygon<f64> {
+impl From<Polygon> for geo::Polygon {
     fn from(value: Polygon) -> Self {
         Self::new(
             value.exterior.into(),
@@ -436,7 +434,7 @@ fn contains_boundary(polygon: &Polygon, boundary: &CellBoundary) -> bool {
 
 // Return the cell indexes that traces the ring outline (rough approximation)
 fn get_edge_cells(
-    ring: &geo::LineString<f64>,
+    ring: &geo::LineString,
     resolution: Resolution,
 ) -> impl Iterator<Item = CellIndex> + '_ {
     ring.lines()
@@ -491,7 +489,7 @@ fn neighbors(cell: CellIndex, scratchpad: &mut [u64]) -> usize {
 
 /// Returns an estimated number of hexagons that trace the cartesian-projected
 /// line.
-fn line_hex_estimate(line: &geo::Line<f64>, resolution: Resolution) -> u64 {
+fn line_hex_estimate(line: &geo::Line, resolution: Resolution) -> u64 {
     // Get the area of the pentagon as the maximally-distorted area possible
     const PENT_DIAMETER_RADS: [f64; 16] = [
         0.32549355508382627,

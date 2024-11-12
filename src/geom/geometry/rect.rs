@@ -30,7 +30,7 @@ impl Rect {
     /// let rect = Rect::from_radians(rect)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
-    pub fn from_radians(rect: geo::Rect<f64>) -> Result<Self, InvalidGeometry> {
+    pub fn from_radians(rect: geo::Rect) -> Result<Self, InvalidGeometry> {
         Ok(Self(Polygon::from_rect(rect)?))
     }
 
@@ -53,12 +53,12 @@ impl Rect {
     /// let rect = Rect::from_degrees(rect)?;
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
-    pub fn from_degrees(rect: geo::Rect<f64>) -> Result<Self, InvalidGeometry> {
+    pub fn from_degrees(rect: geo::Rect) -> Result<Self, InvalidGeometry> {
         Ok(Self(Polygon::from_degrees(rect.to_polygon())?))
     }
 }
 
-impl From<Rect> for geo::Rect<f64> {
+impl From<Rect> for geo::Rect {
     fn from(value: Rect) -> Self {
         value.0.bbox()
     }
