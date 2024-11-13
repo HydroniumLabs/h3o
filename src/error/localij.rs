@@ -1,5 +1,5 @@
 use super::HexGridError;
-use core::fmt;
+use core::{error::Error, fmt};
 
 /// Errors occurring during [`LocalIJ`](crate::LocalIJ) coordinate system
 /// conversions.
@@ -26,9 +26,8 @@ impl fmt::Display for LocalIjError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for LocalIjError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl Error for LocalIjError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         match *self {
             Self::ResolutionMismatch | Self::Pentagon => None,
             Self::HexGrid(ref err) => Some(err),

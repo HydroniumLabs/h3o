@@ -17,6 +17,7 @@ Possible sections are:
 ### Changed
 
 - Performance enhancement for aarch64, should not affect other platforms
+- Error types now derive `Error`, even in no-std mode.
 
 ## [0.6.4] - 2024-05-10
 

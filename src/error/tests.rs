@@ -7,6 +7,7 @@ use crate::error::{
 #[cfg(feature = "geo")]
 use crate::error::{InvalidGeometry, OutlinerError};
 use alloc::string::ToString;
+use core::error::Error as _;
 
 // All error must have a non-empty display.
 #[test]
@@ -57,11 +58,8 @@ fn display() {
 }
 
 // All errors are root errors.
-#[cfg(feature = "std")]
 #[test]
 fn source() {
-    use std::error::Error;
-
     let hex_grid_error = HexGridError::new("error");
 
     assert!(CompactionError::HeterogeneousResolution.source().is_none());

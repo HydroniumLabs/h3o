@@ -1,4 +1,4 @@
-use core::fmt;
+use core::{error::Error, fmt};
 
 /// Resolution mismatch between two cell indexes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -10,9 +10,8 @@ impl fmt::Display for ResolutionMismatch {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for ResolutionMismatch {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl Error for ResolutionMismatch {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         None
     }
 }

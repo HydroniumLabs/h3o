@@ -7,9 +7,7 @@ mod localij;
 mod resolution_mismatch;
 
 #[cfg(feature = "geo")]
-mod geometry;
-#[cfg(feature = "geo")]
-mod outliner;
+mod geom;
 
 #[cfg(test)]
 mod tests;
@@ -25,6 +23,4 @@ pub use localij::LocalIjError;
 pub use resolution_mismatch::ResolutionMismatch;
 
 #[cfg(feature = "geo")]
-pub use geometry::InvalidGeometry;
-#[cfg(feature = "geo")]
-pub use outliner::OutlinerError;
+pub use geom::{InvalidGeometry, OutlinerError};
