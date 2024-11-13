@@ -198,10 +198,8 @@ pub fn cell_to_vertexes(cell: CellIndex) -> Vec<VertexIndex> {
     }
 
     out.into_iter()
-        .filter_map(|index| {
-            (index != 0)
-                .then(|| VertexIndex::try_from(index).expect("vertex index"))
-        })
+        .filter(|&index| index != 0)
+        .map(|index| VertexIndex::try_from(index).expect("vertex index"))
         .collect()
 }
 
@@ -257,10 +255,8 @@ pub fn compact_cells(cells: &[CellIndex]) -> Option<Vec<CellIndex>> {
     };
     (res == 0).then(|| {
         out.into_iter()
-            .filter_map(|index| {
-                (index != 0)
-                    .then(|| CellIndex::try_from(index).expect("cell index"))
-            })
+            .filter(|&index| index != 0)
+            .map(|index| CellIndex::try_from(index).expect("cell index"))
             .collect()
     })
 }
@@ -394,10 +390,8 @@ pub fn get_icosahedron_faces(index: CellIndex) -> Vec<Face> {
 
     let mut res = out
         .into_iter()
-        .filter_map(|value| {
-            (value != -1)
-                .then(|| Face::try_from(value as u8).expect("icosahedron face"))
-        })
+        .filter(|&value| value != -1)
+        .map(|value| Face::try_from(value as u8).expect("icosahedron face"))
         .collect::<Vec<_>>();
     res.sort();
     res
@@ -500,9 +494,8 @@ pub fn grid_disk(origin: CellIndex, k: u32) -> Vec<CellIndex> {
 
     cells
         .into_iter()
-        .filter_map(|cell| {
-            (cell != 0).then(|| CellIndex::try_from(cell).expect("cell index"))
-        })
+        .filter(|&cell| cell != 0)
+        .map(|cell| CellIndex::try_from(cell).expect("cell index"))
         .collect()
 }
 
@@ -524,14 +517,13 @@ pub fn grid_disk_distances(origin: CellIndex, k: u32) -> Vec<(CellIndex, u32)> {
 
     cells
         .into_iter()
-        .zip(distances.into_iter())
-        .filter_map(|(cell, distance)| {
-            (cell != 0).then(|| {
-                (
-                    CellIndex::try_from(cell).expect("cell index"),
-                    distance as u32,
-                )
-            })
+        .zip(distances)
+        .filter(|&(cell, _distance)| cell != 0)
+        .map(|(cell, distance)| {
+            (
+                CellIndex::try_from(cell).expect("cell index"),
+                distance as u32,
+            )
         })
         .collect()
 }
@@ -557,14 +549,13 @@ pub fn grid_disk_distances_safe(
 
     cells
         .into_iter()
-        .zip(distances.into_iter())
-        .filter_map(|(cell, distance)| {
-            (cell != 0).then(|| {
-                (
-                    CellIndex::try_from(cell).expect("cell index"),
-                    distance as u32,
-                )
-            })
+        .zip(distances)
+        .filter(|&(cell, _distance)| cell != 0)
+        .map(|(cell, distance)| {
+            (
+                CellIndex::try_from(cell).expect("cell index"),
+                distance as u32,
+            )
         })
         .collect()
 }
@@ -590,14 +581,13 @@ pub fn grid_disk_distances_unsafe(
     (res == 0).then(|| {
         cells
             .into_iter()
-            .zip(distances.into_iter())
-            .filter_map(|(cell, distance)| {
-                (cell != 0).then(|| {
-                    (
-                        CellIndex::try_from(cell).expect("cell index"),
-                        distance as u32,
-                    )
-                })
+            .zip(distances)
+            .filter(|&(cell, _distance)| cell != 0)
+            .map(|(cell, distance)| {
+                (
+                    CellIndex::try_from(cell).expect("cell index"),
+                    distance as u32,
+                )
             })
             .collect()
     })
@@ -619,10 +609,8 @@ pub fn grid_disk_unsafe(origin: CellIndex, k: u32) -> Option<Vec<CellIndex>> {
     (res == 0).then(|| {
         cells
             .into_iter()
-            .filter_map(|cell| {
-                (cell != 0)
-                    .then(|| CellIndex::try_from(cell).expect("cell index"))
-            })
+            .filter(|&cell| cell != 0)
+            .map(|cell| CellIndex::try_from(cell).expect("cell index"))
             .collect()
     })
 }
@@ -649,10 +637,8 @@ pub fn grid_disks_unsafe(
     (res == 0).then(|| {
         cells
             .into_iter()
-            .filter_map(|cell| {
-                (cell != 0)
-                    .then(|| CellIndex::try_from(cell).expect("cell index"))
-            })
+            .filter(|&cell| cell != 0)
+            .map(|cell| CellIndex::try_from(cell).expect("cell index"))
             .collect()
     })
 }
@@ -711,10 +697,8 @@ pub fn grid_ring_unsafe(origin: CellIndex, k: u32) -> Option<Vec<CellIndex>> {
     (res == 0).then(|| {
         cells
             .into_iter()
-            .filter_map(|cell| {
-                (cell != 0)
-                    .then(|| CellIndex::try_from(cell).expect("cell index"))
-            })
+            .filter(|&cell| cell != 0)
+            .map(|cell| CellIndex::try_from(cell).expect("cell index"))
             .collect()
     })
 }
@@ -815,11 +799,8 @@ pub fn origin_to_directed_edges(index: CellIndex) -> Vec<DirectedEdgeIndex> {
     }
 
     out.into_iter()
-        .filter_map(|index| {
-            (index != 0).then(|| {
-                DirectedEdgeIndex::try_from(index).expect("edge index")
-            })
-        })
+        .filter(|&index| index != 0)
+        .map(|index| DirectedEdgeIndex::try_from(index).expect("edge index"))
         .collect()
 }
 

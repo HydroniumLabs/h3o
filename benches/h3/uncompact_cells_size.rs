@@ -4,7 +4,7 @@ use h3o::{CellIndex, Resolution};
 const RESOLUTION: Resolution = Resolution::Seven;
 
 pub fn bench(c: &mut Criterion) {
-    let compacted = vec![
+    let compacted = [
         CellIndex::try_from(0x802bfffffffffff).unwrap(), // hexagon  res 0.
         CellIndex::try_from(0x820807fffffffff).unwrap(), // pentagon res 1.
         CellIndex::try_from(0x83734efffffffff).unwrap(), // hexagon  res 3.

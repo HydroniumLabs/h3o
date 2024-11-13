@@ -381,8 +381,7 @@ fn fully_in_cell_contained_geometry() {
         .grid_disk_distances(2);
     let coord_ring = cell_ring
         .iter()
-        .filter(|(_, k)| *k == 2)
-        .next()
+        .find(|(_, k)| *k == 2)
         .expect("first k=2 of ring")
         .0
         .boundary()

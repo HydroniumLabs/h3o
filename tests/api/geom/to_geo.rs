@@ -72,9 +72,9 @@ fn from_cells() {
     // Check equivalence due to hashing being used internally, starting point of
     // each ring isn't deterministic.
     for (hole_result, hole_expected) in
-        holes_result.into_iter().zip(holes_expected.into_iter())
+        holes_result.iter().zip(holes_expected.iter())
     {
-        assert_line_string_equivalent(&hole_result, &hole_expected, 1e-6);
+        assert_line_string_equivalent(hole_result, hole_expected, 1e-6);
     }
     assert_line_string_equivalent(
         result.0[0].exterior(),

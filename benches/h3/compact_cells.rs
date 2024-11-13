@@ -24,10 +24,7 @@ pub fn bench(c: &mut Criterion) {
     let uncompactable = cells
         .iter()
         .copied()
-        .filter_map(|cell| {
-            (cell.direction_at(RESOLUTION) != Some(Direction::IK))
-                .then_some(cell)
-        })
+        .filter(|cell| cell.direction_at(RESOLUTION) != Some(Direction::IK))
         .collect::<Vec<_>>();
     group.bench_function("h3o/NoCompaction", |b| bench_h3o(b, &uncompactable));
     group.bench_function("h3/NoCompaction", |b| bench_h3(b, &uncompactable));
