@@ -1,10 +1,7 @@
 #![no_main]
 
-use geo_types as geo;
-use h3o::{
-    geom::{PolyfillConfig, Polygon, ToCells},
-    Resolution,
-};
+use geo_types::{Coord, LineString, Polygon};
+use h3o::{geom::TilerBuilder, Resolution};
 use libfuzzer_sys::fuzz_target;
 
 #[derive(Debug, arbitrary::Arbitrary)]
@@ -18,10 +15,10 @@ fuzz_target!(|args: Args| {
         .values
         .into_iter()
         .filter_map(|coords| {
-            let mut ring = geo::LineString::new(
+            let mut ring = LineString::new(
                 coords
                     .chunks_exact(2)
-                    .map(|chunk| geo::Coord {
+                    .map(|chunk| Coord {
                         x: chunk[0],
                         y: chunk[1],
                     })
@@ -39,14 +36,11 @@ fuzz_target!(|args: Args| {
     let outer = rings.pop().expect("checked above");
     rings.truncate(100); // Avoid too many holes.
 
-    if let Ok(polygon) = Polygon::from_degrees(geo::Polygon::new(outer, rings))
-    {
-        let config = PolyfillConfig::new(args.resolution);
-        let upper_bound = polygon.max_cells_count(config);
-
-        if upper_bound > 4_000_000 {
+    let mut tiler = TilerBuilder::new(args.resolution).build();
+    if tiler.add(Polygon::new(outer, rings)).is_ok() {
+        if tiler.coverage_size_hint() > 4_000_000 {
             return;
         }
-        polygon.to_cells(config).for_each(drop);
+        tiler.into_coverage().for_each(drop);
     }
 });

@@ -144,6 +144,7 @@ fn get_starting_state(index: CellIndex, resolution: Resolution) -> u64 {
 // -----------------------------------------------------------------------------
 
 /// Iterator over a children cell index at a given resolution.
+#[derive(Debug, Clone)]
 pub struct GridPathCells {
     /// Starting cell .
     anchor: CellIndex,

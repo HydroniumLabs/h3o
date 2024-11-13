@@ -5,21 +5,21 @@ use crate::error::{
     LocalIjError, ResolutionMismatch,
 };
 #[cfg(feature = "geo")]
-use crate::error::{InvalidGeometry, OutlinerError};
+use crate::error::{DissolutionError, InvalidGeometry, PlotterError};
 use alloc::string::ToString;
 use core::error::Error as _;
 
 // All error must have a non-empty display.
 #[test]
 fn display() {
-    let hex_grid_error = HexGridError::new("error");
+    let hex_grid = HexGridError::new("error");
 
     assert!(!CompactionError::HeterogeneousResolution
         .to_string()
         .is_empty());
     assert!(!CompactionError::DuplicateInput.to_string().is_empty());
 
-    assert!(!hex_grid_error.to_string().is_empty());
+    assert!(!hex_grid.to_string().is_empty());
 
     assert!(!InvalidResolution::new(Some(32), "error")
         .to_string()
@@ -42,30 +42,34 @@ fn display() {
 
     assert!(!LocalIjError::ResolutionMismatch.to_string().is_empty());
     assert!(!LocalIjError::Pentagon.to_string().is_empty());
-    assert!(!LocalIjError::HexGrid(hex_grid_error).to_string().is_empty());
+    assert!(!LocalIjError::HexGrid(hex_grid).to_string().is_empty());
 
     assert!(!ResolutionMismatch.to_string().is_empty());
 
     #[cfg(feature = "geo")]
-    assert!(!InvalidGeometry::new("error").to_string().is_empty());
+    {
+        let invalid_geometry = InvalidGeometry::new("error");
+        let local_ij = LocalIjError::Pentagon;
 
-    #[cfg(feature = "geo")]
-    assert!(!OutlinerError::HeterogeneousResolution
-        .to_string()
-        .is_empty());
-    #[cfg(feature = "geo")]
-    assert!(!OutlinerError::DuplicateInput.to_string().is_empty());
+        assert!(!invalid_geometry.to_string().is_empty());
+        assert!(!DissolutionError::HeterogeneousResolution
+            .to_string()
+            .is_empty());
+        assert!(!DissolutionError::DuplicateInput.to_string().is_empty());
+
+        assert!(!PlotterError::from(invalid_geometry).to_string().is_empty());
+        assert!(!PlotterError::from(local_ij).to_string().is_empty());
+    }
 }
 
-// All errors are root errors.
 #[test]
 fn source() {
-    let hex_grid_error = HexGridError::new("error");
+    let hex_grid = HexGridError::new("error");
 
     assert!(CompactionError::HeterogeneousResolution.source().is_none());
     assert!(CompactionError::DuplicateInput.source().is_none());
 
-    assert!(hex_grid_error.source().is_none());
+    assert!(hex_grid.source().is_none());
 
     assert!(InvalidResolution::new(Some(32), "error").source().is_none());
     assert!(InvalidCellIndex::new(Some(0), "error").source().is_none());
@@ -82,15 +86,19 @@ fn source() {
 
     assert!(LocalIjError::ResolutionMismatch.source().is_none());
     assert!(LocalIjError::Pentagon.source().is_none());
-    assert!(LocalIjError::HexGrid(hex_grid_error).source().is_some());
+    assert!(LocalIjError::HexGrid(hex_grid).source().is_some());
 
     assert!(ResolutionMismatch.source().is_none());
 
     #[cfg(feature = "geo")]
-    assert!(InvalidGeometry::new("error").source().is_none());
+    {
+        let invalid_geometry = InvalidGeometry::new("error");
+        let local_ij = LocalIjError::Pentagon;
 
-    #[cfg(feature = "geo")]
-    assert!(OutlinerError::HeterogeneousResolution.source().is_none());
-    #[cfg(feature = "geo")]
-    assert!(OutlinerError::DuplicateInput.source().is_none());
+        assert!(invalid_geometry.source().is_none());
+        assert!(DissolutionError::HeterogeneousResolution.source().is_none());
+        assert!(DissolutionError::DuplicateInput.source().is_none());
+        assert!(PlotterError::from(invalid_geometry).source().is_some());
+        assert!(PlotterError::from(local_ij).source().is_some());
+    }
 }

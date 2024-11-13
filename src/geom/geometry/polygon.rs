@@ -1,11 +1,11 @@
-use super::{bbox, CellBoundary, Geometry, Ring};
+use super::{bbox, CellBoundary, Ring};
 use crate::{
-    error::InvalidGeometry,
-    geom::{ContainmentMode, PolyfillConfig, ToCells},
-    CellIndex, LatLng, Resolution,
+    error::InvalidGeometry, geom::ContainmentMode, CellIndex, LatLng,
+    Resolution,
 };
-use alloc::{borrow::Cow, boxed::Box, vec::Vec};
+use alloc::{borrow::Cow, vec::Vec};
 use core::cmp;
+use either::Either;
 use geo::{coord, CoordsIter};
 
 #[cfg(feature = "std")]
@@ -28,30 +28,13 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    /// Initialize a new polygon from a `geo::Polygon` whose coordinates are in
-    /// radians.
-    ///
-    /// # Errors
-    ///
-    /// [`InvalidGeometry`] if the polygon is invalid (e.g. contains non-finite
-    /// coordinates).
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use geo::polygon;
-    /// use h3o::geom::Polygon;
-    ///
-    /// let p: geo::Polygon = polygon![
-    ///     (x: 0.6559997912129759, y: 0.9726707149994819),
-    ///     (x: 0.6573835290630796, y: 0.9726707149994819),
-    ///     (x: 0.6573835290630796, y: 0.9735034901250053),
-    ///     (x: 0.6559997912129759, y: 0.9735034901250053),
-    ///     (x: 0.6559997912129759, y: 0.9726707149994819),
-    /// ];
-    /// let polygon = Polygon::from_radians(p)?;
-    /// # Ok::<(), h3o::error::InvalidGeometry>(())
-    /// ```
+    // Initialize a new polygon from a `geo::Polygon` whose coordinates are in
+    // radians.
+    //
+    // # Errors
+    //
+    // [`InvalidGeometry`] if the polygon is invalid (e.g. contains non-finite
+    // coordinates).
     pub fn from_radians(
         polygon: geo::Polygon,
     ) -> Result<Self, InvalidGeometry> {
@@ -65,30 +48,13 @@ impl Polygon {
         })
     }
 
-    /// Initialize a new polygon from a `geo::Polygon` whose coordinates are in
-    /// degrees.
-    ///
-    /// # Errors
-    ///
-    /// [`InvalidGeometry`] if the polygon is invalid (e.g. contains non-finite
-    /// coordinates).
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use geo::polygon;
-    /// use h3o::geom::Polygon;
-    ///
-    /// let p: geo::Polygon = polygon![
-    ///     (x: 37.58601939796671, y: 55.72992682544245),
-    ///     (x: 37.66530173673016, y: 55.72992682544245),
-    ///     (x: 37.66530173673016, y: 55.777641325418415),
-    ///     (x: 37.58601939796671, y: 55.777641325418415),
-    ///     (x: 37.58601939796671, y: 55.72992682544245),
-    /// ];
-    /// let polygon = Polygon::from_degrees(p)?;
-    /// # Ok::<(), h3o::error::InvalidGeometry>(())
-    /// ```
+    // Initialize a new polygon from a `geo::Polygon` whose coordinates are in
+    // degrees.
+    //
+    // # Errors
+    //
+    // [`InvalidGeometry`] if the polygon is invalid (e.g. contains non-finite
+    // coordinates).
     pub fn from_degrees(
         polygon: geo::Polygon,
     ) -> Result<Self, InvalidGeometry> {
@@ -102,41 +68,26 @@ impl Polygon {
         })
     }
 
-    /// Initialize a new polygon from a [`geo::Rect`] whose coordinates are in
-    /// radians.
-    ///
-    /// # Errors
-    ///
-    /// [`InvalidGeometry`] if the rectangle is invalid (e.g. contains
-    /// non-finite coordinates).
-    pub(super) fn from_rect(rect: geo::Rect) -> Result<Self, InvalidGeometry> {
-        let (exterior, interiors) = rect.to_polygon().into_inner();
-        debug_assert!(interiors.is_empty());
+    pub fn max_cells_count(&self, resolution: Resolution) -> usize {
+        const POLYGON_TO_CELLS_BUFFER: usize = 12;
 
-        Ok(Self {
-            exterior: Ring::from_radians(exterior)?,
-            interiors: Vec::new(),
-        })
-    }
+        let estimated_count = bbox::hex_estimate(&self.bbox(), resolution);
 
-    /// Initialize a new polygon from a [`geo::Triangle`] whose coordinates are
-    /// in
-    /// radians.
-    ///
-    /// # Errors
-    ///
-    /// [`InvalidGeometry`] if the triangle is invalid (e.g. contains on-finite
-    /// coordinates).
-    pub(super) fn from_triangle(
-        triangle: geo::Triangle,
-    ) -> Result<Self, InvalidGeometry> {
-        let (exterior, interiors) = triangle.to_polygon().into_inner();
-        debug_assert!(interiors.is_empty());
+        // This algorithm assumes that the number of vertices is usually less
+        // than the number of hexagons, but when it's wrong, this will keep it
+        // from failing.
+        let vertex_count = self
+            .interiors()
+            // -1 because the last coord is duplicated to close the ring.
+            .fold(self.exterior().coords_count() - 1, |acc, line| {
+                acc + line.coords_count() - 1
+            });
 
-        Ok(Self {
-            exterior: Ring::from_radians(exterior)?,
-            interiors: Vec::new(),
-        })
+        // When the polygon is very small, near an icosahedron edge and is an
+        // odd resolution, the line tracing needs an extra buffer than the
+        // estimator function provides (but beefing that up to cover causes most
+        // situations to overallocate memory)
+        cmp::max(estimated_count, vertex_count) + POLYGON_TO_CELLS_BUFFER
     }
 
     pub(super) const fn bbox(&self) -> geo::Rect {
@@ -222,51 +173,6 @@ impl Polygon {
             acc
         })
     }
-}
-
-impl From<Polygon> for geo::Polygon {
-    fn from(value: Polygon) -> Self {
-        Self::new(
-            value.exterior.into(),
-            value.interiors.into_iter().map(Into::into).collect(),
-        )
-    }
-}
-
-impl TryFrom<Geometry> for Polygon {
-    type Error = InvalidGeometry;
-
-    fn try_from(value: Geometry) -> Result<Self, Self::Error> {
-        match value {
-            Geometry::Polygon(polygon) => Ok(polygon),
-            _ => Err(Self::Error::new("invalid type (polygon expected)")),
-        }
-    }
-}
-
-impl ToCells for Polygon {
-    fn max_cells_count(&self, config: PolyfillConfig) -> usize {
-        const POLYGON_TO_CELLS_BUFFER: usize = 12;
-
-        let estimated_count =
-            bbox::hex_estimate(&self.bbox(), config.resolution);
-
-        // This algorithm assumes that the number of vertices is usually less
-        // than the number of hexagons, but when it's wrong, this will keep it
-        // from failing.
-        let vertex_count = self
-            .interiors()
-            // -1 because the last coord is duplicated to close the ring.
-            .fold(self.exterior().coords_count() - 1, |acc, line| {
-                acc + line.coords_count() - 1
-            });
-
-        // When the polygon is very small, near an icosahedron edge and is an
-        // odd resolution, the line tracing needs an extra buffer than the
-        // estimator function provides (but beefing that up to cover causes most
-        // situations to overallocate memory)
-        cmp::max(estimated_count, vertex_count) + POLYGON_TO_CELLS_BUFFER
-    }
 
     /// This implementation traces the outlines of the polygon's rings, fill one
     /// layer of internal cells and then propagate inwards until the whole area
@@ -275,11 +181,12 @@ impl ToCells for Polygon {
     /// Only the outlines and the first inner layer of cells requires
     /// Point-in-Polygon checks, inward propagation doesn't (since we're bounded
     /// by the outlines) which make this approach relatively efficient.
-    fn to_cells(
-        &self,
-        config: PolyfillConfig,
-    ) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        let contains = match config.containment {
+    pub fn into_cells(
+        self,
+        resolution: Resolution,
+        containment: ContainmentMode,
+    ) -> impl Iterator<Item = CellIndex> {
+        let contains = match containment {
             ContainmentMode::ContainsCentroid => contains_centroid,
             ContainmentMode::ContainsBoundary
             | ContainmentMode::IntersectsBoundary
@@ -293,17 +200,12 @@ impl ToCells for Polygon {
         let mut scratchpad = [0; 7];
 
         // First, compute the outline.
-        let mut outlines = self.hex_outline(
-            config.resolution,
-            &mut seen,
-            &mut scratchpad,
-            contains,
-        );
+        let mut outlines =
+            self.hex_outline(resolution, &mut seen, &mut scratchpad, contains);
 
-        if outlines.is_empty() && config.containment == ContainmentMode::Covers
-        {
-            return Box::new(core::iter::once(
-                self.exterior.centroid().to_cell(config.resolution),
+        if outlines.is_empty() && containment == ContainmentMode::Covers {
+            return Either::Left(core::iter::once(
+                self.exterior.centroid().to_cell(resolution),
             ));
         }
 
@@ -321,12 +223,12 @@ impl ToCells for Polygon {
         #[cfg(feature = "std")]
         let mut new_seen = Set::with_capacity(seen.len());
 
-        if config.containment == ContainmentMode::ContainsBoundary {
+        if containment == ContainmentMode::ContainsBoundary {
             outlines.retain(|&cell| {
-                !intersects_boundary(self, &CellBoundary::from(cell))
+                !intersects_boundary(&self, &CellBoundary::from(cell))
             });
             candidates.retain(|&cell| {
-                !intersects_boundary(self, &CellBoundary::from(cell))
+                !intersects_boundary(&self, &CellBoundary::from(cell))
             });
         }
 
@@ -338,7 +240,7 @@ impl ToCells for Polygon {
 
             for &cell in &candidates {
                 debug_assert!(
-                    contains_boundary(self, &CellBoundary::from(cell)),
+                    contains_boundary(&self, &CellBoundary::from(cell)),
                     "cell index {cell} in polygon"
                 );
 
@@ -364,7 +266,7 @@ impl ToCells for Polygon {
             Some(curr_gen.into_iter())
         });
 
-        Box::new(outlines.into_iter().chain(inward_propagation.flatten()))
+        Either::Right(outlines.into_iter().chain(inward_propagation.flatten()))
     }
 }
 

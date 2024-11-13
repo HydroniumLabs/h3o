@@ -106,10 +106,8 @@ fn get_icosahedron_faces(index: CellIndex) -> Vec<Face> {
 
     let mut res = out
         .into_iter()
-        .filter_map(|value| {
-            (value != -1)
-                .then(|| Face::try_from(value as u8).expect("icosahedron face"))
-        })
+        .filter(|&value| value != -1)
+        .map(|value| Face::try_from(value as u8).expect("icosahedron face"))
         .collect::<Vec<_>>();
     res.sort();
     res
@@ -175,11 +173,8 @@ fn origin_to_directed_edges(index: CellIndex) -> Vec<DirectedEdgeIndex> {
     }
 
     out.into_iter()
-        .filter_map(|index| {
-            (index != 0).then(|| {
-                DirectedEdgeIndex::try_from(index).expect("edge index")
-            })
-        })
+        .filter(|&index| index != 0)
+        .map(|index| DirectedEdgeIndex::try_from(index).expect("edge index"))
         .collect()
 }
 
@@ -191,10 +186,8 @@ fn cell_to_vertexes(cell: CellIndex) -> Vec<VertexIndex> {
     }
 
     out.into_iter()
-        .filter_map(|index| {
-            (index != 0)
-                .then(|| VertexIndex::try_from(index).expect("vertex index"))
-        })
+        .filter(|&index| index != 0)
+        .map(|index| VertexIndex::try_from(index).expect("vertex index"))
         .collect()
 }
 

@@ -2,7 +2,6 @@
 
 use h3o::{CellIndex, CoordIJ, LocalIJ};
 use libfuzzer_sys::fuzz_target;
-use std::os::raw::c_int;
 
 #[derive(Debug, arbitrary::Arbitrary)]
 pub struct Args {

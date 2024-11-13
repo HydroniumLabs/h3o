@@ -331,6 +331,14 @@ impl<'a> arbitrary::Arbitrary<'a> for VertexIndex {
     }
 }
 
+#[cfg(feature = "geo")]
+impl From<VertexIndex> for geo::Point {
+    fn from(value: VertexIndex) -> Self {
+        let coord: geo::Coord = LatLng::from(value).into();
+        coord.into()
+    }
+}
+
 #[cfg(test)]
 #[path = "./vertex_tests.rs"]
 mod tests;

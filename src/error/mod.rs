@@ -23,4 +23,4 @@ pub use localij::LocalIjError;
 pub use resolution_mismatch::ResolutionMismatch;
 
 #[cfg(feature = "geo")]
-pub use geom::{InvalidGeometry, OutlinerError};
+pub use geom::{DissolutionError, InvalidGeometry, PlotterError};

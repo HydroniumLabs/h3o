@@ -228,10 +228,3 @@ fn is_transmeridian(ring: &geo::LineString) -> bool {
     ring.lines()
         .any(|line| (line.start.x - line.end.x).abs() > PI)
 }
-
-impl From<Ring> for geo::LineString {
-    fn from(value: Ring) -> Self {
-        let (ring, _) = value.geom.into_inner();
-        ring
-    }
-}

@@ -79,12 +79,12 @@
 //!
 //! ### Region functions
 //!
-//! | H3                      | H3O                                |
-//! | :---------------------- | :--------------------------------- |
-//! | `polygonToCells`        | [`geom::ToCells::to_cells`]        |
-//! | `maxPolygonToCellsSize` | [`geom::ToCells::max_cells_count`] |
-//! | `h3SetToLinkedGeo`      | [`geom::ToGeo::to_geom`]           |
-//! | `destroyLinkedPolygon`  | N/A                                |
+//! | H3                      | H3O                                 |
+//! | :---------------------- | :---------------------------------  |
+//! | `polygonToCells`        | [`geom::Tiler::into_coverage`]      |
+//! | `maxPolygonToCellsSize` | [`geom::Tiler::coverage_size_hint`] |
+//! | `h3SetToLinkedGeo`      | [`geom::dissolve`]                  |
+//! | `destroyLinkedPolygon`  | N/A                                 |
 //!
 //! ### Directed edge functions
 //!

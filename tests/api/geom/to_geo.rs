@@ -1,6 +1,6 @@
 use approx::{assert_relative_eq, relative_eq};
-use geo::{coord, point, polygon};
-use h3o::{geom::ToGeo, CellIndex, DirectedEdgeIndex, Resolution, VertexIndex};
+use geo::{coord, polygon, Line, LineString, MultiPolygon, Point, Polygon};
+use h3o::{CellIndex, DirectedEdgeIndex, Resolution, VertexIndex};
 
 #[test]
 fn from_cells() {
@@ -12,52 +12,39 @@ fn from_cells() {
     let idx = cells.iter().position(|x| *x == center).expect("idx");
     cells.remove(idx);
 
-    let json = r#"
-        {
-  "coordinates": [
-    [
-      [
-        [ -122.02796455348616, 37.38525281604115 ],
-        [ -122.02732437374608, 37.385758270113065 ],
-        [ -122.02648011977477, 37.38558967035685 ],
-        [ -122.02583992481574, 37.38609511818443 ],
-        [ -122.02604398797318, 37.386769168218684 ],
-        [ -122.02540378194031, 37.38727461225182 ],
-        [ -122.02560784515092, 37.38794865717242 ],
-        [ -122.02645212137664, 37.38811725429045 ],
-        [ -122.02665619162275, 37.38879129032762 ],
-        [ -122.02750047073862, 37.38895987611164 ],
-        [ -122.02814066848063, 37.38845442717775 ],
-        [ -122.02898493935817, 37.38862300294707 ],
-        [ -122.0296251218798, 37.38811754776844 ],
-        [ -122.02942103767036, 37.38744351927073 ],
-        [ -122.03006120911812, 37.38693806029814 ],
-        [ -122.02985712496266, 37.386264026686845 ],
-        [ -122.0290128763404, 37.38609544827806 ],
-        [ -122.02880879921976, 37.38542140578344 ],
-        [ -122.02796455348616, 37.38525281604115 ]
-      ],
-      [
-        [ -122.02752844388534, 37.386432316377665 ],
-        [ -122.02837270074619, 37.38660090480038 ],
-        [ -122.02857677792056, 37.38727494218174 ],
-        [ -122.0279365912526, 37.38778039491016 ],
-        [ -122.02709232326434, 37.387611807806856 ],
-        [ -122.0268882530716, 37.386937766655734 ],
-        [ -122.02752844388534, 37.386432316377665 ]
-      ]
-    ]
-  ],
-  "type": "MultiPolygon"
-}
-"#;
-    let result =
-        geo::MultiPolygon::try_from(cells.to_geojson().expect("geojson"))
-            .expect("result");
-    let expected = geo::MultiPolygon::try_from(
-        json.parse::<geojson::Geometry>().expect("geojson"),
-    )
-    .expect("expected");
+    let result = h3o::geom::dissolve(cells).expect("geometry");
+    let expected = MultiPolygon::new(vec![polygon!(
+        exterior: [
+            (x: -122.02796455348616, y: 37.38525281604115 ),
+            (x: -122.02732437374608, y: 37.385758270113065),
+            (x: -122.02648011977477, y: 37.38558967035685 ),
+            (x: -122.02583992481574, y: 37.38609511818443 ),
+            (x: -122.02604398797318, y: 37.386769168218684),
+            (x: -122.02540378194031, y: 37.38727461225182 ),
+            (x: -122.02560784515092, y: 37.38794865717242 ),
+            (x: -122.02645212137664, y: 37.38811725429045 ),
+            (x: -122.02665619162275, y: 37.38879129032762 ),
+            (x: -122.02750047073862, y: 37.38895987611164 ),
+            (x: -122.02814066848063, y: 37.38845442717775 ),
+            (x: -122.02898493935817, y: 37.38862300294707 ),
+            (x: -122.0296251218798,  y: 37.38811754776844 ),
+            (x: -122.02942103767036, y: 37.38744351927073 ),
+            (x: -122.03006120911812, y: 37.38693806029814 ),
+            (x: -122.02985712496266, y: 37.386264026686845),
+            (x: -122.0290128763404,  y: 37.38609544827806 ),
+            (x: -122.02880879921976, y: 37.38542140578344 )
+        ],
+        interiors: [
+            [
+                (x: -122.02752844388534, y: 37.386432316377665),
+                (x: -122.02837270074619, y: 37.38660090480038 ),
+                (x: -122.02857677792056, y: 37.38727494218174 ),
+                (x: -122.0279365912526,  y: 37.38778039491016 ),
+                (x: -122.02709232326434, y: 37.387611807806856),
+                (x: -122.0268882530716,  y: 37.386937766655734)
+            ],
+        ],
+    )]);
 
     assert_eq!(result.0.len(), expected.0.len(), "polygon count mismatch");
 
@@ -84,122 +71,39 @@ fn from_cells() {
 }
 
 #[test]
-fn from_cell_as_degrees() {
+fn from_cell() {
     let index = CellIndex::try_from(0x89283470803ffff).expect("index");
-    let json = r#"
-        {
-  "coordinates": [
-    [
-      [ -122.02648011977477, 37.38558967035685 ],
-      [ -122.02540378194031, 37.38727461225182 ],
-      [ -122.02665619162275, 37.38879129032762 ],
-      [ -122.02898493935817, 37.38862300294707 ],
-      [ -122.03006120911812, 37.38693806029814 ],
-      [ -122.02880879921976, 37.38542140578344 ],
-      [ -122.02648011977477, 37.38558967035685 ]
-    ]
-  ],
-  "type": "Polygon"
-}
-"#;
-    let result = geo::Geometry::try_from(index.to_geojson().expect("geojson"))
-        .expect("result");
-    let expected = geo::Geometry::try_from(
-        json.parse::<geojson::Geometry>().expect("geojson"),
-    )
-    .expect("expected");
-
-    assert_relative_eq!(result, expected, epsilon = 1e-6);
-}
-
-#[test]
-fn from_cell_as_radians() {
-    let index = CellIndex::try_from(0x89283470803ffff).expect("index");
-    let result = index.to_geom(false).expect("polygon");
+    let result = Polygon::from(index);
     let expected = polygon![
-        (x: -122.02648011977477_f64.to_radians(), y: 37.38558967035685_f64.to_radians()),
-        (x: -122.02540378194031_f64.to_radians(), y: 37.38727461225182_f64.to_radians()),
-        (x: -122.02665619162275_f64.to_radians(), y: 37.38879129032762_f64.to_radians()),
-        (x: -122.02898493935817_f64.to_radians(), y: 37.38862300294707_f64.to_radians()),
-        (x: -122.03006120911812_f64.to_radians(), y: 37.38693806029814_f64.to_radians()),
-        (x: -122.02880879921976_f64.to_radians(), y: 37.38542140578344_f64.to_radians()),
+      (x: -122.02648011977477, y: 37.38558967035685),
+      (x: -122.02540378194031, y: 37.38727461225182),
+      (x: -122.02665619162275, y: 37.38879129032762),
+      (x: -122.02898493935817, y: 37.38862300294707),
+      (x: -122.03006120911812, y: 37.38693806029814),
+      (x: -122.02880879921976, y: 37.38542140578344),
     ];
 
     assert_relative_eq!(result, expected, epsilon = 1e-6);
 }
 
 #[test]
-fn from_directed_edge_as_degrees() {
+fn from_directed_edge() {
     let index =
         DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff).expect("index");
-    let json = r#"
-        {
-  "coordinates": [
-    [ 0.004346277485193205, 51.5333297602599 ],
-    [ 0.005128094944356792, 51.53286048728922 ]
-  ],
-  "type": "LineString"
-}
-"#;
-    let result = geo::Geometry::try_from(index.to_geojson().expect("geojson"))
-        .expect("result");
-    let expected = geo::Geometry::try_from(
-        json.parse::<geojson::Geometry>().expect("geojson"),
-    )
-    .expect("expected");
+    let result = Line::from(index);
+    let expected = Line::new(
+        coord!(x: 0.004346277485193205, y: 51.5333297602599),
+        coord!(x: 0.005128094944356792, y: 51.53286048728922),
+    );
 
     assert_relative_eq!(result, expected, epsilon = 1e-6);
 }
 
 #[test]
-fn from_directed_edge_as_radians() {
-    let index =
-        DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff).expect("index");
-    let result = index.to_geom(false).expect("line");
-    let expected = geo::Line {
-        start: coord! {
-            x: 0.004346277485193205_f64.to_radians(),
-            y: 51.5333297602599_f64.to_radians(),
-        },
-        end: coord! {
-            x: 0.005128094944356792_f64.to_radians(),
-            y: 51.53286048728922_f64.to_radians(),
-        },
-    };
-
-    assert_relative_eq!(result, expected, epsilon = 1e-6);
-}
-
-#[test]
-fn from_vertex_as_degrees() {
+fn from_vertex() {
     let index = VertexIndex::try_from(0x2302_bfff_ffff_ffff).expect("index");
-    let json = r#"
-        {
-  "coordinates": [
-    -74.64046816708004,
-    30.219492199828117
-  ],
-  "type": "Point"
-}
-"#;
-    let result = geo::Geometry::try_from(index.to_geojson().expect("geojson"))
-        .expect("result");
-    let expected = geo::Geometry::try_from(
-        json.parse::<geojson::Geometry>().expect("geojson"),
-    )
-    .expect("expected");
-
-    assert_relative_eq!(result, expected, epsilon = 1e-6);
-}
-
-#[test]
-fn from_vertex_as_radians() {
-    let index = VertexIndex::try_from(0x2302_bfff_ffff_ffff).expect("index");
-    let result = index.to_geom(false).expect("point");
-    let expected = point! {
-        x: -74.64046816708004_f64.to_radians(),
-        y:  30.219492199828117_f64.to_radians()
-    };
+    let result = Point::from(index);
+    let expected = Point::new(-74.64046816708004, 30.219492199828117);
 
     assert_relative_eq!(result, expected, epsilon = 1e-6);
 }
@@ -214,7 +118,7 @@ fn duplicate() {
     ]
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false);
+    let result = h3o::geom::dissolve(set);
 
     // No shape.
     assert!(result.is_err())
@@ -228,7 +132,7 @@ fn consecutive_duplicate() {
     ]
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false);
+    let result = h3o::geom::dissolve(set);
 
     // No shape.
     assert!(result.is_err())
@@ -239,7 +143,7 @@ fn resolution_mismatch() {
     let set = [0x89283082813ffff, 0x8828308281fffff]
         .into_iter()
         .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false);
+    let result = h3o::geom::dissolve(set);
 
     // No shape.
     assert!(result.is_err())
@@ -247,7 +151,7 @@ fn resolution_mismatch() {
 
 #[test]
 fn empty() {
-    let result = std::iter::empty().to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(std::iter::empty()).expect("geometry");
 
     // No shape.
     assert!(result.0.is_empty())
@@ -259,7 +163,7 @@ fn hexagon() {
     // /  \
     // \__/
     let set = [CellIndex::try_from(0x890dab6220bffff).expect("cell index")];
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 1 polygon.
     assert_eq!(result.0.len(), 1);
@@ -278,7 +182,7 @@ fn two_contiguous_cells() {
     let set = [0x8928308291bffff, 0x89283082957ffff]
         .into_iter()
         .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 1 polygon.
     assert_eq!(result.0.len(), 1);
@@ -296,7 +200,7 @@ fn two_non_contiguous_cells() {
     let set = [0x8928308291bffff, 0x89283082943ffff]
         .into_iter()
         .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 2 polygon.
     assert_eq!(result.0.len(), 2);
@@ -321,7 +225,7 @@ fn three_contiguous_cells() {
     ]
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 1 polygon.
     assert_eq!(result.0.len(), 1);
@@ -348,7 +252,7 @@ fn hole() {
     ]
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 1 polygon.
     assert_eq!(result.0.len(), 1);
@@ -362,7 +266,7 @@ fn hole() {
 #[test]
 fn pentagon() {
     let set = [CellIndex::try_from(0x851c0003fffffff).expect("cell index")];
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 1 polygon.
     assert_eq!(result.0.len(), 1);
@@ -386,7 +290,7 @@ fn two_ring() {
     ]
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 1 polygon.
     assert_eq!(result.0.len(), 1);
@@ -410,7 +314,7 @@ fn two_ring_unordered() {
     ]
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 1 polygon.
     assert_eq!(result.0.len(), 1);
@@ -436,7 +340,7 @@ fn nested_donut() {
     ]
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 2 polygon.
     assert_eq!(result.0.len(), 2);
@@ -470,7 +374,7 @@ fn nested_donut_transmeridian() {
     ]
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 2 polygon.
     assert_eq!(result.0.len(), 2);
@@ -493,7 +397,7 @@ fn contiguous_distorted() {
     let set = [0x894cc5365afffff, 0x894cc536537ffff]
         .into_iter()
         .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-    let result = set.to_geom(false).expect("geometry");
+    let result = h3o::geom::dissolve(set).expect("geometry");
 
     // 1 polygon.
     assert_eq!(result.0.len(), 1);
@@ -514,7 +418,7 @@ fn issue_12() {
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
 
-    assert!(set.to_geom(false).is_ok());
+    assert!(h3o::geom::dissolve(set).is_ok());
 }
 
 // See https://github.com/uber/h3/issues/917
@@ -531,7 +435,7 @@ fn issue_917() {
     .into_iter()
     .map(|bits| CellIndex::try_from(bits).expect("cell index"));
 
-    let geom = set.to_geom(false).expect("geometry");
+    let geom = h3o::geom::dissolve(set).expect("geometry");
     assert_eq!(geom.0.len(), 1, "a single polygon");
     assert!(geom.0[0].interiors().is_empty(), "no hole");
 }
@@ -544,7 +448,7 @@ fn non_deterministic_output() {
         let set = [0x871861318ffffff, 0x871861383ffffff]
             .into_iter()
             .map(|bits| CellIndex::try_from(bits).expect("cell index"));
-        let geom = set.to_geom(true).expect("geometry");
+        let geom = h3o::geom::dissolve(set).expect("geometry");
 
         assert_eq!(geom.0.len(), 2);
     }
@@ -561,7 +465,7 @@ macro_rules! grid_disk {
             let origin =
                 base_cell.center_child(resolution).expect("center cell");
             let set = origin.grid_disk::<Vec<_>>(2);
-            let result = set.to_geom(false).expect("geometry");
+            let result = h3o::geom::dissolve(set).expect("geometry");
             // Account for pentagon distortion on class II resolution.
             let expected = if base_cell.is_pentagon() {
                 if resolution.is_class3() {
@@ -621,8 +525,8 @@ grid_disk!(grid_disk_pentagon_res15, 0x8031fffffffffff, 15);
 /// LineString are equivalent if they contains the same point in the same order
 /// (but they don't necessarily start at the same point).
 fn assert_line_string_equivalent(
-    line1: &geo::LineString,
-    line2: &geo::LineString,
+    line1: &LineString,
+    line2: &LineString,
     epsilon: f64,
 ) {
     assert!(line1.is_closed(), "line1 is a LinearRing");

@@ -14,10 +14,28 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- `h3o::geom::Plotter` to compute the cells along lines.
+- `h3o::geom::Tiler` to compute the cell coverage of plane figures.
+
 ### Changed
 
-- Performance enhancement for aarch64, should not affect other platforms
-- Error types now derive `Error`, even in no-std mode.
+- small performance enhancement for aarch64, should not affect other platforms
+- error types now derive `Error`, even in no-std mode.
+
+### Removed
+
+- remove the geometry types wrapper (you can now use `geo` types directly).
+- remove the `ToCells` trait, now you can use:
+    - `h3o::LatLng` for `Point` & `MultiPoint`.
+    - `h3o::geom::Plotter` for `Line`, `LineString` and `MultiLineString`.
+    - `h3o::geom::Tiler` for `Polygon`, `MultiPolygon`, `Rect` and `Triangle`.
+- `Geometry` and `GeometryCollection` are not directly supported
+- remove the support for `geoJSON`.
+- remove the `ToGeo` trait, now you can use:
+    - `From` trait for `CellIndex`, `DirectedEdgeIndex` and `VertexIndex`
+    ` `geom::dissolve` for a set of cell indexes.
 
 ## [0.6.4] - 2024-05-10
 
