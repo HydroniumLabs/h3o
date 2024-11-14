@@ -288,19 +288,19 @@ test_count!(
     16020,
     4228
 );
-test_count!(transmeridian, load_polygon("Transmeridian"), 7, 16020, 4238);
+test_count!(transmeridian, load_polygon("Transmeridian"), 7, 10030, 4238);
 test_count!(
     transmeridian_hole,
     load_polygon("TransmeridianHole"),
     7,
-    16020,
+    10030,
     3176
 );
 test_count!(
     transmeridian_complex,
     load_polygon("TransmeridianComplex"),
     4,
-    5177,
+    8298,
     1204
 );
 
@@ -464,6 +464,7 @@ fn issue_23() {
     let poly = load_polygon("h3o_issue23");
     let mut tiler = TilerBuilder::new(Resolution::Six)
         .containment_mode(ContainmentMode::Covers)
+        .disable_transmeridian_heuristic()
         .build();
     tiler.add(poly).expect("failed to add polygon");
     let count = tiler.into_coverage().count();

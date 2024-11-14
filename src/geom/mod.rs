@@ -1,12 +1,10 @@
 //! Bridge between H3 entities and geometrical shapes.
 
-mod geometry;
 mod plotter;
 mod ring_hierarchy;
 mod tiler;
 mod vertex_graph;
 
-use geometry::Polygon;
 use ring_hierarchy::RingHierarchy;
 use vertex_graph::VertexGraph;
 

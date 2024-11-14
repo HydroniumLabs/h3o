@@ -196,7 +196,6 @@
     clippy::or_fun_call,
     clippy::panic,
     clippy::path_buf_push_overwrite,
-    clippy::pattern_type_mismatch,
     clippy::print_stderr,
     clippy::print_stdout,
     clippy::rc_buffer,
