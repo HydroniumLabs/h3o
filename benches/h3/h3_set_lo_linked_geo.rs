@@ -3,7 +3,7 @@ use ahash::HashSet;
 use criterion::{
     black_box, measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
 };
-use h3o::{geom::ToGeo, CellIndex};
+use h3o::CellIndex;
 use std::os::raw::c_int;
 
 pub fn bench_full(c: &mut Criterion) {
@@ -75,7 +75,7 @@ fn bench_h3o<T>(
     T: Measurement,
 {
     group.bench_with_input(BenchmarkId::new(name, k), &k, |b, _k| {
-        b.iter(|| black_box(indexes.iter().copied().to_geom(false)))
+        b.iter(|| h3o::geom::dissolve(black_box(indexes.iter().copied())))
     });
 }
 

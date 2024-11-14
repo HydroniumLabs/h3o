@@ -86,9 +86,8 @@ fn grid_disk(origin: CellIndex, k: u32) -> Vec<CellIndex> {
 
     cells
         .into_iter()
-        .filter_map(|cell| {
-            (cell != 0).then(|| CellIndex::try_from(cell).expect("cell index"))
-        })
+        .filter(|&cell| cell != 0)
+        .map(|cell| CellIndex::try_from(cell).expect("cell index"))
         .collect()
 }
 
@@ -109,14 +108,13 @@ fn grid_disk_distances(origin: CellIndex, k: u32) -> Vec<(CellIndex, u32)> {
 
     cells
         .into_iter()
-        .zip(distances.into_iter())
-        .filter_map(|(cell, distance)| {
-            (cell != 0).then(|| {
-                (
-                    CellIndex::try_from(cell).expect("cell index"),
-                    distance as u32,
-                )
-            })
+        .zip(distances)
+        .filter(|&(cell, _distance)| cell != 0)
+        .map(|(cell, distance)| {
+            (
+                CellIndex::try_from(cell).expect("cell index"),
+                distance as u32,
+            )
         })
         .collect()
 }
@@ -141,14 +139,13 @@ fn grid_disk_distances_safe(
 
     cells
         .into_iter()
-        .zip(distances.into_iter())
-        .filter_map(|(cell, distance)| {
-            (cell != 0).then(|| {
-                (
-                    CellIndex::try_from(cell).expect("cell index"),
-                    distance as u32,
-                )
-            })
+        .zip(distances)
+        .filter(|&(cell, _distance)| cell != 0)
+        .map(|(cell, distance)| {
+            (
+                CellIndex::try_from(cell).expect("cell index"),
+                distance as u32,
+            )
         })
         .collect()
 }
@@ -173,14 +170,13 @@ fn grid_disk_distances_unsafe(
     (res == 0).then(|| {
         cells
             .into_iter()
-            .zip(distances.into_iter())
-            .filter_map(|(cell, distance)| {
-                (cell != 0).then(|| {
-                    (
-                        CellIndex::try_from(cell).expect("cell index"),
-                        distance as u32,
-                    )
-                })
+            .zip(distances)
+            .filter(|&(cell, _distance)| cell != 0)
+            .map(|(cell, distance)| {
+                (
+                    CellIndex::try_from(cell).expect("cell index"),
+                    distance as u32,
+                )
             })
             .collect()
     })
@@ -201,10 +197,8 @@ fn grid_disk_unsafe(origin: CellIndex, k: u32) -> Option<Vec<CellIndex>> {
     (res == 0).then(|| {
         cells
             .into_iter()
-            .filter_map(|cell| {
-                (cell != 0)
-                    .then(|| CellIndex::try_from(cell).expect("cell index"))
-            })
+            .filter(|&cell| cell != 0)
+            .map(|cell| CellIndex::try_from(cell).expect("cell index"))
             .collect()
     })
 }
@@ -230,10 +224,8 @@ fn grid_disks_unsafe(
     (res == 0).then(|| {
         cells
             .into_iter()
-            .filter_map(|cell| {
-                (cell != 0)
-                    .then(|| CellIndex::try_from(cell).expect("cell index"))
-            })
+            .filter(|&cell| cell != 0)
+            .map(|cell| CellIndex::try_from(cell).expect("cell index"))
             .collect()
     })
 }
@@ -254,10 +246,8 @@ fn grid_ring_unsafe(origin: CellIndex, k: u32) -> Option<Vec<CellIndex>> {
     (res == 0).then(|| {
         cells
             .into_iter()
-            .filter_map(|cell| {
-                (cell != 0)
-                    .then(|| CellIndex::try_from(cell).expect("cell index"))
-            })
+            .filter(|&cell| cell != 0)
+            .map(|cell| CellIndex::try_from(cell).expect("cell index"))
             .collect()
     })
 }

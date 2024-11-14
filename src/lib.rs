@@ -79,12 +79,12 @@
 //!
 //! ### Region functions
 //!
-//! | H3                      | H3O                                |
-//! | :---------------------- | :--------------------------------- |
-//! | `polygonToCells`        | [`geom::ToCells::to_cells`]        |
-//! | `maxPolygonToCellsSize` | [`geom::ToCells::max_cells_count`] |
-//! | `h3SetToLinkedGeo`      | [`geom::ToGeo::to_geom`]           |
-//! | `destroyLinkedPolygon`  | N/A                                |
+//! | H3                      | H3O                                 |
+//! | :---------------------- | :---------------------------------  |
+//! | `polygonToCells`        | [`geom::Tiler::into_coverage`]      |
+//! | `maxPolygonToCellsSize` | [`geom::Tiler::coverage_size_hint`] |
+//! | `h3SetToLinkedGeo`      | [`geom::dissolve`]                  |
+//! | `destroyLinkedPolygon`  | N/A                                 |
 //!
 //! ### Directed edge functions
 //!
@@ -196,7 +196,6 @@
     clippy::or_fun_call,
     clippy::panic,
     clippy::path_buf_push_overwrite,
-    clippy::pattern_type_mismatch,
     clippy::print_stderr,
     clippy::print_stdout,
     clippy::rc_buffer,

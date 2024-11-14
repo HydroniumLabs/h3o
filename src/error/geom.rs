@@ -1,3 +1,4 @@
+use crate::error::LocalIjError;
 use core::{error::Error, fmt};
 
 /// Errors related to the geometries.
@@ -27,17 +28,59 @@ impl Error for InvalidGeometry {
 
 // -----------------------------------------------------------------------------
 
-/// Errors occurring during the outline computation of a set of cell indices.
+/// Errors from a plotter.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
-pub enum OutlinerError {
-    /// Input contains indices of heterogeneous resolutions.
+pub enum PlotterError {
+    /// Invalid input geometry.
+    InvalidGeometry(InvalidGeometry),
+    /// Coordinate system conversion error.
+    LocalIj(LocalIjError),
+}
+
+impl fmt::Display for PlotterError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Self::InvalidGeometry(err) => write!(f, "plotting error: {err}"),
+            Self::LocalIj(err) => write!(f, "plotting error: {err}"),
+        }
+    }
+}
+
+impl Error for PlotterError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match *self {
+            Self::InvalidGeometry(ref err) => Some(err),
+            Self::LocalIj(ref err) => Some(err),
+        }
+    }
+}
+
+impl From<InvalidGeometry> for PlotterError {
+    fn from(value: InvalidGeometry) -> Self {
+        Self::InvalidGeometry(value)
+    }
+}
+
+impl From<LocalIjError> for PlotterError {
+    fn from(value: LocalIjError) -> Self {
+        Self::LocalIj(value)
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+/// Errors occurring during the dissolution of a set of cell indexes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DissolutionError {
+    /// Input contains cell indexes of heterogeneous resolutions.
     HeterogeneousResolution,
-    /// Input set contains duplicate indices.
+    /// Input set contains duplicate cell indexes.
     DuplicateInput,
 }
 
-impl fmt::Display for OutlinerError {
+impl fmt::Display for DissolutionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Self::HeterogeneousResolution => {
@@ -48,7 +91,7 @@ impl fmt::Display for OutlinerError {
     }
 }
 
-impl Error for OutlinerError {
+impl Error for DissolutionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         None
     }

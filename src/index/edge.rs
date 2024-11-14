@@ -359,6 +359,19 @@ impl fmt::UpperHex for DirectedEdgeIndex {
     }
 }
 
+#[cfg(feature = "geo")]
+impl From<DirectedEdgeIndex> for geo::Line {
+    fn from(value: DirectedEdgeIndex) -> Self {
+        let coords: Vec<geo::Coord> =
+            value.boundary().iter().copied().map(Into::into).collect();
+
+        // We only have two point (start and end) as boundary for an edge.
+        assert_eq!(coords.len(), 2);
+
+        Self::new(coords[0], coords[1])
+    }
+}
+
 #[cfg(feature = "arbitrary")]
 impl<'a> arbitrary::Arbitrary<'a> for DirectedEdgeIndex {
     fn arbitrary(

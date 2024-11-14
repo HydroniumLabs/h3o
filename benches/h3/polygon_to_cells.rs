@@ -1,7 +1,8 @@
 use super::utils::load_polygon;
 use criterion::{black_box, BatchSize, Bencher, BenchmarkId, Criterion};
+use geo::Polygon;
 use h3o::{
-    geom::{ContainmentMode, PolyfillConfig, Polygon, ToCells},
+    geom::{ContainmentMode, TilerBuilder},
     Resolution,
 };
 use std::os::raw::c_int;
@@ -50,88 +51,110 @@ pub fn bench_transmeridian(c: &mut Criterion) {
 
 pub fn bench_polyfill_mode(c: &mut Criterion) {
     let mut group = c.benchmark_group("polyfillMode");
-    let config = PolyfillConfig::new(Resolution::Eleven);
 
     let polygon = load_polygon("Paris");
     group.bench_function("h3o/Centroid/Full", |b| {
-        let config = config.containment_mode(ContainmentMode::ContainsCentroid);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Eleven)
+            .containment_mode(ContainmentMode::ContainsCentroid)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
     group.bench_function("h3o/Intersects/Full", |b| {
-        let config =
-            config.containment_mode(ContainmentMode::IntersectsBoundary);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Eleven)
+            .containment_mode(ContainmentMode::IntersectsBoundary)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
     group.bench_function("h3o/Contains/Full", |b| {
-        let config = config.containment_mode(ContainmentMode::ContainsBoundary);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Eleven)
+            .containment_mode(ContainmentMode::ContainsBoundary)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
 
     let polygon = load_polygon("Rabi");
     group.bench_function("h3o/Centroid/Transmeridian", |b| {
-        let config = config.containment_mode(ContainmentMode::ContainsCentroid);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Eleven)
+            .containment_mode(ContainmentMode::ContainsCentroid)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
     group.bench_function("h3o/Intersects/Transmeridian", |b| {
-        let config =
-            config.containment_mode(ContainmentMode::IntersectsBoundary);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Eleven)
+            .containment_mode(ContainmentMode::IntersectsBoundary)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
     group.bench_function("h3o/Contains/Transmeridian", |b| {
-        let config = config.containment_mode(ContainmentMode::ContainsBoundary);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Eleven)
+            .containment_mode(ContainmentMode::ContainsBoundary)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
 
-    let config = PolyfillConfig::new(Resolution::Seven);
     let polygon = load_polygon("Holes");
     group.bench_function("h3o/Centroid/Holes", |b| {
-        let config = config.containment_mode(ContainmentMode::ContainsCentroid);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Seven)
+            .containment_mode(ContainmentMode::ContainsCentroid)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
     group.bench_function("h3o/Intersects/Holes", |b| {
-        let config =
-            config.containment_mode(ContainmentMode::IntersectsBoundary);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Seven)
+            .containment_mode(ContainmentMode::IntersectsBoundary)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
     group.bench_function("h3o/Contains/Holes", |b| {
-        let config = config.containment_mode(ContainmentMode::ContainsBoundary);
-        b.iter(|| {
-            black_box(&polygon)
-                .to_cells(black_box(config))
-                .for_each(drop)
-        })
+        let mut tiler = TilerBuilder::new(Resolution::Seven)
+            .containment_mode(ContainmentMode::ContainsBoundary)
+            .build();
+        tiler.add(polygon.clone()).expect("valid polygon");
+        b.iter_batched(
+            || tiler.clone(),
+            |tiler| black_box(tiler).into_coverage().for_each(drop),
+            BatchSize::SmallInput,
+        )
     });
 
     group.finish();
@@ -141,17 +164,18 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
 
 fn bench_h3o(b: &mut Bencher<'_>, polygon: &Polygon, resolution: u8) {
     let resolution = Resolution::try_from(resolution).expect("resolution");
-    let config = PolyfillConfig::new(resolution);
+    let mut tiler = TilerBuilder::new(resolution).build();
+    tiler.add(polygon.clone()).expect("valid polygon");
 
-    b.iter(|| {
-        black_box(polygon)
-            .to_cells(black_box(config))
-            .for_each(drop)
-    });
+    b.iter_batched(
+        || tiler.clone(),
+        |tiler| black_box(tiler).into_coverage().for_each(drop),
+        BatchSize::SmallInput,
+    )
 }
 
 fn bench_h3(b: &mut Bencher<'_>, polygon: &Polygon, resolution: u8) {
-    let mut coords = geo::Polygon::from(polygon.clone())
+    let mut coords = polygon
         .exterior()
         .coords()
         .map(|coord| h3ron_h3_sys::LatLng {

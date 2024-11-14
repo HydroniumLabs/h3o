@@ -1,20 +1,10 @@
 use super::RingHierarchy;
-use crate::{error::OutlinerError, CellIndex, LatLng, Resolution, VertexIndex};
-use alloc::{vec, vec::Vec};
-use geo::{LineString, MultiPolygon, Polygon};
-
-#[cfg(not(feature = "std"))]
-use alloc::collections::{btree_map::Entry, BTreeMap};
-#[cfg(feature = "std")]
-use {
-    ahash::{HashMap, HashMapExt},
-    std::collections::hash_map::Entry,
+use crate::{
+    error::DissolutionError, CellIndex, LatLng, Resolution, VertexIndex,
 };
-
-#[cfg(not(feature = "std"))]
-type Map<K, V> = BTreeMap<K, V>;
-#[cfg(feature = "std")]
-type Map<K, V> = HashMap<K, V>;
+use ahash::{HashMap, HashMapExt};
+use geo::{LineString, MultiPolygon, Polygon};
+use std::collections::hash_map::Entry;
 
 /// A single node in a vertex graph.
 #[derive(Debug, Eq, PartialEq)]
@@ -28,8 +18,8 @@ pub struct Node {
 /// A data structure to store a graph of vertices.
 #[derive(Default)]
 pub struct VertexGraph {
-    nodes: Map<VertexIndex, Vec<VertexIndex>>,
-    distortions: Map<Node, LatLng>,
+    nodes: HashMap<VertexIndex, Vec<VertexIndex>>,
+    distortions: HashMap<Node, LatLng>,
     is_class3: bool,
 }
 
@@ -37,7 +27,7 @@ impl VertexGraph {
     /// Initializes a new `VertexGraph` from the given set of cells.
     pub fn from_cells(
         cells: impl IntoIterator<Item = CellIndex>,
-    ) -> Result<Self, OutlinerError> {
+    ) -> Result<Self, DissolutionError> {
         // Detect duplicates in the input.
         // (sort + dedup is slower than HashSet but use less memory, especially
         // for large input).
@@ -47,7 +37,7 @@ impl VertexGraph {
         cells.dedup();
         if cells.len() < old_len {
             // Dups were removed, not good.
-            return Err(OutlinerError::DuplicateInput);
+            return Err(DissolutionError::DuplicateInput);
         }
 
         let resolution = cells
@@ -55,15 +45,15 @@ impl VertexGraph {
             .copied()
             .map_or_else(|| Resolution::Zero, CellIndex::resolution);
         let mut graph = Self {
-            nodes: Map::new(),
-            distortions: Map::new(),
+            nodes: HashMap::new(),
+            distortions: HashMap::new(),
             is_class3: resolution.is_class3(),
         };
 
         let mut vertexes = Vec::with_capacity(6);
         for cell in cells {
             if cell.resolution() != resolution {
-                return Err(OutlinerError::HeterogeneousResolution);
+                return Err(DissolutionError::HeterogeneousResolution);
             }
 
             for vertex in cell.vertexes() {
