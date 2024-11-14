@@ -1,6 +1,5 @@
-use alloc::{vec, vec::Vec};
-use core::iter::Peekable;
 use geo::{Contains, Coord, LineString, MultiPolygon, Polygon};
+use std::{iter::Peekable, vec};
 
 /// A rings hierarchy.
 pub struct RingHierarchy {
@@ -105,7 +104,7 @@ impl RingHierarchy {
         // Outers ring at the current nesting level.
         let mut outers: Option<OuterRingIterator> = None;
 
-        core::iter::from_fn(move || {
+        std::iter::from_fn(move || {
             // If the current layer is exhausted, peel the next one.
             if outers.as_mut().map_or(true, |rings| rings.peek().is_none()) {
                 outers = self
@@ -142,7 +141,7 @@ impl RingHierarchy {
                 (!self.is_assigned[i] && self.is_outer(i)).then(|| {
                     // Extract the ring in place to preserve `rings` size and
                     // ordering.
-                    let ring = core::mem::replace(
+                    let ring = std::mem::replace(
                         &mut self.rings[i],
                         LineString(vec![]),
                     );
@@ -172,7 +171,7 @@ impl RingHierarchy {
                 .then(|| {
                     // Extract the ring in place to preserve `rings` size and
                     // ordering.
-                    let ring = core::mem::replace(
+                    let ring = std::mem::replace(
                         &mut self.rings[inner_id],
                         LineString(vec![]),
                     );
