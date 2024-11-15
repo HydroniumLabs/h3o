@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.7.0] - 2024-11-15
+
 ### Added
 
 - `h3o::geom::Plotter` to compute the cells along lines.
