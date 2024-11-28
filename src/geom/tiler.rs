@@ -8,7 +8,7 @@ use geo::{
     },
     coord, BooleanOps as _, BoundingRect as _, Centroid as _, Coord,
     CoordsIter as _, Intersects, Line, LineString, MultiPolygon, Polygon, Rect,
-    Relate as _,
+    Relate as _, ToRadians as _,
 };
 use std::{
     cmp,
@@ -34,20 +34,7 @@ impl Tiler {
     pub fn add(&mut self, mut polygon: Polygon) -> Result<(), InvalidGeometry> {
         // Convert to radians if necessary.
         if self.convert_to_rads {
-            polygon.exterior_mut(|exterior| {
-                for coord in exterior.coords_mut() {
-                    coord.x = coord.x.to_radians();
-                    coord.y = coord.y.to_radians();
-                }
-            });
-            polygon.interiors_mut(|interiors| {
-                for interior in interiors {
-                    for coord in interior.coords_mut() {
-                        coord.x = coord.x.to_radians();
-                        coord.y = coord.y.to_radians();
-                    }
-                }
-            });
+            polygon.to_radians_in_place();
         }
 
         // Check coordinates validity.

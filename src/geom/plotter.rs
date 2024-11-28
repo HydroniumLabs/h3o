@@ -3,7 +3,7 @@ use crate::{
     index::GridPathCells,
     CellIndex, LatLng, Resolution,
 };
-use geo::Line;
+use geo::{Line, ToRadians as _};
 
 /// A plotter that produces H3 cell indexes along given lines.
 ///
@@ -38,10 +38,7 @@ impl Plotter {
     /// [`grid_path_cells`](CellIndex::grid_path_cells) limitations).
     pub fn add(&mut self, mut line: Line) -> Result<(), PlotterError> {
         if self.convert_to_rads {
-            line.start.x = line.start.x.to_radians();
-            line.start.y = line.start.y.to_radians();
-            line.end.x = line.end.x.to_radians();
-            line.end.y = line.end.y.to_radians();
+            line.to_radians_in_place();
         }
         Self::check_coords(&line)?;
 
