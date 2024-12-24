@@ -67,7 +67,10 @@ impl LatLng {
     /// let ll = h3o::LatLng::from_radians(0.852850182, 0.0409980285)?;
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
-    pub fn from_radians(lat: f64, lng: f64) -> Result<Self, InvalidLatLng> {
+    pub const fn from_radians(
+        lat: f64,
+        lng: f64,
+    ) -> Result<Self, InvalidLatLng> {
         if !lat.is_finite() {
             return Err(InvalidLatLng::new(lat, "infinite latitude"));
         }

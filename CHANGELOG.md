@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- Fix a bug in the `Tiler` when dealing with transmeridian cells.
+
 ## [0.7.0] - 2024-11-15
 
 ### Added

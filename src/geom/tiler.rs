@@ -1,6 +1,7 @@
 use crate::{error::InvalidGeometry, CellIndex, LatLng, Resolution, TWO_PI};
 use ahash::{HashSet, HashSetExt};
 use either::Either;
+use float_eq::float_eq;
 use geo::{
     algorithm::{
         coordinate_position::{coord_pos_relative_to_ring, CoordPos},
@@ -807,15 +808,24 @@ fn unshift_transmeridian_ring(ring: &mut LineString) {
 // after clipping might be slightly different which can be a problem when
 // computing the intersection matrix.
 fn fix_ring_clipping_boundary(ring: &mut LineString, is_west: bool) {
+    const ROUNDING_EPSILON: f64 = 1e-6;
     let (bad_value, fixed_value) = if is_west {
         let mut bad_value = PI;
         for coord in ring.coords() {
+            if float_eq!(coord.x, PI, abs <= ROUNDING_EPSILON) {
+                bad_value = coord.x;
+                break;
+            }
             bad_value = bad_value.min(coord.x);
         }
         (bad_value, -PI)
     } else {
         let mut bad_value = -PI;
         for coord in ring.coords() {
+            if float_eq!(coord.x, -PI, abs <= ROUNDING_EPSILON) {
+                bad_value = coord.x;
+                break;
+            }
             bad_value = bad_value.max(coord.x);
         }
         (bad_value, PI)

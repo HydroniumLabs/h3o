@@ -182,7 +182,7 @@ impl VertexIndex {
     /// # Safety
     ///
     /// The value must be a valid vertex index.
-    pub(crate) fn new_unchecked(value: u64) -> Self {
+    pub(crate) const fn new_unchecked(value: u64) -> Self {
         // XXX: cannot `debug_assert!` a `Self::try_from` here.
         // `try_from` relies on `CellIndex::vertex` for canonical check,
         // which itself calls `new_unchecked` => infinite recursion, stack overflow.
