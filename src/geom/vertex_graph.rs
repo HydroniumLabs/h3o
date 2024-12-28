@@ -1,15 +1,14 @@
-use super::RingHierarchy;
+use super::{neighbors, RingHierarchy};
 use crate::{
     error::DissolutionError, CellIndex, LatLng, Resolution, VertexIndex,
 };
-use ahash::{HashMap, HashMapExt};
+use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
+use either::Either;
 use geo::{LineString, MultiPolygon, Polygon};
 use std::collections::hash_map::Entry;
 
 /// A single node in a vertex graph.
-#[derive(Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "std", derive(Hash))]
-#[cfg_attr(not(feature = "std"), derive(Ord, PartialOrd))]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct Node {
     from: VertexIndex,
     to: VertexIndex,
@@ -24,56 +23,116 @@ pub struct VertexGraph {
 }
 
 impl VertexGraph {
-    /// Initializes a new `VertexGraph` from the given set of cells.
-    pub fn from_cells(
+    /// Initializes a new `VertexGraph` from a set of homogeneous cells.
+    ///
+    /// # Notes
+    ///
+    /// If `check_duplicate` is set to true, a duplicates detection is
+    /// performed, which implies an eager consumption of the iterator upfront,
+    /// incurring memory overhead and losing the lazyness of the iterator-based
+    /// approach.
+    pub fn from_homogeneous(
         cells: impl IntoIterator<Item = CellIndex>,
+        check_duplicate: bool,
     ) -> Result<Self, DissolutionError> {
-        // Detect duplicates in the input.
-        // (sort + dedup is slower than HashSet but use less memory, especially
-        // for large input).
-        let mut cells = cells.into_iter().collect::<Vec<_>>();
-        let old_len = cells.len();
-        cells.sort_unstable();
-        cells.dedup();
-        if cells.len() < old_len {
-            // Dups were removed, not good.
-            return Err(DissolutionError::DuplicateInput);
-        }
+        let mut cells = if check_duplicate {
+            Either::Left(check_duplicates(cells)?.into_iter())
+        } else {
+            Either::Right(cells.into_iter())
+        };
 
-        let resolution = cells
-            .first()
-            .copied()
-            .map_or_else(|| Resolution::Zero, CellIndex::resolution);
+        // Infer the resolution from the first cell (since its homogeneous).
+        let first = cells.next();
+        let resolution = first.map_or(Resolution::Zero, CellIndex::resolution);
+        let cells = first.into_iter().chain(cells);
+
         let mut graph = Self {
             nodes: HashMap::new(),
             distortions: HashMap::new(),
             is_class3: resolution.is_class3(),
         };
 
-        let mut vertexes = Vec::with_capacity(6);
+        // Scratchpad to reuse memory allocations.
+        let mut scratchpad = Scratchpad::new();
         for cell in cells {
             if cell.resolution() != resolution {
-                return Err(DissolutionError::HeterogeneousResolution);
+                return Err(DissolutionError::UnsupportedResolution);
             }
 
-            for vertex in cell.vertexes() {
-                vertexes.push(vertex);
-            }
-
-            // Iterate through every edge.
-            for i in 0..vertexes.len() {
-                let from = vertexes[i];
-                let to = vertexes[(i + 1) % vertexes.len()];
-
-                graph.insert(&Node { from, to });
+            scratchpad.compute_vertexes(cell);
+            for pair in scratchpad.vertexes.windows(2) {
+                graph.insert(&Node {
+                    from: pair[0],
+                    to: pair[1],
+                });
             }
 
             // Keep track of distortions vertices when necessary.
             if graph.is_class3 && cell.icosahedron_faces().len() > 1 {
-                graph.index_distortions(cell, &vertexes);
+                graph.index_distortions(cell, &scratchpad.vertexes);
             }
+        }
 
-            vertexes.clear();
+        Ok(graph)
+    }
+
+    /// Initializes a new `VertexGraph` from a set of heterogeneous cells.
+    ///
+    /// # Notes
+    ///
+    /// If `check_duplicate` is set to true, a duplicates detection is
+    /// performed, which implies an eager consumption of the iterator upfront,
+    /// incurring memory overhead and losing the lazyness of the iterator-based
+    /// approach.
+    pub fn from_heterogeneous(
+        cells: impl IntoIterator<Item = CellIndex>,
+        resolution: Resolution,
+        check_duplicate: bool,
+    ) -> Result<Self, DissolutionError> {
+        let cells = if check_duplicate {
+            let cells = cells.into_iter().collect::<Vec<_>>();
+            if cells.iter().any(|cell| cell.resolution() > resolution) {
+                return Err(DissolutionError::UnsupportedResolution);
+            }
+            check_duplicates(
+                cells.iter().flat_map(|cell| cell.children(resolution)),
+            )?;
+            Either::Left(cells.into_iter())
+        } else {
+            Either::Right(cells.into_iter())
+        };
+
+        let mut graph = Self {
+            nodes: HashMap::new(),
+            distortions: HashMap::new(),
+            is_class3: resolution.is_class3(),
+        };
+
+        // Scratchpad to reuse memory allocations.
+        let mut scratchpad = Scratchpad::new();
+        for cell in cells {
+            match cell.resolution().cmp(&resolution) {
+                std::cmp::Ordering::Less => {
+                    graph.insert_large_cell(cell, resolution, &mut scratchpad);
+                }
+                std::cmp::Ordering::Equal => {
+                    scratchpad.compute_vertexes(cell);
+                    for pair in scratchpad.vertexes.windows(2) {
+                        graph.insert(&Node {
+                            from: pair[0],
+                            to: pair[1],
+                        });
+                    }
+
+                    // Keep track of distortions vertices when necessary.
+                    if graph.is_class3 && cell.icosahedron_faces().len() > 1 {
+                        graph.index_distortions(cell, &scratchpad.vertexes);
+                    }
+                }
+                std::cmp::Ordering::Greater => {
+                    return Err(DissolutionError::UnsupportedResolution);
+                }
+            }
         }
 
         Ok(graph)
@@ -132,6 +191,56 @@ impl VertexGraph {
     /// Returns true if the graph is empty.
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
+    }
+
+    /// Efficient insertion of cells larger than the target resolution.
+    fn insert_large_cell(
+        &mut self,
+        cell: CellIndex,
+        resolution: Resolution,
+        scratchpad: &mut Scratchpad,
+    ) {
+        let boundary = compute_large_cell_boundary(
+            cell,
+            resolution,
+            &mut scratchpad.neighbors,
+        );
+
+        for (cell, neighbors) in boundary {
+            // Build a blacklist of edge by storing the reverse edge of the
+            // neighbors to cancel the shared edges of the cell being examined.
+            for candidate in neighbors {
+                // Skip the cell being examined of course.
+                if candidate == cell {
+                    continue;
+                }
+                scratchpad.compute_vertexes(candidate);
+                scratchpad.blacklist.extend(
+                    scratchpad.vertexes.windows(2).map(|pair| Node {
+                        to: pair[0],
+                        from: pair[1],
+                    }),
+                );
+            }
+
+            scratchpad.compute_vertexes(cell);
+            for pair in scratchpad.vertexes.windows(2) {
+                let node = Node {
+                    from: pair[0],
+                    to: pair[1],
+                };
+                if !scratchpad.blacklist.contains(&node) {
+                    self.insert(&node);
+                }
+            }
+
+            // Keep track of distortions vertices when necessary.
+            if self.is_class3 && cell.icosahedron_faces().len() > 1 {
+                self.index_distortions(cell, &scratchpad.vertexes);
+            }
+
+            scratchpad.blacklist.clear();
+        }
     }
 
     /// Index distortions vertices that exists between topological ones.
@@ -206,4 +315,77 @@ impl From<VertexGraph> for MultiPolygon<f64> {
 
         RingHierarchy::new(rings).into()
     }
+}
+
+// -----------------------------------------------------------------------------
+
+struct Scratchpad {
+    neighbors: [u64; 7],
+    vertexes: Vec<VertexIndex>,
+    blacklist: HashSet<Node>,
+}
+
+impl Scratchpad {
+    fn new() -> Self {
+        Self {
+            // 6 neighbors + self.
+            neighbors: [0; 7],
+            // 6 vertexes + 1 to close the loop.
+            vertexes: Vec::with_capacity(7),
+            // 5 neighbors * 6 vertexes.
+            blacklist: HashSet::with_capacity(30),
+        }
+    }
+
+    fn compute_vertexes(&mut self, cell: CellIndex) {
+        self.vertexes.clear();
+        self.vertexes.extend(cell.vertexes());
+        // Close the loop.
+        // This simplify the iteration over edges by using `windows(2)`.
+        self.vertexes.push(self.vertexes[0]);
+    }
+}
+
+fn compute_large_cell_boundary(
+    cell: CellIndex,
+    resolution: Resolution,
+    scratchpad: &mut [u64],
+) -> HashMap<CellIndex, Vec<CellIndex>> {
+    let cells = cell.children(resolution).collect::<HashSet<_>>();
+
+    cells
+        .iter()
+        .copied()
+        .filter_map(|cell| {
+            let count = neighbors(cell, scratchpad);
+            let is_boundary = scratchpad[0..count].iter().any(|neighbor| {
+                !cells.contains(&CellIndex::new_unchecked(*neighbor))
+            });
+
+            is_boundary.then(|| {
+                let neighbors = scratchpad[0..count]
+                    .iter()
+                    .filter_map(|&neighbor| {
+                        let index = CellIndex::new_unchecked(neighbor);
+                        cells.contains(&index).then_some(index)
+                    })
+                    .collect::<Vec<_>>();
+                (cell, neighbors)
+            })
+        })
+        .collect()
+}
+
+fn check_duplicates(
+    cells: impl IntoIterator<Item = CellIndex>,
+) -> Result<HashSet<CellIndex>, DissolutionError> {
+    cells
+        .into_iter()
+        .try_fold(HashSet::default(), |mut acc, cell| {
+            if acc.insert(cell) {
+                Ok(acc)
+            } else {
+                Err(DissolutionError::DuplicateInput)
+            }
+        })
 }

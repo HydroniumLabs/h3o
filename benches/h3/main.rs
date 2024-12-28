@@ -154,6 +154,7 @@ criterion_group!(
     h3_set_lo_linked_geo::bench_full,
     h3_set_lo_linked_geo::bench_holes,
     h3_set_lo_linked_geo::bench_rings,
+    h3_set_lo_linked_geo::bench_solvent,
     max_polygon_to_cells_size::bench,
     polygon_to_cells::bench_full,
     polygon_to_cells::bench_transmeridian,

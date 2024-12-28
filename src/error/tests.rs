@@ -52,7 +52,7 @@ fn display() {
         let local_ij = LocalIjError::Pentagon;
 
         assert!(!invalid_geometry.to_string().is_empty());
-        assert!(!DissolutionError::HeterogeneousResolution
+        assert!(!DissolutionError::UnsupportedResolution
             .to_string()
             .is_empty());
         assert!(!DissolutionError::DuplicateInput.to_string().is_empty());
@@ -96,7 +96,7 @@ fn source() {
         let local_ij = LocalIjError::Pentagon;
 
         assert!(invalid_geometry.source().is_none());
-        assert!(DissolutionError::HeterogeneousResolution.source().is_none());
+        assert!(DissolutionError::UnsupportedResolution.source().is_none());
         assert!(DissolutionError::DuplicateInput.source().is_none());
         assert!(PlotterError::from(invalid_geometry).source().is_some());
         assert!(PlotterError::from(local_ij).source().is_some());

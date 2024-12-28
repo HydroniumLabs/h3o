@@ -1,3 +1,4 @@
+use super::neighbors;
 use crate::{error::InvalidGeometry, CellIndex, LatLng, Resolution, TWO_PI};
 use ahash::{HashSet, HashSetExt};
 use either::Either;
@@ -571,33 +572,6 @@ fn get_edge_cells(
                 .to_cell(resolution)
         })
     })
-}
-
-// Return the immediate neighbors.
-fn neighbors(cell: CellIndex, scratchpad: &mut [u64]) -> usize {
-    let mut count = 0;
-
-    // Don't use `grid_disk` to avoid the allocation,
-    // use the pre-allocated scratchpad memory instead.
-    for candidate in cell.grid_disk_fast(1) {
-        if let Some(neighbor) = candidate {
-            scratchpad[count] = neighbor.into();
-            count += 1;
-        } else {
-            count = 0;
-            break;
-        }
-    }
-
-    // Unsafe version failed, fallback on the safe version.
-    if count == 0 {
-        for candidate in cell.grid_disk_safe(1) {
-            scratchpad[count] = candidate.into();
-            count += 1;
-        }
-    }
-
-    count
 }
 
 /// Returns an estimated number of hexagons that trace the cartesian-projected

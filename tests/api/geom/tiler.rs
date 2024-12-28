@@ -1,12 +1,10 @@
-use geo::{coord, polygon, Geometry, LineString, MultiPolygon, Polygon, Rect};
+use super::utils::load_polygon;
+use geo::{coord, polygon, LineString, MultiPolygon, Polygon, Rect};
 use h3o::{
     geom::{ContainmentMode, TilerBuilder},
     CellIndex, LatLng, Resolution,
 };
-use std::{
-    collections::BTreeSet, f64::consts::PI, fs::File, io::BufReader,
-    path::PathBuf,
-};
+use std::{collections::BTreeSet, f64::consts::PI};
 
 #[test]
 fn add_rads() {
@@ -617,20 +615,4 @@ fn bbox_transmeridian() {
     expected.sort_unstable();
     result.sort_unstable();
     assert_eq!(result, expected);
-}
-
-//------------------------------------------------------------------------------
-
-pub fn load_polygon(name: &str) -> Polygon {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let filepath = format!("dataset/shapes/{name}.geojson");
-    path.push(filepath);
-
-    let file = File::open(path).expect("open test dataset");
-    let reader = BufReader::new(file);
-
-    let geojson = geojson::GeoJson::from_reader(reader).expect("GeoJSON");
-    let geometry = Geometry::try_from(geojson).expect("geometry");
-
-    Polygon::try_from(geometry).expect("polygon")
 }

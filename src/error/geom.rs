@@ -74,8 +74,8 @@ impl From<LocalIjError> for PlotterError {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DissolutionError {
-    /// Input contains cell indexes of heterogeneous resolutions.
-    HeterogeneousResolution,
+    /// Input contains cell indexes of unsupported resolutions.
+    UnsupportedResolution,
     /// Input set contains duplicate cell indexes.
     DuplicateInput,
 }
@@ -83,8 +83,8 @@ pub enum DissolutionError {
 impl fmt::Display for DissolutionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Self::HeterogeneousResolution => {
-                write!(f, "heterogeneous resolution")
+            Self::UnsupportedResolution => {
+                write!(f, "unsupported resolution")
             }
             Self::DuplicateInput => write!(f, "duplicate indices"),
         }

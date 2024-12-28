@@ -2,6 +2,7 @@
 
 mod plotter;
 mod ring_hierarchy;
+mod solvent;
 mod tiler;
 mod vertex_graph;
 
@@ -9,33 +10,8 @@ use ring_hierarchy::RingHierarchy;
 use vertex_graph::VertexGraph;
 
 pub use plotter::{Plotter, PlotterBuilder};
+pub use solvent::{Solvent, SolventBuilder};
 pub use tiler::{ContainmentMode, Tiler, TilerBuilder};
-
-/// Creates a [`MultiPolygon`](geo::MultiPolygon) describing the outline(s) of a
-/// set of cells.
-///
-/// # Errors
-///
-/// All cell indexes must be unique and have the same resolution, otherwise
-/// [`DissolutionError`](crate::error::DissolutionError) is returned.
-///
-/// # Example
-///
-/// ```
-/// use h3o::{CellIndex, Resolution};
-///
-/// let index = CellIndex::try_from(0x089283470803ffff)?;
-/// let cells = index.children(Resolution::Twelve).collect::<Vec<_>>();
-/// let geom = h3o::geom::dissolve(cells)?;
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
-pub fn dissolve(
-    cells: impl IntoIterator<Item = crate::CellIndex>,
-) -> Result<geo::MultiPolygon, crate::error::DissolutionError> {
-    VertexGraph::from_cells(cells).map(Into::into)
-}
-
-// ----------------------------------------------------------------------------
 
 // Check that the coordinate are finite and in a legit range.
 fn coord_is_valid(coord: geo::Coord) -> bool {
@@ -48,4 +24,31 @@ fn coord_is_valid(coord: geo::Coord) -> bool {
         && coord.x <= TWO_PI
         && coord.y >= -PI
         && coord.y <= PI
+}
+
+// Return the immediate neighbors, no memory allocations.
+fn neighbors(cell: crate::CellIndex, scratchpad: &mut [u64]) -> usize {
+    let mut count = 0;
+
+    // Don't use `grid_disk` to avoid the allocation,
+    // use the pre-allocated scratchpad memory instead.
+    for candidate in cell.grid_disk_fast(1) {
+        if let Some(neighbor) = candidate {
+            scratchpad[count] = neighbor.into();
+            count += 1;
+        } else {
+            count = 0;
+            break;
+        }
+    }
+
+    // Unsafe version failed, fallback on the safe version.
+    if count == 0 {
+        for candidate in cell.grid_disk_safe(1) {
+            scratchpad[count] = candidate.into();
+            count += 1;
+        }
+    }
+
+    count
 }

@@ -1,9 +1,12 @@
-use super::utils::load_cells;
+use super::utils::{load_cells, load_polygon};
 use ahash::HashSet;
 use criterion::{
     black_box, measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
 };
-use h3o::CellIndex;
+use h3o::{
+    geom::{SolventBuilder, TilerBuilder},
+    CellIndex, Resolution,
+};
 use std::os::raw::c_int;
 
 pub fn bench_full(c: &mut Criterion) {
@@ -64,6 +67,72 @@ pub fn bench_rings(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn bench_solvent(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Dissolve");
+
+    for res in 6..=12 {
+        let resolution = Resolution::try_from(res).expect("resolution");
+        let mut tiler = TilerBuilder::new(resolution).build();
+        tiler.add(load_polygon("Paris")).expect("add polygon");
+        let cells = tiler.into_coverage().collect::<HashSet<_>>();
+        let compacted = CellIndex::compact(cells.clone())
+            .expect("compact")
+            .collect::<Vec<_>>();
+
+        let homo_checked = SolventBuilder::new().build();
+        let hetero_checked = SolventBuilder::new()
+            .enable_heterogeneous_support(resolution)
+            .build();
+        let homo_unchecked =
+            SolventBuilder::new().disable_duplicate_detection().build();
+        let hetero_unchecked = SolventBuilder::new()
+            .disable_duplicate_detection()
+            .enable_heterogeneous_support(resolution)
+            .build();
+
+        group.bench_with_input(
+            BenchmarkId::new("Homogeneous/Checked", res),
+            &cells,
+            |b, cells| {
+                b.iter(|| {
+                    homo_checked.dissolve(black_box(cells.iter().copied()))
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Homogeneous/Unchecked", res),
+            &cells,
+            |b, cells| {
+                b.iter(|| {
+                    homo_unchecked.dissolve(black_box(cells.iter().copied()))
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Heterogeneous/Checked", res),
+            &compacted,
+            |b, compacted| {
+                b.iter(|| {
+                    hetero_checked
+                        .dissolve(black_box(compacted.iter().copied()))
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Heterogeneous/Unchecked", res),
+            &compacted,
+            |b, compacted| {
+                b.iter(|| {
+                    hetero_unchecked
+                        .dissolve(black_box(compacted.iter().copied()))
+                })
+            },
+        );
+    }
+
+    group.finish();
+}
+
 // -----------------------------------------------------------------------------
 
 fn bench_h3o<T>(
@@ -74,8 +143,9 @@ fn bench_h3o<T>(
 ) where
     T: Measurement,
 {
+    let solvent = SolventBuilder::new().build();
     group.bench_with_input(BenchmarkId::new(name, k), &k, |b, _k| {
-        b.iter(|| h3o::geom::dissolve(black_box(indexes.iter().copied())))
+        b.iter(|| solvent.dissolve(black_box(indexes.iter().copied())))
     });
 }
 

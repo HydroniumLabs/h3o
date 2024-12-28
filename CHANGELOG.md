@@ -14,6 +14,17 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- `h3o::geom::Solvent` to compute the shape of a set of H3 cells.
+    - opt-in duplicate detection
+    - can works with heterogeneous set of cells
+
+### Removed
+
+- `h3o::geom::dissolve` is removed.
+    - you can use `SolventBuilder::new().build().dissolve(cells)` instead.
+
 ## [0.7.1] - 2024-12-24
 
 ### Fixed

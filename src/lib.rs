@@ -83,7 +83,7 @@
 //! | :---------------------- | :---------------------------------  |
 //! | `polygonToCells`        | [`geom::Tiler::into_coverage`]      |
 //! | `maxPolygonToCellsSize` | [`geom::Tiler::coverage_size_hint`] |
-//! | `h3SetToLinkedGeo`      | [`geom::dissolve`]                  |
+//! | `h3SetToLinkedGeo`      | [`geom::Solvent::dissolve`]         |
 //! | `destroyLinkedPolygon`  | N/A                                 |
 //!
 //! ### Directed edge functions
