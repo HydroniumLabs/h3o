@@ -113,15 +113,21 @@ fn heterogeneous_resolution() {
 fn unsupported_resolution() {
     let set = [0x89283082813ffff, 0x8828308299fffff]
         .into_iter()
-        .map(|bits| CellIndex::try_from(bits).expect("cell index"));
+        .map(|bits| CellIndex::try_from(bits).expect("cell index"))
+        .collect::<Vec<_>>();
 
     let result = SolventBuilder::new()
         .enable_heterogeneous_support(Resolution::Eight)
         .build()
-        .dissolve(set);
-    dbg!(&result);
+        .dissolve(set.iter().copied());
+    assert!(result.is_err(), "by dup-check");
 
-    assert!(result.is_err());
+    let result = SolventBuilder::default()
+        .enable_heterogeneous_support(Resolution::Eight)
+        .disable_duplicate_detection()
+        .build()
+        .dissolve(set);
+    assert!(result.is_err(), "even with dup-check disabled");
 }
 
 #[test]
