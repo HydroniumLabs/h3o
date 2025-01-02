@@ -185,7 +185,7 @@ fn last() {
 // https://github.com/uber/h3-java/issues/131
 #[test]
 fn bug_h3_java_131() {
-    let cells = [
+    let mut cells = [
         581487719465615359,
         582222193232969727,
         581193050349371391,
@@ -282,9 +282,10 @@ fn bug_h3_java_131() {
         581439340953993215,
     ]
     .into_iter()
-    .map(|value| CellIndex::try_from(value).expect("valid cell index"));
+    .map(|value| CellIndex::try_from(value).expect("valid cell index"))
+    .collect::<Vec<_>>();
 
-    assert!(CellIndex::compact(cells).is_ok());
+    assert!(CellIndex::compact(&mut cells).is_ok());
 }
 
 // https://github.com/uber/h3/issues/915
@@ -293,13 +294,11 @@ fn bug_h3_915() {
     let expected = CellIndex::base_cells().collect::<Vec<_>>();
     assert_eq!(expected.len(), 122);
 
-    let cells = CellIndex::base_cells()
+    let mut cells = CellIndex::base_cells()
         .flat_map(|index| index.children(Resolution::One))
         .collect::<Vec<_>>();
     assert_eq!(cells.len(), 842);
 
-    let result = CellIndex::compact(cells)
-        .expect("compact")
-        .collect::<Vec<_>>();
-    assert_eq!(result, expected);
+    CellIndex::compact(&mut cells).expect("compact");
+    assert_eq!(cells, expected);
 }

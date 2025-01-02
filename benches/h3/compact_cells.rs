@@ -1,4 +1,4 @@
-use criterion::{black_box, Bencher, Criterion};
+use criterion::{black_box, BatchSize, Bencher, Criterion};
 use h3o::{CellIndex, Direction, Resolution};
 
 pub fn bench(c: &mut Criterion) {
@@ -35,11 +35,13 @@ pub fn bench(c: &mut Criterion) {
 // -----------------------------------------------------------------------------
 
 fn bench_h3o(b: &mut Bencher<'_>, indexes: &[CellIndex]) {
-    b.iter(|| {
-        CellIndex::compact(black_box(indexes.iter().copied()))
-            .expect("compacted set")
-            .for_each(drop)
-    })
+    b.iter_batched(
+        || indexes.to_owned(),
+        |mut indexes| {
+            CellIndex::compact(black_box(&mut indexes)).expect("compacted set")
+        },
+        BatchSize::SmallInput,
+    )
 }
 
 fn bench_h3(b: &mut Bencher<'_>, indexes: &[CellIndex]) {

@@ -13,5 +13,5 @@ pub use edge::{DirectedEdgeIndex, Edge};
 pub use mode::IndexMode;
 pub use vertex::{Vertex, VertexIndex};
 
-pub use iterator::{Children, Compact, GridPathCells};
+pub use iterator::{Children, GridPathCells};
 use triangle::Triangle;

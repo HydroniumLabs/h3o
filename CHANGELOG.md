@@ -20,6 +20,10 @@ Possible sections are:
     - opt-in duplicate detection
     - can works with heterogeneous set of cells
 
+### Changed
+
+- `CellIndex::compact` now works in-place instead of using iterators.
+
 ### Removed
 
 - `h3o::geom::dissolve` is removed.

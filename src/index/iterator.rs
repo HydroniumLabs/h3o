@@ -1,11 +1,10 @@
 use super::CellIndex;
 use crate::{
     coord::{CoordCube, CoordIJK, LocalIJK},
-    error::{CompactionError, LocalIjError},
+    error::LocalIjError,
     index::bits,
     Direction, Resolution,
 };
-use alloc::vec::Vec;
 use core::cmp::max;
 
 /// Iterator over a children cell index at a given resolution.
@@ -229,118 +228,3 @@ impl Iterator for GridPathCells {
 }
 
 impl ExactSizeIterator for GridPathCells {}
-
-// -----------------------------------------------------------------------------
-
-/// Iterator over a compacted set of cells.
-pub struct Compact {
-    /// Sorted list of unique uncompacted cells.
-    cells: Vec<CellIndex>,
-    /// Current position in the vector.
-    index: usize,
-    /// Resolution of the uncompacted cells.
-    resolution: Resolution,
-}
-
-impl Compact {
-    /// Returns an iterator over the compacted version of the input iterator.
-    ///
-    /// # Errors
-    ///
-    /// All cell indexes must be unique and have the same resolution, otherwise
-    /// [`CompactionError`] is returned.
-    pub fn new(
-        cells: impl IntoIterator<Item = CellIndex>,
-    ) -> Result<Self, CompactionError> {
-        let mut cells = cells.into_iter();
-        let size = cells.size_hint();
-        let mut vec = Vec::with_capacity(size.1.unwrap_or(size.0));
-
-        let resolution = if let Some(cell) = cells.next() {
-            let resolution = cell.resolution();
-            vec.push(cell);
-            for cell in cells {
-                if cell.resolution() != resolution {
-                    return Err(CompactionError::HeterogeneousResolution);
-                }
-                vec.push(cell);
-            }
-
-            let old_len = vec.len();
-            vec.sort_unstable();
-            vec.dedup();
-            let new_len = vec.len();
-
-            // Dups were removed, not good.
-            if new_len < old_len {
-                return Err(CompactionError::DuplicateInput);
-            }
-
-            resolution
-        } else {
-            // If we're here the input stream is empty, so the value is not
-            // important.
-            Resolution::Zero
-        };
-
-        Ok(Self {
-            cells: vec,
-            index: 0,
-            resolution,
-        })
-    }
-}
-
-impl Iterator for Compact {
-    type Item = CellIndex;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let cell = *self.cells.get(self.index)?;
-
-        // Base cell cannot be compacted, return as-is.
-        if u8::from(self.resolution) == 0 {
-            self.index += 1;
-            return Some(cell);
-        }
-
-        // If this is the first cell, we may be able to compact it with the next
-        // ones.
-        if bits::get_direction(cell.into(), self.resolution) == 0 {
-            for res in Resolution::range(Resolution::Zero, self.resolution) {
-                let parent = cell.parent(res).expect("parent exists");
-                let count =
-                    usize::try_from(parent.children_count(self.resolution))
-                        .expect("too many children");
-                let end_index = self.index + count - 1;
-
-                // Compute the expected last cell index at the given targeted
-                // resolution.
-                //
-                // First compute a mask wide enough to cover the bit range to
-                // update. Also compute the offset of the bit range.
-                //
-                // Next, compute the bits of the direction to update by masking
-                // a constant (repeated `0b110`, i.e `6` on 3-bit) and shifting
-                // accordingly.
-                //
-                // Finally, clear the targeted directions using the mask
-                // (shifted and negated) and applies the new values.
-                let diff =
-                    usize::from(u8::from(self.resolution) - u8::from(res));
-                let mask = (1_u64 << (diff * h3o_bit::DIRECTION_BITSIZE)) - 1;
-                let offset = self.resolution.direction_offset();
-                let new_dirs = (0x0000_1b6d_b6db_6db6 & mask) << offset;
-                // SAFETY: this bit twiddling produces a valid cell index.
-                let expected = CellIndex::new_unchecked(
-                    (u64::from(cell) & !(mask << offset)) | new_dirs,
-                );
-                if self.cells.get(end_index) == Some(&expected) {
-                    self.index += count;
-                    return Some(parent);
-                }
-            }
-        }
-        self.index += 1;
-        Some(cell)
-    }
-}

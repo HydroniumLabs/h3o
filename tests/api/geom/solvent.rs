@@ -437,7 +437,8 @@ fn paris_heterogeneous() {
     let mut tiler = TilerBuilder::new(resolution).build();
     tiler.add(load_polygon("Paris")).expect("add polygon");
     let cells = tiler.into_coverage().collect::<HashSet<_>>();
-    let compacted = CellIndex::compact(cells.clone()).expect("compact");
+    let mut compacted = cells.iter().copied().collect::<Vec<_>>();
+    CellIndex::compact(&mut compacted).expect("compact");
 
     let solvent = SolventBuilder::new().disable_duplicate_detection().build();
     let expected = solvent.dissolve(cells).expect("homo geom");
@@ -451,7 +452,8 @@ fn rabi_heterogeneous() {
     let mut tiler = TilerBuilder::new(resolution).build();
     tiler.add(load_polygon("Rabi")).expect("add polygon");
     let cells = tiler.into_coverage().collect::<HashSet<_>>();
-    let compacted = CellIndex::compact(cells.clone()).expect("compact");
+    let mut compacted = cells.iter().copied().collect::<Vec<_>>();
+    CellIndex::compact(&mut compacted).expect("compact");
 
     let solvent = SolventBuilder::new().disable_duplicate_detection().build();
     let expected = solvent.dissolve(cells).expect("homo geom");
@@ -465,7 +467,8 @@ fn holes_heterogeneous() {
     let mut tiler = TilerBuilder::new(resolution).build();
     tiler.add(load_polygon("Holes")).expect("add polygon");
     let cells = tiler.into_coverage().collect::<HashSet<_>>();
-    let compacted = CellIndex::compact(cells.clone()).expect("compact");
+    let mut compacted = cells.iter().copied().collect::<Vec<_>>();
+    CellIndex::compact(&mut compacted).expect("compact");
 
     let solvent = SolventBuilder::new().disable_duplicate_detection().build();
     let expected = solvent.dissolve(cells).expect("homo geom");

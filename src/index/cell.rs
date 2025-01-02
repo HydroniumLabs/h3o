@@ -1,4 +1,4 @@
-use super::{Children, Compact, GridPathCells, Triangle};
+use super::{Children, GridPathCells, Triangle};
 use crate::{
     coord::{CoordIJ, CoordIJK, FaceIJK, LocalIJK, Overage},
     error::{
@@ -11,6 +11,7 @@ use crate::{
     FaceSet, LatLng, LocalIJ, Resolution, Vertex, VertexIndex, CCW, CW,
     DEFAULT_CELL_INDEX, EARTH_RADIUS_KM, NUM_HEX_VERTS, NUM_PENT_VERTS,
 };
+use alloc::vec::Vec;
 use core::{
     cmp::Ordering,
     fmt, iter,
@@ -666,13 +667,53 @@ impl CellIndex {
     /// .into_iter()
     /// .map(|hex| CellIndex::try_from(hex))
     /// .collect::<Result<Vec<_>, _>>()?;
-    /// let compacted_cells = CellIndex::compact(cells)?.collect::<Vec<_>>();
+    /// CellIndex::compact_in_place(cells)?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn compact(
-        indexes: impl IntoIterator<Item = Self>,
-    ) -> Result<impl Iterator<Item = Self>, CompactionError> {
-        Compact::new(indexes)
+    pub fn compact(cells: &mut Vec<Self>) -> Result<(), CompactionError> {
+        let Some(first) = cells.first() else {
+            return Ok(()); // Empty input, nothing to do.
+        };
+        let resolution = first.resolution();
+        if cells.iter().any(|cell| cell.resolution() != resolution) {
+            return Err(CompactionError::HeterogeneousResolution);
+        }
+        // Check for duplicates.
+        let old_len = cells.len();
+        cells.sort_unstable();
+        cells.dedup();
+        if cells.len() < old_len {
+            return Err(CompactionError::DuplicateInput);
+        }
+
+        let mut cursor = Cursor::new(cells);
+        'next_cell: while let Some(&cell) = cursor.peek() {
+            // Resolution zero cell cannot be compacted.
+            // First cell may be compacted with the next ones.
+            if resolution != Resolution::Zero
+                && bits::get_direction(cell.into(), resolution) == 0
+            {
+                for res in Resolution::range(Resolution::Zero, resolution) {
+                    let parent = cell.parent(res).expect("parent exists");
+                    let count =
+                        usize::try_from(parent.children_count(resolution))
+                            .expect("child overflow");
+                    let expected = compute_last_sibling(cell, res);
+
+                    if cursor.peek_at(count - 1) == Some(&expected) {
+                        cursor.consume(count);
+                        cursor.write(parent);
+                        continue 'next_cell;
+                    }
+                }
+            }
+            // Cannot compact, keep as-is.
+            cursor.consume(1);
+            cursor.write(cell);
+        }
+
+        cursor.flush();
+        Ok(())
     }
 
     /// Computes the exact size of the uncompacted set of cells.
@@ -2013,6 +2054,70 @@ const fn has_unused_direction(dirs: u64) -> bool {
     const HI_MAGIC: u64 = 0b100_100_100_100_100_100_100_100_100_100_100_100_100_100_100;
 
     ((!dirs - LO_MAGIC) & (dirs & HI_MAGIC)) != 0
+}
+
+// Compute the last sibling.
+//
+// This returns the last sibling needed to be able to compact the given cell
+// into one of the specified resolution.
+fn compute_last_sibling(cell: CellIndex, res: Resolution) -> CellIndex {
+    // Compute the expected last cell index at the given targeted
+    // resolution.
+    //
+    // First compute a mask wide enough to cover the bit range to
+    // update. Also compute the offset of the bit range.
+    //
+    // Next, compute the bits of the direction to update by masking
+    // a constant (repeated `0b110`, i.e `6` on 3-bit) and shifting
+    // accordingly.
+    //
+    // Finally, clear the targeted directions using the mask
+    // (shifted and negated) and applies the new values.
+    let diff = usize::from(u8::from(cell.resolution()) - u8::from(res));
+    let mask = (1_u64 << (diff * h3o_bit::DIRECTION_BITSIZE)) - 1;
+    let offset = cell.resolution().direction_offset();
+    let new_dirs = (0x0000_1b6d_b6db_6db6 & mask) << offset;
+    // SAFETY: this bit twiddling produces a valid cell index.
+    CellIndex::new_unchecked((u64::from(cell) & !(mask << offset)) | new_dirs)
+}
+
+struct Cursor<'a> {
+    buffer: &'a mut Vec<CellIndex>,
+    rd_idx: usize,
+    wr_idx: usize,
+}
+
+impl<'a> Cursor<'a> {
+    fn new(buffer: &'a mut Vec<CellIndex>) -> Self {
+        Self {
+            buffer,
+            rd_idx: 0,
+            wr_idx: 0,
+        }
+    }
+
+    fn peek(&self) -> Option<&CellIndex> {
+        self.buffer.get(self.rd_idx)
+    }
+
+    fn peek_at(&self, index: usize) -> Option<&CellIndex> {
+        self.buffer.get(self.rd_idx + index)
+    }
+
+    fn consume(&mut self, count: usize) {
+        self.rd_idx += count;
+        assert!(self.rd_idx <= self.buffer.len(), "read overflow");
+    }
+
+    fn write(&mut self, cell: CellIndex) {
+        assert!(self.rd_idx > self.wr_idx, "write overflow");
+        self.buffer[self.wr_idx] = cell;
+        self.wr_idx += 1;
+    }
+
+    fn flush(self) {
+        self.buffer.truncate(self.wr_idx);
+    }
 }
 
 #[cfg(test)]

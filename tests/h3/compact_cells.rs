@@ -1,15 +1,12 @@
 use super::h3api;
 use h3o::{CellIndex, Resolution};
 
-fn assert_compact(cells: Vec<CellIndex>) {
-    let result = CellIndex::compact(cells.iter().copied())
-        .map(|iter| iter.collect::<Vec<_>>())
-        .ok()
-        .map(|mut cells| {
-            cells.sort_unstable();
-            cells
-        });
+fn assert_compact(mut cells: Vec<CellIndex>) {
     let reference = h3api::compact_cells(&cells).map(|mut cells| {
+        cells.sort_unstable();
+        cells
+    });
+    let result = CellIndex::compact(&mut cells).ok().map(|()| {
         cells.sort_unstable();
         cells
     });
@@ -97,9 +94,7 @@ fn duplicate_minimum_bis() {
 
     // This duplicate is not detected by H3 (see their test `compactCells_duplicateIgnored`).
     // But we do.
-    let result = CellIndex::compact(cells);
-
-    assert!(result.is_err());
+    assert!(CellIndex::compact(&mut cells).is_err());
 }
 
 #[test]
@@ -129,12 +124,13 @@ fn disparate() {
 
 #[test]
 fn resolution_mismatch() {
-    let cells = [0x81003ffffffffff, 0x8500924bfffffff, 0x89283470803ffff]
+    let mut cells = [0x81003ffffffffff, 0x8500924bfffffff, 0x89283470803ffff]
         .into_iter()
-        .map(|hex| CellIndex::try_from(hex).expect("cell index"));
+        .map(|hex| CellIndex::try_from(hex).expect("cell index"))
+        .collect::<Vec<_>>();
 
     // This duplicate is not detected by H3, but we do.
-    let result = CellIndex::compact(cells);
+    let result = CellIndex::compact(&mut cells);
 
     assert!(result.is_err());
 }

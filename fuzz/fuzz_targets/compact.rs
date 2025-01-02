@@ -10,10 +10,8 @@ fuzz_target!(|cells: Vec<u64>| {
         .filter_map(|bits| CellIndex::try_from(bits).ok())
         .collect::<Vec<_>>();
 
-    let compacted = CellIndex::compact(cells.iter().copied())
-        .map(|iter| iter.collect::<Vec<_>>());
-
-    if let Ok(compacted) = compacted {
+    let mut compacted = cells.clone();
+    if CellIndex::compact(&mut compacted).is_ok() {
         // Check that every input cell is present in the output either as itself
         // or as an ancestor.
         let mut i = 0;

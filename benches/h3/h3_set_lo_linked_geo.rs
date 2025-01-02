@@ -75,9 +75,8 @@ pub fn bench_solvent(c: &mut Criterion) {
         let mut tiler = TilerBuilder::new(resolution).build();
         tiler.add(load_polygon("Paris")).expect("add polygon");
         let cells = tiler.into_coverage().collect::<HashSet<_>>();
-        let compacted = CellIndex::compact(cells.clone())
-            .expect("compact")
-            .collect::<Vec<_>>();
+        let mut compacted = cells.iter().copied().collect::<Vec<_>>();
+        CellIndex::compact(&mut compacted).expect("compact");
 
         let homo_checked = SolventBuilder::new().build();
         let hetero_checked = SolventBuilder::new()
