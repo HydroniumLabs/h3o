@@ -254,7 +254,7 @@ impl Tiler {
     ) -> Vec<(CellIndex, bool)> {
         // IIUC, the collect is necessary to consume the iterator and release
         // the mutable borrow on `already_seen`.
-        #[allow(
+        #[expect(
             clippy::needless_collect,
             reason = "needed because mutable borrow"
         )]
@@ -556,7 +556,7 @@ fn get_edge_cells(
         let count = line_hex_estimate(&line, resolution);
 
         assert!(count <= 1 << f64::MANTISSA_DIGITS);
-        #[allow(
+        #[expect(
             clippy::cast_precision_loss,
             reason = "cannot happen thanks to assert above"
         )]
@@ -607,7 +607,7 @@ fn line_hex_estimate(line: &Line, resolution: Resolution) -> u64 {
     let dist_ceil = (distance / pentagon_diameter).ceil();
     assert!(dist_ceil.is_finite());
 
-    #[allow(
+    #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
         reason = "truncate on purpose"
@@ -658,13 +658,13 @@ pub fn bbox_hex_estimate(bbox: &Rect, resolution: Resolution) -> usize {
     let (width, length) = if d1 < d2 { (d1, d2) } else { (d2, d1) };
     // Derived constant based on: https://math.stackexchange.com/a/1921940
     // Clamped to 3 as higher values tend to rapidly drag the estimate to zero.
-    #[allow(clippy::suspicious_operation_groupings, reason = "false positive")]
+    #[expect(clippy::suspicious_operation_groupings, reason = "false positive")]
     let area = (diagonal * diagonal) / (length / width);
 
     // Divide the two to get an estimate of the number of hexagons needed.
     let estimate = (area / pentagon_area_rads2).ceil();
 
-    #[allow(
+    #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
         reason = "truncate on purpose"

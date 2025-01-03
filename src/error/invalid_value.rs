@@ -6,6 +6,7 @@ macro_rules! invalid_value_error {
         #[doc = concat!("Invalid ", $name, ".")]
         #[derive(Clone, Copy, Debug, PartialEq)]
         #[allow(
+            clippy::allow_attributes,
             clippy::derive_partial_eq_without_eq,
             reason = "value type may not be `Eq` (e.g. f64)"
         )]

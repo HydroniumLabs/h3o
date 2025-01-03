@@ -113,10 +113,6 @@ const PENTAGON_ROTATIONS: [[u8; 7]; 7] = [
 /// due to failure cases. It's possible this could be restricted to a narrower
 /// set of a failure cases. Currently, the logic is any unfolding across more
 /// than one icosahedron face is not permitted.
-#[allow(
-    clippy::unusual_byte_groupings,
-    reason = "grouping by 7 is more explicit here"
-)]
 const FAILED_DIRECTIONS: u64 =
     //   6       5       4       3       2       1       0
     0b0101000_1000100_0001100_1010000_0110000_0000000_0000000;
@@ -458,7 +454,7 @@ impl CellIndex {
     // In this case, `mut-let-if` is faster than the idiomatic `let-if-else`.
     // Actually 12.5% faster for hexagons and 3.5% slower for pentagons.
     // Given that hexagons are way more common than pentagons, worth it.
-    #[allow(clippy::useless_let_if_seq, reason = "12.5% faster")]
+    #[expect(clippy::useless_let_if_seq, reason = "12.5% faster")]
     pub fn children_count(self, resolution: Resolution) -> u64 {
         let resolution = usize::from(resolution);
         let curr_resolution = usize::from(bits::get_resolution(self.0.get()));
@@ -574,7 +570,7 @@ impl CellIndex {
         mut position: u64,
         resolution: Resolution,
     ) -> Option<Self> {
-        #[allow(
+        #[expect(
             clippy::cast_possible_truncation,
             reason = "safe thx to assert"
         )]
@@ -2002,7 +1998,6 @@ impl<'a> arbitrary::Arbitrary<'a> for CellIndex {
 /// Checks if there is at least one unused direction in the given directions.
 #[inline(always)]
 #[rustfmt::skip] // Keep constants aligned for readability.
-#[allow(clippy::unusual_byte_groupings, reason = "grouping by 3-bit is better here")]
 const fn has_unused_direction(dirs: u64) -> bool {
     // Unused directions are represented by `0b111`, so we actually want to
     // check the absence of this pattern.

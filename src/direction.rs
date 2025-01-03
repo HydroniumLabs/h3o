@@ -49,7 +49,7 @@ const TO_VERTEX_PENTAGON: [Vertex; NUM_PENT_VERTS as usize] = [
 /// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u8)]
-#[allow(clippy::exhaustive_enums, reason = "not gonna change any time soon")]
+#[expect(clippy::exhaustive_enums, reason = "not gonna change any time soon")]
 #[cfg_attr(
     feature = "serde",
     derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
@@ -107,7 +107,7 @@ impl Direction {
     /// # Safety
     ///
     /// The value must be a valid direction.
-    #[allow(unsafe_code, reason = "only used internally")]
+    #[expect(unsafe_code, reason = "only used internally")]
     pub(crate) const fn new_unchecked(value: u8) -> Self {
         assert!(value <= MAX, "direction out of range");
         // SAFETY: range checked above.

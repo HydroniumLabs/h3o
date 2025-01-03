@@ -191,7 +191,7 @@ impl TryFrom<LocalIJK> for CellIndex {
 /// current base cell.
 ///
 /// Returns the adjusted `IJK` coordinates.
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "4-5% boost, up to 13% at resolution 1"
 )]

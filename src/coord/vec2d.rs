@@ -155,9 +155,9 @@ impl From<Vec2d> for CoordIJK {
         let x1 = a1 + x2 / 2.;
 
         // Check if we have the center of a hex.
-        #[allow(clippy::cast_possible_truncation, reason = "on purpose")]
+        #[expect(clippy::cast_possible_truncation, reason = "on purpose")]
         let m1 = x1 as i32;
-        #[allow(clippy::cast_possible_truncation, reason = "on purpose")]
+        #[expect(clippy::cast_possible_truncation, reason = "on purpose")]
         let m2 = x2 as i32;
 
         // Otherwise round correctly.

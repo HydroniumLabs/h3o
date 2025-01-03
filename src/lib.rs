@@ -152,6 +152,7 @@
     clippy::all,
     clippy::cargo,
     clippy::pedantic,
+    clippy::allow_attributes,
     clippy::allow_attributes_without_reason,
     clippy::as_underscore,
     clippy::branches_sharing_code,

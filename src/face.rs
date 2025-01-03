@@ -20,7 +20,10 @@ impl Face {
     /// # Safety
     ///
     /// The value must be a valid face.
-    #[allow(clippy::cast_possible_truncation, reason = "cannot because assert")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "cannot because assert"
+    )]
     pub(crate) const fn new_unchecked(value: usize) -> Self {
         debug_assert!(value < NUM_ICOSA_FACES, "face out of range");
         Self(value as u8)
@@ -134,7 +137,7 @@ impl FaceSet {
     /// ```
     pub fn iter(self) -> impl Iterator<Item = Face> {
         (0..NUM_ICOSA_FACES).filter_map(move |offset| {
-            #[allow(
+            #[expect(
                 clippy::cast_possible_truncation,
                 reason = "bounded by NUM_ICOSA_FACES"
             )]

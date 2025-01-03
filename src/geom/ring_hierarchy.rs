@@ -131,7 +131,7 @@ impl RingHierarchy {
     /// Note that in case of nested polygons, you may need to call this function
     /// several time to extract outer rings at every nesting level.
     fn peel_outers(&mut self) -> Option<Vec<(usize, LineString<f64>)>> {
-        #[allow(
+        #[expect(
             clippy::filter_map_bool_then,
             reason = "borrow issue if filter+map"
         )]
@@ -160,7 +160,7 @@ impl RingHierarchy {
     fn inners(&mut self, outer_id: usize) -> Vec<LineString<f64>> {
         // Walk by column to find candidate and then check their parents using
         // the row-order
-        #[allow(
+        #[expect(
             clippy::filter_map_bool_then,
             reason = "borrow issue if filter+map"
         )]

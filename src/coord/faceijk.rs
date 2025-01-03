@@ -38,7 +38,7 @@ impl FaceIJK {
 
     /// Returns the number of 60° counterclockwise rotations to rotate into the
     /// coordinate system of the base cell at that coordinates.
-    #[allow(
+    #[expect(
         clippy::cast_sign_loss,
         reason = "safe because components values are in [0; 2]"
     )]
@@ -537,7 +537,7 @@ impl FaceIJK {
 /// current base cell.
 ///
 /// Returns the adjusted `IJK` coordinates.
-#[allow(
+#[expect(
     clippy::inline_always,
     reason = "4-5% boost, up to 13% at resolution 1."
 )]

@@ -20,7 +20,6 @@ const VERTEX_MASK: u64 = 0b111 << VERTEX_OFFSET;
 pub const DIRECTIONS_MASK: u64 = 0x0000_1fff_ffff_ffff;
 
 /// Returns the H3 index mode  bits.
-#[allow(clippy::cast_possible_truncation, reason = "cast safe thx to masking")]
 #[must_use]
 pub const fn get_mode(bits: u64) -> u8 {
     ((bits & MODE_MASK) >> MODE_OFFSET) as u8
@@ -39,7 +38,6 @@ pub const fn set_mode(bits: u64, mode: IndexMode) -> u64 {
 }
 
 /// Returns the H3 index cell edge bits.
-#[allow(clippy::cast_possible_truncation, reason = "cast safe thx to masking")]
 #[must_use]
 pub const fn get_edge(bits: u64) -> u8 {
     ((bits & EDGE_MASK) >> EDGE_OFFSET) as u8
@@ -58,7 +56,6 @@ pub const fn clr_edge(bits: u64) -> u64 {
 }
 
 /// Returns the H3 index cell vertex bits.
-#[allow(clippy::cast_possible_truncation, reason = "cast safe thx to masking")]
 #[must_use]
 pub const fn get_vertex(bits: u64) -> u8 {
     ((bits & VERTEX_MASK) >> VERTEX_OFFSET) as u8
@@ -134,7 +131,7 @@ pub fn first_axe(bits: u64) -> Option<NonZeroU8> {
     let bit_index = (bits & DIRECTIONS_MASK).leading_zeros() - PREFIX_LENGTH;
 
     // +1 because the first direction is at resolution 1, not 0.
-    #[allow(clippy::cast_possible_truncation, reason = "values are in range")]
+    #[expect(clippy::cast_possible_truncation, reason = "values are in range")]
     let resolution = cmp::min(
         ((bit_index / h3o_bit::DIRECTION_BITSIZE as u32) + 1) as u8,
         resolution.into(),

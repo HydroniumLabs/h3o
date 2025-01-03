@@ -127,7 +127,7 @@ impl CoordIJK {
 
     /// Returns the normalized `IJK` coordinates of the indexing parent of a
     /// cell in an aperture 7 grid.
-    #[allow(clippy::cast_possible_truncation, reason = "on purpose")]
+    #[expect(clippy::cast_possible_truncation, reason = "on purpose")]
     pub fn up_aperture7<const CCW: bool>(&self) -> Self {
         let CoordIJ { i, j } = self.into();
 
@@ -142,7 +142,7 @@ impl CoordIJK {
 
     /// Returns the normalized `IJK` coordinates of the indexing parent of a
     /// cell in an aperture 7 grid.
-    #[allow(clippy::cast_possible_truncation, reason = "on purpose")]
+    #[expect(clippy::cast_possible_truncation, reason = "on purpose")]
     pub fn checked_up_aperture7<const CCW: bool>(&self) -> Option<Self> {
         let CoordIJ { i, j } = self.into();
 
@@ -290,7 +290,7 @@ impl TryFrom<CoordIJK> for Direction {
 
         // First, make sure we have a unit vector in `ijk`.
         if (value.i | value.j | value.k) & !1 == 0 {
-            #[allow(
+            #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
                 reason = "cannot truncate thx to check above (unit vector)"

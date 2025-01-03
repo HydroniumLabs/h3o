@@ -140,7 +140,7 @@ impl BaseCell {
             .iter()
             .position(|&cell| u8::from(neighbor) == cell)
             .map(|dir| {
-                #[allow(
+                #[expect(
                     clippy::cast_possible_truncation,
                     reason = "Cast safe thx to bounds"
                 )]
@@ -200,7 +200,7 @@ impl fmt::Display for BaseCell {
 ///
 /// To reduce the footprints of the lookup table, we use a bitset where the
 /// rotation is encoded on 3-bit, where `111` means no rotation for this face.
-#[allow(
+#[expect(
     clippy::unusual_byte_groupings,
     reason = "Grouping by 3 is more explicit here"
 )]
