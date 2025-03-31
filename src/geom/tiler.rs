@@ -428,7 +428,7 @@ struct PredicateResult {
 
 enum ContainmentPredicate<'geom> {
     ContainsCentroid(&'geom MultiPolygon, MultiBBoxes),
-    IntersectsBoundary(PreparedGeometry<'geom>),
+    IntersectsBoundary(PreparedGeometry<'geom, &'geom MultiPolygon>),
 }
 
 impl<'geom> ContainmentPredicate<'geom> {
