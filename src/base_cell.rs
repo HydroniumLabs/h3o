@@ -86,7 +86,7 @@ impl BaseCell {
     pub(crate) fn rotation_count(self, face: Face) -> u8 {
         let shift = usize::from(face) * 3;
         let rotation =
-            BASE_CELL_ROTATIONS[usize::from(self.0)] >> shift & 0b111;
+            (BASE_CELL_ROTATIONS[usize::from(self.0)] >> shift) & 0b111;
 
         debug_assert_ne!(rotation, 0b111, "no cell {self} on face {face:?}");
 

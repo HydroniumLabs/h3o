@@ -122,7 +122,7 @@ impl FaceSet {
     #[must_use]
     pub fn contains(self, face: Face) -> bool {
         let offset = u8::from(face);
-        self.0 & 1 << u32::from(offset) != 0
+        self.0 & (1 << u32::from(offset)) != 0
     }
 
     /// Returns the contained faces.
@@ -141,7 +141,7 @@ impl FaceSet {
                 clippy::cast_possible_truncation,
                 reason = "bounded by NUM_ICOSA_FACES"
             )]
-            (self.0 >> offset & 1 == 1).then_some(Face(offset as u8))
+            ((self.0 >> offset) & 1 == 1).then_some(Face(offset as u8))
         })
     }
 }

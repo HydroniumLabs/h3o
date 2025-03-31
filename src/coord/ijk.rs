@@ -295,7 +295,7 @@ impl TryFrom<CoordIJK> for Direction {
                 clippy::cast_sign_loss,
                 reason = "cannot truncate thx to check above (unit vector)"
             )]
-            let bits = (value.i << 2 | value.j << 1 | value.k) as u8;
+            let bits = ((value.i << 2) | (value.j << 1) | value.k) as u8;
 
             // SAFETY: thx to `normalize` we are guaranteed to have at most two
             // non-zero components, hence max value is 6 (thus valid).

@@ -106,7 +106,7 @@ impl RingHierarchy {
 
         std::iter::from_fn(move || {
             // If the current layer is exhausted, peel the next one.
-            if outers.as_mut().map_or(true, |rings| rings.peek().is_none()) {
+            if outers.as_mut().is_none_or(|rings| rings.peek().is_none()) {
                 outers = self
                     .peel_outers()
                     .map(|rings| rings.into_iter().peekable());

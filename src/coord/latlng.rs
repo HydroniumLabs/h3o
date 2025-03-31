@@ -51,7 +51,7 @@ impl LatLng {
     /// assert!(h3o::LatLng::new(f64::NAN, 10.).is_err());
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
-    pub fn new(lat: f64, lng: f64) -> Result<Self, InvalidLatLng> {
+    pub const fn new(lat: f64, lng: f64) -> Result<Self, InvalidLatLng> {
         Self::from_radians(lat.to_radians(), lng.to_radians())
     }
 
@@ -92,7 +92,7 @@ impl LatLng {
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
     #[must_use]
-    pub fn lat(self) -> f64 {
+    pub const fn lat(self) -> f64 {
         self.lat.to_degrees()
     }
 
@@ -107,7 +107,7 @@ impl LatLng {
     /// # Ok::<(), h3o::error::InvalidLatLng>(())
     /// ```
     #[must_use]
-    pub fn lng(self) -> f64 {
+    pub const fn lng(self) -> f64 {
         self.lng.to_degrees()
     }
 

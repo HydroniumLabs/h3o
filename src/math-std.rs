@@ -1,5 +1,5 @@
 #[inline]
-pub fn abs(x: f64) -> f64 {
+pub const fn abs(x: f64) -> f64 {
     x.abs()
 }
 
