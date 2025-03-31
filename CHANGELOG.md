@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.8.0] - 2025-03-31
+
 ### Added
 
 - `h3o::geom::Solvent` to compute the shape of a set of H3 cells.
