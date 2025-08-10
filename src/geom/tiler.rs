@@ -319,7 +319,7 @@ pub struct TilerBuilder {
 }
 
 impl TilerBuilder {
-    /// Initializes a new plotter builder with default settings.
+    /// Initializes a new tiler builder with default settings.
     #[must_use]
     pub const fn new(resolution: Resolution) -> Self {
         Self {
@@ -356,7 +356,7 @@ impl TilerBuilder {
         self
     }
 
-    /// Builds the plotter.
+    /// Builds the tiler.
     #[must_use]
     pub fn build(self) -> Tiler {
         Tiler {
