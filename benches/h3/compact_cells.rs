@@ -1,5 +1,6 @@
-use criterion::{black_box, BatchSize, Bencher, Criterion};
+use criterion::{BatchSize, Bencher, Criterion};
 use h3o::{CellIndex, Direction, Resolution};
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     const RESOLUTION: Resolution = Resolution::Three;

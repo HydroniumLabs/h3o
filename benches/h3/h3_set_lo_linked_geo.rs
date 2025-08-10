@@ -1,13 +1,13 @@
 use super::utils::{load_cells, load_polygon};
 use ahash::HashSet;
 use criterion::{
-    black_box, measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
+    measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
 };
 use h3o::{
     geom::{SolventBuilder, TilerBuilder},
     CellIndex, Resolution,
 };
-use std::os::raw::c_int;
+use std::{hint::black_box, os::raw::c_int};
 
 pub fn bench_full(c: &mut Criterion) {
     let mut group = c.benchmark_group("h3SetToLinkedGeo");

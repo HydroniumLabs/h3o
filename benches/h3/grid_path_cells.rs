@@ -1,5 +1,6 @@
-use criterion::{black_box, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion};
 use h3o::{LatLng, Resolution};
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     let src = LatLng::new(30.3157384429565, 104.15339644867949).expect("src");

@@ -1,5 +1,6 @@
-use criterion::{black_box, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion};
 use h3o::CellIndex;
+use std::hint::black_box;
 
 pub fn bench_succ(c: &mut Criterion) {
     let hexagons: [u64; 16] = [

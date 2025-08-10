@@ -1,4 +1,5 @@
-use criterion::{black_box, Criterion};
+use criterion::Criterion;
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     const VALUE: f64 = 48.854501508844095;

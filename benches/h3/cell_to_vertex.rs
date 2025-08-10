@@ -1,7 +1,8 @@
 use criterion::{
-    black_box, measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
+    measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
 };
 use h3o::{CellIndex, Vertex};
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     const HEXAGON: u64 = 0x084e_c69b_ffff_ffff;

@@ -1,11 +1,11 @@
 use super::utils::load_polygon;
-use criterion::{black_box, BatchSize, Bencher, BenchmarkId, Criterion};
+use criterion::{BatchSize, Bencher, BenchmarkId, Criterion};
 use geo::Polygon;
 use h3o::{
     geom::{ContainmentMode, TilerBuilder},
     Resolution,
 };
-use std::os::raw::c_int;
+use std::{hint::black_box, os::raw::c_int};
 
 pub fn bench_full(c: &mut Criterion) {
     let mut group = c.benchmark_group("polygonToCells");

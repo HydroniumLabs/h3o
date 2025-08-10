@@ -1,5 +1,6 @@
-use criterion::{black_box, Criterion};
+use criterion::Criterion;
 use h3o::{CellIndex, Resolution};
+use std::hint::black_box;
 
 const RESOLUTION: Resolution = Resolution::Seven;
 

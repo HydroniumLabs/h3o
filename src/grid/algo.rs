@@ -17,7 +17,7 @@ use crate::{
 /// * `origin`    - Origin index.
 /// * `direction` - Direction to move in.
 /// * `rotations` - Number of ccw rotations to perform to reorient the
-///                 translation vector.
+///   translation vector.
 ///
 /// # Returns
 ///

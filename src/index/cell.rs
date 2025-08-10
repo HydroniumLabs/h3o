@@ -513,7 +513,7 @@ impl CellIndex {
                     // Adjust digit index for deleted K-subsequence.
                     if parent_is_pentagon && digit > 0 {
                         digit -= 1;
-                    };
+                    }
                     if digit == 0 {
                         return 0;
                     }
@@ -2083,7 +2083,7 @@ struct Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    fn new(buffer: &'a mut Vec<CellIndex>) -> Self {
+    const fn new(buffer: &'a mut Vec<CellIndex>) -> Self {
         Self {
             buffer,
             rd_idx: 0,

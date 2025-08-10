@@ -1,5 +1,6 @@
-use criterion::{black_box, Bencher, Criterion};
+use criterion::{Bencher, Criterion};
 use h3o::CellIndex;
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("cellToLocalIj");

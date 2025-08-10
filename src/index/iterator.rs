@@ -31,10 +31,11 @@ impl Children {
             parent_resolution: index.resolution(),
             target_resolution: resolution,
             scratchpad: get_starting_state(index, resolution),
-            skip_count: index
-                .is_pentagon()
-                .then(|| i16::from(u8::from(resolution)))
-                .unwrap_or(-1),
+            skip_count: if index.is_pentagon() {
+                i16::from(u8::from(resolution))
+            } else {
+                -1
+            },
             count: index.children_count(resolution),
         }
     }

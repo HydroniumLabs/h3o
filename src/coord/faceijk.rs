@@ -163,7 +163,7 @@ impl FaceIJK {
     ///
     /// * `resolution` - The H3 resolution of the cell.
     /// * `is_pent4` - Whether or not the cell is a pentagon with a leading
-    ///                digit 4.
+    ///   digit 4.
     /// * `in_substrate` - Whether or not the cell is in a substrate grid.
     pub fn adjust_overage_class2<const IS_SUBSTRATE: bool>(
         &mut self,
@@ -469,7 +469,7 @@ impl FaceIJK {
     /// # Arguments
     ///
     /// * `resolution` - The H3 resolution of the cell. This may be adjusted if
-    ///                  necessary for the substrate grid resolution.
+    ///   necessary for the substrate grid resolution.
     /// * `vertices` - output array for the vertices.
     pub fn vertices(
         &mut self,

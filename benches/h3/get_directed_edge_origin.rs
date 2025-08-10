@@ -1,5 +1,6 @@
-use criterion::{black_box, Criterion};
+use criterion::Criterion;
 use h3o::DirectedEdgeIndex;
+use std::hint::black_box;
 
 const INPUT: u64 = 0x13f2834782b9c2ab;
 

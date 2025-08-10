@@ -1,5 +1,6 @@
-use criterion::{black_box, Bencher, Criterion};
+use criterion::{Bencher, Criterion};
 use h3o::CellIndex;
+use std::hint::black_box;
 
 const PENTAGON: u64 = 0x8f0800000000000;
 const HEXAGON: u64 = 0x8f734e64992d6d8;

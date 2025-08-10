@@ -1,5 +1,6 @@
-use criterion::{black_box, Bencher, BenchmarkId, Criterion};
+use criterion::{Bencher, BenchmarkId, Criterion};
 use h3o::{LatLng, Resolution};
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("latLngToCell");

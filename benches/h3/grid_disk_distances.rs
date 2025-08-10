@@ -1,8 +1,8 @@
 use criterion::{
-    black_box, measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
+    measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
 };
 use h3o::CellIndex;
-use std::os::raw::c_int;
+use std::{hint::black_box, os::raw::c_int};
 
 const HEXAGON: u64 = 0x8b1fb46622defff;
 const PENTAGON: u64 = 0x8b0800000000fff;

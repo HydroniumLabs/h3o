@@ -90,10 +90,10 @@ impl Vec2d {
     ///
     /// * `vec2d` - The 2D hex coordinates of the cell.
     /// * `face` -  The icosahedral face upon which the 2D hex coordinate system
-    ///             is centered.
+    ///   is centered.
     /// * `resolution` - The H3 resolution of the cell.
     /// * `is_substrate` - Indicates whether or not this grid is actually a
-    ///                    substrate grid relative to the specified resolution.
+    ///   substrate grid relative to the specified resolution.
     pub fn to_latlng(
         self,
         face: Face,
@@ -167,7 +167,7 @@ impl From<Vec2d> for CoordIJK {
         let (mut i, mut j) = if r1 < 0.5 {
             if r1 < 1. / 3. {
                 let i = m1;
-                let j = m2 + i32::from(r2 >= (1. + r1) / 2.);
+                let j = m2 + i32::from(r2 >= f64::midpoint(1., r1));
                 (i, j)
             } else {
                 let i = m1 + i32::from((1. - r1) <= r2 && r2 < (2. * r1));
@@ -188,7 +188,7 @@ impl From<Vec2d> for CoordIJK {
         // Now fold across the axes if necessary.
         if value.x < 0. {
             let offset = j % 2;
-            let axis_i = (j + offset) / 2;
+            let axis_i = i32::midpoint(j, offset);
             let diff = i - axis_i;
             i -= 2 * diff + offset;
         }

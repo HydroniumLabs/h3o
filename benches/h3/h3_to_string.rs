@@ -1,6 +1,6 @@
-use criterion::{black_box, Criterion};
+use criterion::Criterion;
 use h3o::CellIndex;
-use std::{ffi::CString, fmt::Write};
+use std::{ffi::CString, fmt::Write, hint::black_box};
 
 const INPUT: u64 = 0x8f734e64992d6d8;
 const SIZE: usize = 16; // u64 is at most a 16-char hexstring.

@@ -1,6 +1,6 @@
-use criterion::{black_box, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion};
 use h3o::CellIndex;
-use std::os::raw::c_int;
+use std::{hint::black_box, os::raw::c_int};
 
 const HEXAGON: u64 = 0x08b1_fb46_622d_efff;
 

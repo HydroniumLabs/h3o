@@ -8,16 +8,16 @@
 //! ## Crate features
 //!
 //! * **std** -
-//!     When enabled, this will cause `h3o` to use the standard library. In terms of
-//!     APIs, `std` causes error types to implement the `std::error::Error` trait.
-//!     Enabling `std` will also result in performance optimizations.
+//!   When enabled, this will cause `h3o` to use the standard library. In terms of
+//!   APIs, `std` causes error types to implement the `std::error::Error` trait.
+//!   Enabling `std` will also result in performance optimizations.
 //!
 //! * **geo** -
-//!     When enabled, you'll be able to convert lists of H3 cell indexes from and
-//!     into geometric shapes. Also enables the `GeoJSON` support. Requires `std`.
+//!   When enabled, you'll be able to convert lists of H3 cell indexes from and
+//!   into geometric shapes. Also enables the `GeoJSON` support. Requires `std`.
 //!
 //! * **serde** -
-//!     When enabled, H3 index types (cell, vertex and edge) derive serde traits.
+//!   When enabled, H3 index types (cell, vertex and edge) derive serde traits.
 //!
 //! ## H3 to H3O mapping
 //!

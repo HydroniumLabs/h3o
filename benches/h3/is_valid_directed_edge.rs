@@ -1,5 +1,6 @@
-use criterion::{black_box, Bencher, BenchmarkId, Criterion};
+use criterion::{Bencher, BenchmarkId, Criterion};
 use h3o::DirectedEdgeIndex;
+use std::hint::black_box;
 
 const HEXAGONS: [u64; 16] = [
     0x12073fffffffffff,

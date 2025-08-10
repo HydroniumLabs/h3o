@@ -1,5 +1,6 @@
-use criterion::{black_box, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion};
 use h3o::{CellIndex, Resolution};
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     const INDEX: u64 = 0x8073fffffffffff;

@@ -1,5 +1,6 @@
-use criterion::{black_box, Criterion};
+use criterion::Criterion;
 use h3o::Resolution;
+use std::hint::black_box;
 
 pub fn bench_km2(c: &mut Criterion) {
     let mut group = c.benchmark_group("getHexagonAreaAvgKm2");

@@ -11,13 +11,12 @@ pub struct Solvent {
 }
 
 impl Solvent {
-    /// Creates a [`MultiPolygon`](geo::MultiPolygon) describing the outline(s) of a
-    /// set of cells.
+    /// Creates a [`MultiPolygon`] describing the outline(s) of a set of cells.
     ///
     /// # Errors
     ///
     /// All cell indexes must be unique and have the expected resolution,
-    /// otherwise [`DissolutionError`](DissolutionError) is returned.
+    /// otherwise [`DissolutionError`] is returned.
     ///
     /// # Example
     ///

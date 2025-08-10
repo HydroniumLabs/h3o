@@ -1,6 +1,6 @@
-use criterion::{black_box, Criterion};
+use criterion::Criterion;
 use h3o::CellIndex;
-use std::os::raw::c_int;
+use std::{hint::black_box, os::raw::c_int};
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("gridDisksUnsafe");

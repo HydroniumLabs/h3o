@@ -1,5 +1,6 @@
-use criterion::{black_box, Criterion};
+use criterion::Criterion;
 use h3o::CellIndex;
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     const ORIGIN: u64 = 0x0891_fb46_622f_ffff;

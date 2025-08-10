@@ -1,5 +1,6 @@
-use criterion::{black_box, Criterion};
+use criterion::Criterion;
 use h3o::CellIndex;
+use std::hint::black_box;
 
 const INPUT: u64 = 0x8f734e64992d6d8;
 

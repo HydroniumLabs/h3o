@@ -1,5 +1,5 @@
-use criterion::{black_box, Criterion};
-use std::os::raw::c_int;
+use criterion::Criterion;
+use std::{hint::black_box, os::raw::c_int};
 
 const K: u32 = 42;
 

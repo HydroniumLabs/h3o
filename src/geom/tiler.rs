@@ -252,12 +252,6 @@ impl Tiler {
         scratchpad: &mut [u64],
         predicate: &ContainmentPredicate<'_>,
     ) -> Vec<(CellIndex, bool)> {
-        // IIUC, the collect is necessary to consume the iterator and release
-        // the mutable borrow on `already_seen`.
-        #[expect(
-            clippy::needless_collect,
-            reason = "needed because mutable borrow"
-        )]
         // Compute the set of cells making the outlines of the polygon.
         let outlines = self
             .interiors()
@@ -426,6 +420,7 @@ struct PredicateResult {
     is_fully_contained: bool,
 }
 
+#[expect(clippy::large_enum_variant, reason = "used once, on the stack")]
 enum ContainmentPredicate<'geom> {
     ContainsCentroid(&'geom MultiPolygon, MultiBBoxes),
     IntersectsBoundary(PreparedGeometry<'geom, &'geom MultiPolygon>),
