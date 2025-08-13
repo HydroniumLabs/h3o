@@ -1,6 +1,8 @@
 use approx::assert_relative_eq;
 use geo::{coord, polygon, Line, Point, Polygon};
-use h3o::{CellIndex, DirectedEdgeIndex, VertexIndex};
+use h3o::{
+    geom::cell_to_multi_polygon, CellIndex, DirectedEdgeIndex, VertexIndex,
+};
 
 #[test]
 fn from_cell() {
@@ -38,4 +40,44 @@ fn from_vertex() {
     let expected = Point::new(-74.64046816708004, 30.219492199828117);
 
     assert_relative_eq!(result, expected, epsilon = 1e-6);
+}
+
+#[test]
+fn to_simple_polygon() {
+    // hexagon cell in Le vigan at low res: https://h3geo.org/#hex=893961acb53ffff
+    let cell = CellIndex::try_from(0x0893_961a_cb53_ffff).expect("index");
+    let polygon = cell_to_multi_polygon(cell);
+    assert_eq!(polygon.0.len(), 1);
+    assert_eq!(polygon.0[0].exterior().0.len(), 7); // the last point is duplicated to close the polygon
+
+    // pentagon cell in west australia at res 0: https://h3geo.org/#hex=80a7fffffffffff
+    let cell = CellIndex::try_from(0x080a_7fff_ffff_ffff).expect("index");
+    let polygon = cell_to_multi_polygon(cell);
+    assert_eq!(polygon.0.len(), 1);
+    assert_eq!(polygon.0[0].exterior().0.len(), 6);
+}
+
+#[test]
+fn to_multi_polygon() {
+    // hexagon cell in between us and russia at low res: https://h3geo.org/#hex=840d9edffffffff
+    let cell = CellIndex::try_from(0x0840_d9ed_ffff_ffff).expect("index");
+    let polygon = cell_to_multi_polygon(cell);
+    assert_eq!(polygon.0.len(), 2);
+    assert_eq!(polygon.0[0].exterior().0.len(), 6);
+    assert_eq!(polygon.0[1].exterior().0.len(), 6);
+    assert_eq!(polygon.0[0].exterior().0[0].x, -180.0, "{polygon:?}");
+    assert_eq!(polygon.0[0].exterior().0[4].x, -180.0, "{polygon:?}");
+    assert_eq!(polygon.0[1].exterior().0[2].x, 180.0, "{polygon:?}");
+    assert_eq!(polygon.0[1].exterior().0[3].x, 180.0, "{polygon:?}");
+
+    // pentagon cell on the anti-meridian at res 0: https://h3geo.org/#hex=807ffffffffffff
+    let cell = CellIndex::try_from(0x0807_ffff_ffff_ffff).expect("index");
+    let polygon = cell_to_multi_polygon(cell);
+    assert_eq!(polygon.0.len(), 2);
+    assert_eq!(polygon.0[0].exterior().0.len(), 4);
+    assert_eq!(polygon.0[1].exterior().0.len(), 7);
+    assert_eq!(polygon.0[0].exterior().0[0].x, -180.0, "{polygon:?}");
+    assert_eq!(polygon.0[0].exterior().0[2].x, -180.0, "{polygon:?}");
+    assert_eq!(polygon.0[1].exterior().0[2].x, 180.0, "{polygon:?}");
+    assert_eq!(polygon.0[1].exterior().0[3].x, 180.0, "{polygon:?}");
 }
