@@ -61,13 +61,14 @@ fn neighbors(cell: crate::CellIndex, scratchpad: &mut [u64]) -> usize {
 ///
 /// ```
 /// let cell = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
-/// let geom = cell_to_multi_polygon(cell);
+/// let geom = geo::MultiPolygon::from(cell);
 /// # Ok::<(), h3o::error::InvalidCellIndex>(())
 /// ```
-#[must_use]
-pub fn cell_to_multi_polygon(cell: crate::CellIndex) -> geo::MultiPolygon {
-    let mut polygons = cell_boundary(cell);
-    // converts back everything to degrees
-    polygons.to_degrees_in_place();
-    polygons
+impl From<crate::CellIndex> for geo::MultiPolygon {
+    fn from(cell: crate::CellIndex) -> Self {
+        let mut polygons = cell_boundary(cell);
+        // converts back everything to degrees
+        polygons.to_degrees_in_place();
+        polygons
+    }
 }

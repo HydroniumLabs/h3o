@@ -1974,14 +1974,6 @@ impl fmt::UpperHex for CellIndex {
     }
 }
 
-#[cfg(feature = "geo")]
-impl From<CellIndex> for geo::Polygon {
-    fn from(value: CellIndex) -> Self {
-        let boundary: geo::LineString = value.boundary().into();
-        Self::new(boundary, Vec::new())
-    }
-}
-
 #[cfg(feature = "arbitrary")]
 impl<'a> arbitrary::Arbitrary<'a> for CellIndex {
     fn arbitrary(
