@@ -6,6 +6,7 @@ mod solvent;
 mod tiler;
 mod vertex_graph;
 
+use geo::ToDegrees;
 use ring_hierarchy::RingHierarchy;
 use tiler::cell_boundary;
 use vertex_graph::VertexGraph;
@@ -13,8 +14,6 @@ use vertex_graph::VertexGraph;
 pub use plotter::{Plotter, PlotterBuilder};
 pub use solvent::{Solvent, SolventBuilder};
 pub use tiler::{ContainmentMode, Tiler, TilerBuilder};
-
-use crate::LatLng;
 
 // Check that the coordinate are finite and in a legit range.
 fn coord_is_valid(coord: geo::Coord) -> bool {
@@ -69,16 +68,6 @@ fn neighbors(cell: crate::CellIndex, scratchpad: &mut [u64]) -> usize {
 pub fn cell_to_multi_polygon(cell: crate::CellIndex) -> geo::MultiPolygon {
     let mut polygons = cell_boundary(cell);
     // converts back everything to degrees
-    polygons.iter_mut().for_each(|polygon| {
-        polygon.exterior_mut(|line| {
-            line.coords_mut().for_each(|coord| {
-                let ll = LatLng::new_unchecked(coord.y, coord.x);
-                *coord = geo::coord! {
-                    x: ll.lng(),
-                    y: ll.lat(),
-                };
-            });
-        });
-    });
+    polygons.to_degrees_in_place();
     polygons
 }
