@@ -14,6 +14,15 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- Bump crate to 2024 edition
+
+### Removed
+
+- `From<CellIndex> for Polygon`
+    - use `From<CellIndex> for MultiPolygon` instead
+
 ## [0.8.0] - 2025-03-31
 
 ### Added
