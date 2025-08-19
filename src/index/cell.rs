@@ -19,6 +19,8 @@ use core::{
     str::FromStr,
 };
 use either::Either;
+#[cfg(feature = "geo")]
+use geo::ToDegrees as _;
 
 /// Lookup table for number of children for hexagonal cells.
 // 7.pow(resolution_delta)
@@ -1919,7 +1921,9 @@ impl TryFrom<u64> for CellIndex {
     }
 }
 
-/// Return the geometry of this cell, if it crosses the trans-meridian two polygons are returned.
+/// Return the geometry of this cell.
+///
+/// If it crosses the anti-meridian, two polygons are returned.
 ///
 /// # Example
 ///
@@ -1931,9 +1935,7 @@ impl TryFrom<u64> for CellIndex {
 #[cfg(feature = "geo")]
 impl From<CellIndex> for geo::MultiPolygon {
     fn from(cell: CellIndex) -> Self {
-        use crate::geom::cell_boundary;
-        use geo::ToDegrees;
-        let mut polygons = cell_boundary(cell);
+        let mut polygons = crate::geom::cell_boundary(cell);
         // converts back everything to degrees
         polygons.to_degrees_in_place();
         polygons

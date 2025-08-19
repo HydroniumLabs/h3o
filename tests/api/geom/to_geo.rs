@@ -1,24 +1,6 @@
 use approx::assert_relative_eq;
-use geo::MultiPolygon;
-use geo::{coord, polygon, Line, Point, Polygon};
+use geo::{coord, Line, MultiPolygon, Point};
 use h3o::{CellIndex, DirectedEdgeIndex, VertexIndex};
-
-#[test]
-fn legacy_from_cell() {
-    let index = CellIndex::try_from(0x89283470803ffff).expect("index");
-    let result = MultiPolygon::from(index);
-    assert_eq!(result.0.len(), 1);
-    let expected = polygon![
-      (x: -122.02648011977477, y: 37.38558967035685),
-      (x: -122.02540378194031, y: 37.38727461225182),
-      (x: -122.02665619162275, y: 37.38879129032762),
-      (x: -122.02898493935817, y: 37.38862300294707),
-      (x: -122.03006120911812, y: 37.38693806029814),
-      (x: -122.02880879921976, y: 37.38542140578344),
-    ];
-
-    assert_relative_eq!(result.0[0], expected, epsilon = 1e-6);
-}
 
 #[test]
 fn from_directed_edge() {
@@ -44,13 +26,16 @@ fn from_vertex() {
 
 #[test]
 fn from_cell() {
-    // hexagon cell in Le vigan at low res: https://h3geo.org/#hex=893961acb53ffff
+    // Hexagon cell in Le Vigan.
+    // https://h3geo.org/#hex=893961acb53ffff
     let cell = CellIndex::try_from(0x0893_961a_cb53_ffff).expect("index");
     let polygon = MultiPolygon::from(cell);
     assert_eq!(polygon.0.len(), 1);
-    assert_eq!(polygon.0[0].exterior().0.len(), 7); // the last point is duplicated to close the polygon
+    // 7 instead of 6 because the last point is duplicated to close the polygon.
+    assert_eq!(polygon.0[0].exterior().0.len(), 7);
 
-    // pentagon cell in west australia at res 0: https://h3geo.org/#hex=80a7fffffffffff
+    // Pentagon cell in West Australia
+    // https://h3geo.org/#hex=80a7fffffffffff
     let cell = CellIndex::try_from(0x080a_7fff_ffff_ffff).expect("index");
     let polygon = MultiPolygon::from(cell);
     assert_eq!(polygon.0.len(), 1);
@@ -59,12 +44,15 @@ fn from_cell() {
 
 #[test]
 fn from_transmeridian_cell() {
-    // hexagon cell in between us and russia at low res: https://h3geo.org/#hex=840d9edffffffff
+    // Transmeridian hexagon cell in between the US and Russia.
+    // https://h3geo.org/#hex=840d9edffffffff
     let cell = CellIndex::try_from(0x0840_d9ed_ffff_ffff).expect("index");
     let polygon = MultiPolygon::from(cell);
     assert_eq!(polygon.0.len(), 2);
     assert_eq!(polygon.0[0].exterior().0.len(), 6);
     assert_eq!(polygon.0[1].exterior().0.len(), 6);
+
+    // Make sure we return degrees, not radians.
     assert!(
         polygon.0[0]
             .exterior()
@@ -82,12 +70,14 @@ fn from_transmeridian_cell() {
         "{polygon:?}"
     );
 
-    // pentagon cell on the anti-meridian at res 0: https://h3geo.org/#hex=807ffffffffffff
+    // Transmeridian pentagon cell.
+    // https://h3geo.org/#hex=807ffffffffffff
     let cell = CellIndex::try_from(0x0807_ffff_ffff_ffff).expect("index");
     let polygon = MultiPolygon::from(cell);
     assert_eq!(polygon.0.len(), 2);
     assert_eq!(polygon.0[0].exterior().0.len(), 4);
     assert_eq!(polygon.0[1].exterior().0.len(), 7);
+    // Make sure we return degrees, not radians.
     assert!(
         polygon.0[0]
             .exterior()

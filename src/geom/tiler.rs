@@ -848,7 +848,7 @@ fn ring_contains_centroid(
 }
 
 // Return the cell boundary, in radians.
-pub(crate) fn cell_boundary(cell: CellIndex) -> MultiPolygon {
+pub fn cell_boundary(cell: CellIndex) -> MultiPolygon {
     let boundary = LineString(
         cell.boundary()
             .iter()
