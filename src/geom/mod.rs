@@ -6,14 +6,15 @@ mod solvent;
 mod tiler;
 mod vertex_graph;
 
-use geo::ToDegrees;
 use ring_hierarchy::RingHierarchy;
-use tiler::cell_boundary;
 use vertex_graph::VertexGraph;
 
 pub use plotter::{Plotter, PlotterBuilder};
 pub use solvent::{Solvent, SolventBuilder};
 pub use tiler::{ContainmentMode, Tiler, TilerBuilder};
+
+// Required for the From<CellIndex> for MultiPolygon implementation in index/cell.rs
+pub(crate) use tiler::cell_boundary;
 
 // Check that the coordinate are finite and in a legit range.
 fn coord_is_valid(coord: geo::Coord) -> bool {
@@ -53,22 +54,4 @@ fn neighbors(cell: crate::CellIndex, scratchpad: &mut [u64]) -> usize {
     }
 
     count
-}
-
-/// Return the geometry of this cell, if it crosses the trans-meridian two polygons are returned.
-///
-/// # Example
-///
-/// ```
-/// let cell = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
-/// let geom = geo::MultiPolygon::from(cell);
-/// # Ok::<(), h3o::error::InvalidCellIndex>(())
-/// ```
-impl From<crate::CellIndex> for geo::MultiPolygon {
-    fn from(cell: crate::CellIndex) -> Self {
-        let mut polygons = cell_boundary(cell);
-        // converts back everything to degrees
-        polygons.to_degrees_in_place();
-        polygons
-    }
 }
