@@ -1919,6 +1919,27 @@ impl TryFrom<u64> for CellIndex {
     }
 }
 
+/// Return the geometry of this cell, if it crosses the trans-meridian two polygons are returned.
+///
+/// # Example
+///
+/// ```
+/// let cell = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+/// let geom = geo::MultiPolygon::from(cell);
+/// # Ok::<(), h3o::error::InvalidCellIndex>(())
+/// ```
+#[cfg(feature = "geo")]
+impl From<CellIndex> for geo::MultiPolygon {
+    fn from(cell: CellIndex) -> Self {
+        use crate::geom::cell_boundary;
+        use geo::ToDegrees;
+        let mut polygons = cell_boundary(cell);
+        // converts back everything to degrees
+        polygons.to_degrees_in_place();
+        polygons
+    }
+}
+
 impl FromStr for CellIndex {
     type Err = InvalidCellIndex;
 
@@ -1971,14 +1992,6 @@ impl fmt::LowerHex for CellIndex {
 impl fmt::UpperHex for CellIndex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
-    }
-}
-
-#[cfg(feature = "geo")]
-impl From<CellIndex> for geo::Polygon {
-    fn from(value: CellIndex) -> Self {
-        let boundary: geo::LineString = value.boundary().into();
-        Self::new(boundary, Vec::new())
     }
 }
 

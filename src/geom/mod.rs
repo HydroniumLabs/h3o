@@ -13,6 +13,9 @@ pub use plotter::{Plotter, PlotterBuilder};
 pub use solvent::{Solvent, SolventBuilder};
 pub use tiler::{ContainmentMode, Tiler, TilerBuilder};
 
+// Required for the From<CellIndex> for MultiPolygon implementation in index/cell.rs
+pub(crate) use tiler::cell_boundary;
+
 // Check that the coordinate are finite and in a legit range.
 fn coord_is_valid(coord: geo::Coord) -> bool {
     use crate::TWO_PI;
