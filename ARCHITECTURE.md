@@ -66,9 +66,6 @@ They are divided into two tests suite:
 - `h3` contains tests that are run against the H3 reference implementation
   (differential testing).
 
-doctest are disabled because they are way slower than regular tests (one binary
-per example, and since we have one example per public function...)
-
 ### Fuzzing
 
 Fuzz targets for `cargo-fuzz` can be found under `fuzz`.
