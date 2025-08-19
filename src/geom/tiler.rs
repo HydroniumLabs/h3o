@@ -85,7 +85,7 @@ impl Tiler {
     ///     LineString::from(vec![(0., 0.), (1., 1.), (1., 0.), (0., 0.)]),
     ///     vec![],
     /// );
-    /// let mut tiler = TilerBuilder::new(Resolution::Ten)
+    /// let mut tiler = TilerBuilder::new(Resolution::Six)
     ///     .containment_mode(ContainmentMode::Covers)
     ///     .build();
     /// tiler.add(polygon)?;
@@ -142,7 +142,7 @@ impl Tiler {
     ///     LineString::from(vec![(0., 0.), (1., 1.), (1., 0.), (0., 0.)]),
     ///     vec![],
     /// );
-    /// let mut tiler = TilerBuilder::new(Resolution::Ten)
+    /// let mut tiler = TilerBuilder::new(Resolution::Six)
     ///     .containment_mode(ContainmentMode::Covers)
     ///     .build();
     /// tiler.add(polygon)?;

@@ -214,7 +214,11 @@ impl CellIndex {
     ///
     /// ```
     /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
-    /// assert_eq!(index.area_rads2(), 3.3032558516982826e-10);
+    /// float_eq::assert_float_eq!(
+    ///     index.area_rads2(),
+    ///     3.3032558516982826e-10,
+    ///     abs <= 1e-11
+    /// );
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
@@ -236,7 +240,11 @@ impl CellIndex {
     ///
     /// ```
     /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
-    /// assert_eq!(index.area_km2(), 0.013407827139722947);
+    /// float_eq::assert_float_eq!(
+    ///     index.area_km2(),
+    ///     0.013407827139722947,
+    ///     abs <= 1e-11
+    /// );
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
@@ -250,7 +258,11 @@ impl CellIndex {
     ///
     /// ```
     /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
-    /// assert_eq!(index.area_m2(), 13407.827139722947);
+    /// float_eq::assert_float_eq!(
+    ///     index.area_m2(),
+    ///     13407.827139722947,
+    ///     abs <= 1e-5
+    /// );
     /// # Ok::<(), h3o::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
@@ -653,7 +665,7 @@ impl CellIndex {
     /// ```
     /// use h3o::CellIndex;
     ///
-    /// let cells = [
+    /// let mut cells = [
     ///     0x081003ffffffffff,
     ///     0x081023ffffffffff,
     ///     0x081043ffffffffff,
@@ -665,7 +677,7 @@ impl CellIndex {
     /// .into_iter()
     /// .map(|hex| CellIndex::try_from(hex))
     /// .collect::<Result<Vec<_>, _>>()?;
-    /// CellIndex::compact_in_place(cells)?;
+    /// CellIndex::compact(&mut cells)?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn compact(cells: &mut Vec<Self>) -> Result<(), CompactionError> {

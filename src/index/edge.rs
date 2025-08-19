@@ -203,7 +203,11 @@ impl DirectedEdgeIndex {
     ///
     /// ```
     /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
-    /// assert_eq!(index.length_rads(), 1.1795418098325597e-5);
+    /// float_eq::assert_float_eq!(
+    ///     index.length_rads(),
+    ///     1.1795418098325597e-5,
+    ///     abs <= 1e-11
+    /// );
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
@@ -221,7 +225,11 @@ impl DirectedEdgeIndex {
     ///
     /// ```
     /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
-    /// assert_eq!(index.length_km(), 0.07514869340636812);
+    /// float_eq::assert_float_eq!(
+    ///     index.length_km(),
+    ///     0.07514869340636812,
+    ///     abs <= 1e-11
+    /// );
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
@@ -235,7 +243,11 @@ impl DirectedEdgeIndex {
     ///
     /// ```
     /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
-    /// assert_eq!(index.length_m(), 75.14869340636812);
+    /// float_eq::assert_float_eq!(
+    ///     index.length_m(),
+    ///     75.14869340636812,
+    ///     abs <= 1e-8
+    /// );
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]

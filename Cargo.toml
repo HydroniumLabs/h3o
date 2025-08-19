@@ -50,11 +50,6 @@ criterion = { version = "0.7", default-features = false, features = ["plotters",
 geojson = { version = "0.24", default-features = false, features = ["geo-types"] }
 h3ron-h3-sys = { version = "0.17", default-features = false }
 
-[lib]
-# doctests are good for docs, but unfortunately they are slow.
-# Cf. https://matklad.github.io/2021/02/27/delete-cargo-integration-tests.html
-doctest = false
-
 [[bin]]
 name = "average_edge_length"
 path = "tools/average_edge_length.rs"
