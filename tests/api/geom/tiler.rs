@@ -1,8 +1,8 @@
 use super::utils::load_polygon;
-use geo::{coord, polygon, LineString, MultiPolygon, Polygon, Rect};
+use geo::{LineString, MultiPolygon, Polygon, Rect, coord, polygon};
 use h3o::{
-    geom::{ContainmentMode, TilerBuilder},
     CellIndex, LatLng, Resolution,
+    geom::{ContainmentMode, TilerBuilder},
 };
 use std::{collections::BTreeSet, f64::consts::PI};
 
@@ -496,9 +496,7 @@ fn bug_h3_python_343() {
 }
 
 macro_rules! cell {
-    ($x: expr) => {{
-        CellIndex::try_from($x).expect("valid cell")
-    }};
+    ($x: expr) => {{ CellIndex::try_from($x).expect("valid cell") }};
 }
 
 // Case 1: Non-crossing shape on the west, intersecting with a crossing cell.

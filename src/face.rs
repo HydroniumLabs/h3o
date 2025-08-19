@@ -1,8 +1,9 @@
 //! Various precomputed data about each of the 20 icosahedron face.
 
 use crate::{
+    NUM_ICOSA_FACES,
     coord::{CoordIJK, LatLng, Vec3d},
-    error, NUM_ICOSA_FACES,
+    error,
 };
 use core::fmt;
 

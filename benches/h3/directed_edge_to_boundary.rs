@@ -1,6 +1,6 @@
 use super::constants::{HEXAGONS, PENTAGONS};
 use criterion::{
-    measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
+    BenchmarkGroup, BenchmarkId, Criterion, measurement::Measurement,
 };
 use h3o::CellIndex;
 use std::hint::black_box;

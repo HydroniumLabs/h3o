@@ -1,6 +1,6 @@
 use crate::{
-    math::{atan, sqrt, tan},
     LatLng,
+    math::{atan, sqrt, tan},
 };
 
 /// A triangle on unit sphere.

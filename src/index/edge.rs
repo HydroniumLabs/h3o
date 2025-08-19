@@ -1,7 +1,7 @@
-use super::{bits, IndexMode};
+use super::{IndexMode, bits};
 use crate::{
-    coord::FaceIJK, error, grid, Boundary, CellIndex, Direction,
-    EARTH_RADIUS_KM,
+    Boundary, CellIndex, Direction, EARTH_RADIUS_KM, coord::FaceIJK, error,
+    grid,
 };
 use core::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
 

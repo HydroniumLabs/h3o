@@ -1,4 +1,4 @@
-use crate::{error, index::bits, BaseCell, CellIndex, NUM_PENTAGONS};
+use crate::{BaseCell, CellIndex, NUM_PENTAGONS, error, index::bits};
 use core::{ffi::c_int, fmt, iter::DoubleEndedIterator, str::FromStr};
 
 /// Cell resolution, from 0 to 15.

@@ -9,13 +9,13 @@
 //! R. Buckminster Fuller). The base cells, which make up resolution 0, are
 //! Class II.
 
-use super::{CoordIJK, Vec2d, SQRT3_2};
+use super::{CoordIJK, SQRT3_2, Vec2d};
 use crate::{
+    BaseCell, Boundary, CCW, CW, CellIndex, DEFAULT_CELL_INDEX, Direction,
+    ExtendedResolution, Face, LatLng, NUM_HEX_VERTS, NUM_ICOSA_FACES,
+    NUM_PENT_VERTS, Resolution, Vertex,
     face::{self, FaceOrientIJK},
     index::bits,
-    BaseCell, Boundary, CellIndex, Direction, ExtendedResolution, Face, LatLng,
-    Resolution, Vertex, CCW, CW, DEFAULT_CELL_INDEX, NUM_HEX_VERTS,
-    NUM_ICOSA_FACES, NUM_PENT_VERTS,
 };
 
 static ZERO: CoordIJK = CoordIJK::new(0, 0, 0);

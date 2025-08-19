@@ -1,5 +1,5 @@
 use approx::assert_relative_eq;
-use geo::{coord, Line, MultiPolygon, Point};
+use geo::{Line, MultiPolygon, Point, coord};
 use h3o::{CellIndex, DirectedEdgeIndex, VertexIndex};
 
 #[test]

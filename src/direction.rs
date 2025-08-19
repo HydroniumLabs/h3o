@@ -1,6 +1,6 @@
 use crate::{
-    coord::CoordIJK, error, CellIndex, Edge, Vertex, NUM_HEX_VERTS,
-    NUM_PENT_VERTS,
+    CellIndex, Edge, NUM_HEX_VERTS, NUM_PENT_VERTS, Vertex, coord::CoordIJK,
+    error,
 };
 use core::{fmt, num::NonZeroU8};
 

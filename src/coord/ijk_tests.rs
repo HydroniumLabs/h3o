@@ -1,5 +1,5 @@
 use super::*;
-use crate::{LatLng, Resolution, CCW, CW};
+use crate::{CCW, CW, LatLng, Resolution};
 
 #[test]
 fn from_ij_zero() {

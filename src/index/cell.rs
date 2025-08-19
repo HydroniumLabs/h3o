@@ -1,21 +1,21 @@
 use super::{Children, GridPathCells, Triangle};
 use crate::{
+    BaseCell, Boundary, CCW, CW, DEFAULT_CELL_INDEX, DirectedEdgeIndex,
+    Direction, EARTH_RADIUS_KM, Edge, ExtendedResolution, FaceSet, LatLng,
+    LocalIJ, NUM_HEX_VERTS, NUM_PENT_VERTS, Resolution, Vertex, VertexIndex,
     coord::{CoordIJ, CoordIJK, FaceIJK, LocalIJK, Overage},
     error::{
         CompactionError, HexGridError, InvalidCellIndex, LocalIjError,
         ResolutionMismatch,
     },
     grid,
-    index::{bits, IndexMode},
-    BaseCell, Boundary, DirectedEdgeIndex, Direction, Edge, ExtendedResolution,
-    FaceSet, LatLng, LocalIJ, Resolution, Vertex, VertexIndex, CCW, CW,
-    DEFAULT_CELL_INDEX, EARTH_RADIUS_KM, NUM_HEX_VERTS, NUM_PENT_VERTS,
+    index::{IndexMode, bits},
 };
 use alloc::vec::Vec;
 use core::{
     cmp::Ordering,
     fmt, iter,
-    num::{NonZeroU64, NonZeroU8},
+    num::{NonZeroU8, NonZeroU64},
     str::FromStr,
 };
 use either::Either;

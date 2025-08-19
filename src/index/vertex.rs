@@ -1,7 +1,7 @@
-use super::{bits, IndexMode};
+use super::{IndexMode, bits};
 use crate::{
-    coord::FaceIJK, error, CellIndex, Direction, LatLng, NUM_HEX_VERTS,
-    NUM_PENT_VERTS,
+    CellIndex, Direction, LatLng, NUM_HEX_VERTS, NUM_PENT_VERTS,
+    coord::FaceIJK, error,
 };
 use core::{cmp::Ordering, fmt, num::NonZeroU64, str::FromStr};
 

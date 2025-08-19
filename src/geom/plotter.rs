@@ -1,7 +1,7 @@
 use crate::{
+    CellIndex, LatLng, Resolution,
     error::{InvalidGeometry, PlotterError},
     index::GridPathCells,
-    CellIndex, LatLng, Resolution,
 };
 use geo::{Line, ToRadians as _};
 

@@ -11,14 +11,13 @@
 //!   cell centers in the `ijk` coordinate system.
 
 use super::{
-    to_positive_angle, CoordIJK, AP7_ROT_RADS, EPSILON, INV_SQRT7_POWERS,
-    RES0_U_GNOMONIC,
+    AP7_ROT_RADS, CoordIJK, EPSILON, INV_SQRT7_POWERS, RES0_U_GNOMONIC,
+    to_positive_angle,
 };
 use crate::{
-    face,
+    Face, LatLng, face,
     math::{abs, atan, atan2, hypot, mul_add},
     resolution::ExtendedResolution,
-    Face, LatLng,
 };
 use float_eq::float_eq;
 

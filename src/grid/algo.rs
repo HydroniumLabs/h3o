@@ -1,8 +1,8 @@
 //! Hexagon grid algorithms.
 
 use crate::{
-    coord::FaceIJK, index::bits, BaseCell, CellIndex, Direction, Resolution,
-    CCW, CW,
+    BaseCell, CCW, CW, CellIndex, Direction, Resolution, coord::FaceIJK,
+    index::bits,
 };
 
 // -----------------------------------------------------------------------------

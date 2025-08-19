@@ -1,5 +1,5 @@
 use super::VertexGraph;
-use crate::{error::DissolutionError, CellIndex, Resolution};
+use crate::{CellIndex, Resolution, error::DissolutionError};
 use geo::MultiPolygon;
 
 /// A solvent that dissolves a set of H3 cell indexes into a `MultiPolygon`

@@ -1,6 +1,7 @@
 use crate::{
+    Direction, Face, NUM_PENT_VERTS, NUM_PENTAGONS,
     coord::{CoordIJK, FaceIJK},
-    error, Direction, Face, NUM_PENTAGONS, NUM_PENT_VERTS,
+    error,
 };
 use core::fmt;
 

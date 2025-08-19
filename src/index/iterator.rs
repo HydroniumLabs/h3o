@@ -1,9 +1,9 @@
 use super::CellIndex;
 use crate::{
+    Direction, Resolution,
     coord::{CoordCube, CoordIJK, LocalIJK},
     error::LocalIjError,
     index::bits,
-    Direction, Resolution,
 };
 use core::cmp::max;
 

@@ -1,6 +1,6 @@
-use super::{neighbors, RingHierarchy};
+use super::{RingHierarchy, neighbors};
 use crate::{
-    error::DissolutionError, CellIndex, LatLng, Resolution, VertexIndex,
+    CellIndex, LatLng, Resolution, VertexIndex, error::DissolutionError,
 };
 use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use either::Either;
@@ -170,16 +170,15 @@ impl VertexGraph {
 
     /// Removes a node from the graph.
     pub fn remove(&mut self, node: &Node) {
-        if let Entry::Occupied(mut entry) = self.nodes.entry(node.from) {
-            if let Some(pos) =
+        if let Entry::Occupied(mut entry) = self.nodes.entry(node.from)
+            && let Some(pos) =
                 entry.get().iter().position(|&vertex| vertex == node.to)
-            {
-                entry.get_mut().swap_remove(pos);
-                if entry.get().is_empty() {
-                    entry.remove_entry();
-                }
-                // XXX: distortions deletion is handled when injected.
+        {
+            entry.get_mut().swap_remove(pos);
+            if entry.get().is_empty() {
+                entry.remove_entry();
             }
+            // XXX: distortions deletion is handled when injected.
         }
     }
 
@@ -287,10 +286,10 @@ impl From<VertexGraph> for MultiPolygon<f64> {
             loop {
                 coords.push(LatLng::from(node.from).into());
                 // Inject distortion vertex, if any.
-                if value.is_class3 {
-                    if let Some(distortion) = value.distortions.remove(&node) {
-                        coords.push(distortion.into());
-                    }
+                if value.is_class3
+                    && let Some(distortion) = value.distortions.remove(&node)
+                {
+                    coords.push(distortion.into());
                 }
 
                 let to = node.to;

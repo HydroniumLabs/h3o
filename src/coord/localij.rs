@@ -18,9 +18,9 @@
 
 use super::{CoordIJ, CoordIJK};
 use crate::{
+    BaseCell, CCW, CW, CellIndex, DEFAULT_CELL_INDEX, Direction, Resolution,
     error::{HexGridError, LocalIjError},
     index::bits,
-    BaseCell, CellIndex, Direction, Resolution, CCW, CW, DEFAULT_CELL_INDEX,
 };
 use core::{fmt, num::NonZeroU8};
 

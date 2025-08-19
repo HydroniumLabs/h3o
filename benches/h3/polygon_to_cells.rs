@@ -2,8 +2,8 @@ use super::utils::load_polygon;
 use criterion::{BatchSize, Bencher, BenchmarkId, Criterion};
 use geo::Polygon;
 use h3o::{
-    geom::{ContainmentMode, TilerBuilder},
     Resolution,
+    geom::{ContainmentMode, TilerBuilder},
 };
 use std::{hint::black_box, os::raw::c_int};
 

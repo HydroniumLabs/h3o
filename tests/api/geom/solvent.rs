@@ -1,10 +1,10 @@
 use super::utils::load_polygon;
 use ahash::HashSet;
 use approx::{assert_relative_eq, relative_eq};
-use geo::{polygon, Area, BooleanOps, LineString, MultiPolygon, Polygon};
+use geo::{Area, BooleanOps, LineString, MultiPolygon, Polygon, polygon};
 use h3o::{
-    geom::{SolventBuilder, TilerBuilder},
     CellIndex, Resolution,
+    geom::{SolventBuilder, TilerBuilder},
 };
 
 #[test]
@@ -552,11 +552,7 @@ macro_rules! grid_disk {
                 solvent.dissolve(set.iter().copied()).expect("geometry");
             // Account for pentagon distortion on class II resolution.
             let expected = if base_cell.is_pentagon() {
-                if resolution.is_class3() {
-                    30
-                } else {
-                    25
-                }
+                if resolution.is_class3() { 30 } else { 25 }
             } else {
                 30
             };

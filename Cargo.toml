@@ -2,7 +2,7 @@
 name = "h3o"
 version = "0.8.0"
 authors = ["Sylvain Laperche <sylvain.laperche@gmail.com>"]
-edition = "2021"
+edition = "2024"
 description = "A Rust implementation of the H3 geospatial indexing system."
 documentation = "https://docs.rs/h3o/"
 readme = "README.md"

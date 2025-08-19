@@ -1,16 +1,17 @@
 use super::neighbors;
-use crate::{error::InvalidGeometry, CellIndex, LatLng, Resolution, TWO_PI};
+use crate::{CellIndex, LatLng, Resolution, TWO_PI, error::InvalidGeometry};
 use ahash::{HashSet, HashSetExt};
 use either::Either;
 use float_eq::float_eq;
 use geo::{
+    BooleanOps as _, BoundingRect as _, Centroid as _, Coord, CoordsIter as _,
+    Intersects, Line, LineString, MultiPolygon, Polygon, Rect, Relate as _,
+    ToRadians as _,
     algorithm::{
-        coordinate_position::{coord_pos_relative_to_ring, CoordPos},
+        coordinate_position::{CoordPos, coord_pos_relative_to_ring},
         relate::PreparedGeometry,
     },
-    coord, BooleanOps as _, BoundingRect as _, Centroid as _, Coord,
-    CoordsIter as _, Intersects, Line, LineString, MultiPolygon, Polygon, Rect,
-    Relate as _, ToRadians as _,
+    coord,
 };
 use std::{
     cmp,

@@ -1,12 +1,12 @@
 use super::{
-    faceijk::FaceIJK, to_positive_angle, Vec2d, Vec3d, AP7_ROT_RADS, EPSILON,
-    INV_RES0_U_GNOMONIC, SQRT7_POWERS,
+    AP7_ROT_RADS, EPSILON, INV_RES0_U_GNOMONIC, SQRT7_POWERS, Vec2d, Vec3d,
+    faceijk::FaceIJK, to_positive_angle,
 };
 use crate::{
+    CellIndex, EARTH_RADIUS_KM, Face, Resolution, TWO_PI,
     error::InvalidLatLng,
     face,
     math::{acos, asin, atan2, cos, mul_add, sin, sqrt, tan},
-    CellIndex, Face, Resolution, EARTH_RADIUS_KM, TWO_PI,
 };
 use core::{
     f64::consts::{FRAC_PI_2, PI},

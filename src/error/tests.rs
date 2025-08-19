@@ -14,25 +14,35 @@ use core::error::Error as _;
 fn display() {
     let hex_grid = HexGridError::new("error");
 
-    assert!(!CompactionError::HeterogeneousResolution
-        .to_string()
-        .is_empty());
+    assert!(
+        !CompactionError::HeterogeneousResolution
+            .to_string()
+            .is_empty()
+    );
     assert!(!CompactionError::DuplicateInput.to_string().is_empty());
 
     assert!(!hex_grid.to_string().is_empty());
 
-    assert!(!InvalidResolution::new(Some(32), "error")
-        .to_string()
-        .is_empty());
-    assert!(!InvalidCellIndex::new(Some(0), "error")
-        .to_string()
-        .is_empty());
-    assert!(!InvalidDirectedEdgeIndex::new(Some(0), "error")
-        .to_string()
-        .is_empty());
-    assert!(!InvalidVertexIndex::new(Some(0), "error")
-        .to_string()
-        .is_empty());
+    assert!(
+        !InvalidResolution::new(Some(32), "error")
+            .to_string()
+            .is_empty()
+    );
+    assert!(
+        !InvalidCellIndex::new(Some(0), "error")
+            .to_string()
+            .is_empty()
+    );
+    assert!(
+        !InvalidDirectedEdgeIndex::new(Some(0), "error")
+            .to_string()
+            .is_empty()
+    );
+    assert!(
+        !InvalidVertexIndex::new(Some(0), "error")
+            .to_string()
+            .is_empty()
+    );
     assert!(!InvalidLatLng::new(f64::NAN, "error").to_string().is_empty());
     assert!(!InvalidEdge::new(7, "error").to_string().is_empty());
     assert!(!InvalidVertex::new(8, "error").to_string().is_empty());
@@ -52,9 +62,11 @@ fn display() {
         let local_ij = LocalIjError::Pentagon;
 
         assert!(!invalid_geometry.to_string().is_empty());
-        assert!(!DissolutionError::UnsupportedResolution
-            .to_string()
-            .is_empty());
+        assert!(
+            !DissolutionError::UnsupportedResolution
+                .to_string()
+                .is_empty()
+        );
         assert!(!DissolutionError::DuplicateInput.to_string().is_empty());
 
         assert!(!PlotterError::from(invalid_geometry).to_string().is_empty());
@@ -73,9 +85,11 @@ fn source() {
 
     assert!(InvalidResolution::new(Some(32), "error").source().is_none());
     assert!(InvalidCellIndex::new(Some(0), "error").source().is_none());
-    assert!(InvalidDirectedEdgeIndex::new(Some(0), "error")
-        .source()
-        .is_none());
+    assert!(
+        InvalidDirectedEdgeIndex::new(Some(0), "error")
+            .source()
+            .is_none()
+    );
     assert!(InvalidVertexIndex::new(Some(0), "error").source().is_none());
     assert!(InvalidLatLng::new(f64::NAN, "error").source().is_none());
     assert!(InvalidEdge::new(7, "error").source().is_none());

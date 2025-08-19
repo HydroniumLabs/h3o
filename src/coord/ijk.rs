@@ -9,11 +9,11 @@
 //! a unique address consisting of the minimal positive `IJK` components; this
 //! always results in at most two non-zero components.
 
-use super::{CoordCube, Vec2d, SQRT3_2};
+use super::{CoordCube, SQRT3_2, Vec2d};
 use crate::{
+    Direction,
     error::HexGridError,
     math::{mul_add, round},
-    Direction,
 };
 use core::{
     cmp, fmt,

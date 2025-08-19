@@ -1,4 +1,4 @@
-use h3o::{error, CellIndex, Resolution};
+use h3o::{CellIndex, Resolution, error};
 
 #[test]
 fn is_neighbor_with() {

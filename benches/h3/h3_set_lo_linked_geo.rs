@@ -1,11 +1,11 @@
 use super::utils::{load_cells, load_polygon};
 use ahash::HashSet;
 use criterion::{
-    measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
+    BenchmarkGroup, BenchmarkId, Criterion, measurement::Measurement,
 };
 use h3o::{
-    geom::{SolventBuilder, TilerBuilder},
     CellIndex, Resolution,
+    geom::{SolventBuilder, TilerBuilder},
 };
 use std::{hint::black_box, os::raw::c_int};
 

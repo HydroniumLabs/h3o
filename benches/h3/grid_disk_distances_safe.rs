@@ -1,5 +1,5 @@
 use criterion::{
-    measurement::Measurement, BatchSize, BenchmarkGroup, BenchmarkId, Criterion,
+    BatchSize, BenchmarkGroup, BenchmarkId, Criterion, measurement::Measurement,
 };
 use h3o::CellIndex;
 use std::{hint::black_box, os::raw::c_int};
