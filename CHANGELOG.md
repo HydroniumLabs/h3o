@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.9.0] - 2025-08-19
+
 ### Changed
 
 - Bump crate to 2024 edition
