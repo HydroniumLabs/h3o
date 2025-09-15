@@ -37,6 +37,7 @@
 //! | :-------------------- | :------------------------------- |
 //! | `getResolution`       | [`CellIndex::resolution`]        |
 //! | `getBaseCellNumber`   | [`CellIndex::base_cell`]         |
+//! | `getIndexDigit`       | [`CellIndex::direction_at`]      |
 //! | `stringToH3`          | [`str::parse`]                   |
 //! | `h3ToString`          | [`ToString::to_string`]          |
 //! | `isValidCell`         | [`CellIndex::try_from`](./struct.CellIndex.html#impl-TryFrom<u64>-for-CellIndex) |
