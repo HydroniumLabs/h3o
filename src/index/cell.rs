@@ -1202,6 +1202,34 @@ impl CellIndex {
         )
     }
 
+    /// Returns the "hollow" ring of hexagons at exactly grid distance `k` from
+    /// the current cell.
+    ///
+    /// This function is a convenience helper that tries
+    /// [`Self::grid_ring_fast`] first and then fallback on a safe version
+    /// backed by [`Self::grid_disk_distances_safe`] if the former fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let cells = index.grid_disk::<Vec<_>>(2);
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[must_use]
+    pub fn grid_ring<T>(self, k: u32) -> T
+    where
+        T: FromIterator<Self>,
+    {
+        self.grid_ring_fast(k)
+            .collect::<Option<T>>()
+            .unwrap_or_else(|| {
+                self.grid_disk_distances_safe(k)
+                    .filter_map(|(cell, dist)| (dist == k).then_some(cell))
+                    .collect()
+            })
+    }
+
     /// Produces the grid distance between the two indexes.
     ///
     /// # Errors

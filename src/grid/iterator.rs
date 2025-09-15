@@ -288,6 +288,12 @@ impl Iterator for RingUnsafe {
         }
         Some(Some(item))
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let count = usize::try_from(crate::max_grid_disk_size(self.k))
+            .unwrap_or(usize::MAX);
+        (count, Some(count))
+    }
 }
 
 #[cfg(test)]

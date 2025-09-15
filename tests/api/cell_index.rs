@@ -101,6 +101,177 @@ fn child_position_roundtrip() {
 }
 
 #[test]
+fn max_grid_ring_size() {
+    assert_eq!(h3o::max_grid_ring_size(2), 12);
+}
+
+#[test]
+fn max_grid_ring_size_identity() {
+    assert_eq!(h3o::max_grid_ring_size(0), 1);
+}
+
+#[test]
+fn grid_ring_identity() {
+    let index = CellIndex::try_from(0x891fb46741bffff).expect("index");
+
+    let result = index.grid_ring::<Vec<_>>(0);
+    assert_eq!(result, vec![index]);
+}
+
+#[test]
+fn grid_ring_1() {
+    let index = CellIndex::try_from(0x89283080dcbffff).expect("index");
+    let mut expected = [
+        0x89283080ddbffff,
+        0x89283080c37ffff,
+        0x89283080c27ffff,
+        0x89283080d53ffff,
+        0x89283080dcfffff,
+        0x89283080dc3ffff,
+    ]
+    .into_iter()
+    .map(|value| CellIndex::try_from(value).expect("valid cell index"))
+    .collect::<Vec<_>>();
+    let mut result = index.grid_ring::<Vec<_>>(1);
+
+    result.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn grid_ring_2() {
+    let index = CellIndex::try_from(0x89283080dcbffff).expect("index");
+    let mut expected = [
+        0x89283080ca7ffff,
+        0x89283080cafffff,
+        0x89283080c33ffff,
+        0x89283080c23ffff,
+        0x89283080c2fffff,
+        0x89283080d5bffff,
+        0x89283080d43ffff,
+        0x89283080d57ffff,
+        0x89283080d1bffff,
+        0x89283080dc7ffff,
+        0x89283080dd7ffff,
+        0x89283080dd3ffff,
+    ]
+    .into_iter()
+    .map(|value| CellIndex::try_from(value).expect("valid cell index"))
+    .collect::<Vec<_>>();
+    let mut result = index.grid_ring::<Vec<_>>(2);
+
+    result.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn grid_ring_polar_pentagon_res0() {
+    let index = CellIndex::try_from(0x8009fffffffffff).expect("index");
+    let mut expected = [
+        0x8007fffffffffff,
+        0x8001fffffffffff,
+        0x8011fffffffffff,
+        0x801ffffffffffff,
+        0x8019fffffffffff,
+    ]
+    .into_iter()
+    .map(|value| CellIndex::try_from(value).expect("valid cell index"))
+    .collect::<Vec<_>>();
+    let mut result = index.grid_ring::<Vec<_>>(1);
+
+    result.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn grid_ring_polar_pentagon_res1() {
+    let index = CellIndex::try_from(0x81083ffffffffff).expect("index");
+    let mut expected = [
+        0x81093ffffffffff,
+        0x81097ffffffffff,
+        0x8108fffffffffff,
+        0x8108bffffffffff,
+        0x8109bffffffffff,
+    ]
+    .into_iter()
+    .map(|value| CellIndex::try_from(value).expect("valid cell index"))
+    .collect::<Vec<_>>();
+    let mut result = index.grid_ring::<Vec<_>>(1);
+
+    result.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn grid_ring_3_polar_pentagon_res1() {
+    let index = CellIndex::try_from(0x81083ffffffffff).expect("index");
+    let mut expected = [
+        0x811fbffffffffff,
+        0x81003ffffffffff,
+        0x81183ffffffffff,
+        0x8111bffffffffff,
+        0x81067ffffffffff,
+        0x811e7ffffffffff,
+        0x8101bffffffffff,
+        0x81107ffffffffff,
+        0x81063ffffffffff,
+        0x811e3ffffffffff,
+        0x8119bffffffffff,
+        0x81103ffffffffff,
+        0x81007ffffffffff,
+        0x81187ffffffffff,
+        0x8107bffffffffff,
+    ]
+    .into_iter()
+    .map(|value| CellIndex::try_from(value).expect("valid cell index"))
+    .collect::<Vec<_>>();
+    let mut result = index.grid_ring::<Vec<_>>(3);
+
+    result.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn grid_ring_4_polar_pentagon_res1() {
+    let index = CellIndex::try_from(0x811c3ffffffffff).expect("index");
+    let mut expected = [
+        0x81227ffffffffff,
+        0x81293ffffffffff,
+        0x8136bffffffffff,
+        0x81167ffffffffff,
+        0x81477ffffffffff,
+        0x810dbffffffffff,
+        0x81473ffffffffff,
+        0x81237ffffffffff,
+        0x81127ffffffffff,
+        0x8126bffffffffff,
+        0x81177ffffffffff,
+        0x810d3ffffffffff,
+        0x8150fffffffffff,
+        0x8102fffffffffff,
+        0x8129bffffffffff,
+        0x8102bffffffffff,
+        0x81507ffffffffff,
+        0x8136fffffffffff,
+        0x8127bffffffffff,
+        0x81137ffffffffff,
+    ]
+    .into_iter()
+    .map(|value| CellIndex::try_from(value).expect("valid cell index"))
+    .collect::<Vec<_>>();
+    let mut result = index.grid_ring::<Vec<_>>(4);
+
+    result.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(result, expected);
+}
+
+#[test]
 fn succ() {
     let index = CellIndex::try_from(0o42417664314213377777).expect("index");
     let expected = CellIndex::try_from(0o42417664314213477777).ok();

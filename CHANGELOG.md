@@ -14,6 +14,11 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- `h3o::max_grid_ring_size`
+- `h3o::CellIndex::grid_ring`
+
 ## [0.9.1] - 2025-09-02
 
 ### Changed

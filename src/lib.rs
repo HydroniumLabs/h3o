@@ -52,12 +52,14 @@
 //! | :------------------------ | :-------------------------------------- |
 //! | `gridDisk`                | [`CellIndex::grid_disk`]                |
 //! | `maxGridDiskSize`         | [`max_grid_disk_size`]                  |
+//! | `maxGridRingSize`         | [`max_grid_ring_size`]                  |
 //! | `gridDiskDistances`       | [`CellIndex::grid_disk_distances`]      |
 //! | `gridDiskUnsafe`          | [`CellIndex::grid_disk_fast`]           |
 //! | `gridDiskDistancesUnsafe` | [`CellIndex::grid_disk_distances_fast`] |
 //! | `gridDiskDistancesSafe`   | [`CellIndex::grid_disk_distances_safe`] |
 //! | `gridDisksUnsafe`         | [`CellIndex::grid_disks_fast`]          |
 //! | `gridRingUnsafe`          | [`CellIndex::grid_ring_fast`]           |
+//! | `gridRing`                | [`CellIndex::grid_ring`]                |
 //! | `gridPathCells`           | [`CellIndex::grid_path_cells`]          |
 //! | `gridPathCellsSize`       | [`CellIndex::grid_path_cells_size`]     |
 //! | `gridDistance`            | [`CellIndex::grid_distance`]            |
@@ -325,4 +327,16 @@ pub const fn max_grid_disk_size(k: u32) -> u64 {
     let k = k as u64;
     // Formula source and proof: https://oeis.org/A003215
     3 * k * (k + 1) + 1
+}
+
+/// Maximum number of cells that result from the `gridRing` algorithm with
+/// the given `k`.
+/// # Example
+///
+/// ```
+/// let count = h3o::max_grid_ring_size(3);
+/// ```
+#[must_use]
+pub const fn max_grid_ring_size(k: u32) -> u64 {
+    if k == 0 { 1 } else { 6 * k as u64 }
 }
