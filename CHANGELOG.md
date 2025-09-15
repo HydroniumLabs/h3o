@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.9.2] - 2025-09-15
+
 ### Added
 
 - `h3o::max_grid_ring_size`
