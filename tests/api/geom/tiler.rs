@@ -202,6 +202,51 @@ fn holes_coverage_intersects_boundary() {
     assert_eq!(result, 285, "Holes/mode=Intersects");
 }
 
+#[test]
+fn annotated_coverage() {
+    let mut tiler = TilerBuilder::new(Resolution::Seven)
+        .containment_mode(ContainmentMode::ContainsBoundary)
+        .build();
+    let polygon = load_polygon("Paris");
+    tiler.add(polygon).expect("failed to add polygon");
+    let expected_fully_contained = tiler.into_coverage().count();
+
+    let mut tiler = TilerBuilder::new(Resolution::Seven)
+        .containment_mode(ContainmentMode::IntersectsBoundary)
+        .build();
+    let polygon = load_polygon("Paris");
+    tiler.add(polygon).expect("failed to add polygon");
+    let result = tiler.into_annotated_coverage().collect::<Vec<_>>();
+    let fully_contained =
+        result.iter().filter(|cell| cell.is_fully_contained).count();
+
+    assert_eq!(fully_contained, expected_fully_contained);
+}
+
+#[test]
+fn annotated_coverage_with_centroid() {
+    let mut tiler = TilerBuilder::new(Resolution::Seven).build();
+    let polygon = load_polygon("Paris");
+    tiler.add(polygon).expect("failed to add polygon");
+    let result = tiler.into_annotated_coverage().collect::<Vec<_>>();
+
+    assert!(result.iter().all(|cell| cell.is_fully_contained));
+}
+
+#[test]
+fn annotated_coverage_with_contains() {
+    let mut tiler = TilerBuilder::new(Resolution::Seven).build();
+    let polygon = load_polygon("Paris");
+    tiler.add(polygon).expect("failed to add polygon");
+    let result = tiler.into_annotated_coverage().collect::<Vec<_>>();
+    let overlap = result
+        .iter()
+        .filter(|cell| !cell.is_fully_contained)
+        .count();
+
+    assert_eq!(overlap, 0);
+}
+
 // -----------------------------------------------------------------------------
 
 macro_rules! world_test {

@@ -14,6 +14,10 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- `h3o::geom::Tiler::into_annotated_coverage`
+
 ## [0.9.2] - 2025-09-15
 
 ### Added

@@ -11,7 +11,7 @@ use vertex_graph::VertexGraph;
 
 pub use plotter::{Plotter, PlotterBuilder};
 pub use solvent::{Solvent, SolventBuilder};
-pub use tiler::{ContainmentMode, Tiler, TilerBuilder};
+pub use tiler::{AnnotatedCell, ContainmentMode, Tiler, TilerBuilder};
 
 // Required for the From<CellIndex> for MultiPolygon implementation.
 pub(crate) use tiler::cell_boundary;

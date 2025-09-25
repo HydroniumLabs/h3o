@@ -28,6 +28,19 @@ pub struct Tiler {
     geom: MultiPolygon,
 }
 
+/// A cell, part of a geometry coverage, with annotations.
+pub struct AnnotatedCell {
+    /// The H3 cell index.
+    pub cell: CellIndex,
+
+    /// Whether the cell is fully contained by the geometry.
+    ///
+    /// Note: when using [`ContainmentMode::ContainsCentroid`], this value
+    /// is always `true`, since containment is determined by the cell's centroid
+    /// rather than its full area.
+    pub is_fully_contained: bool,
+}
+
 impl Tiler {
     /// Adds a `Polygon` to tile.
     ///
@@ -152,6 +165,36 @@ impl Tiler {
     /// # Ok::<(), h3o::error::InvalidGeometry>(())
     /// ```
     pub fn into_coverage(self) -> impl Iterator<Item = CellIndex> {
+        self.into_annotated_coverage().map(|value| value.cell)
+    }
+
+    /// Computes the annotated cell coverage of the geometries.
+    ///
+    /// The output may contain duplicate indexes in case of overlapping input
+    /// geometries/depending on the selected containment mode.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use geo::{LineString, Polygon};
+    /// use h3o::{geom::{ContainmentMode, TilerBuilder}, Resolution};
+    ///
+    /// let polygon = Polygon::new(
+    ///     LineString::from(vec![(0., 0.), (1., 1.), (1., 0.), (0., 0.)]),
+    ///     vec![],
+    /// );
+    /// let mut tiler = TilerBuilder::new(Resolution::Six)
+    ///     .containment_mode(ContainmentMode::Covers)
+    ///     .build();
+    /// tiler.add(polygon)?;
+    ///
+    /// let cells = tiler.into_annotated_coverage().collect::<Vec<_>>();
+    ///
+    /// # Ok::<(), h3o::error::InvalidGeometry>(())
+    /// ```
+    pub fn into_annotated_coverage(
+        self,
+    ) -> impl Iterator<Item = AnnotatedCell> {
         // This implementation traces the outlines of the polygon's rings, fill one
         // layer of internal cells and then propagate inwards until the whole area
         // is covered.
@@ -180,11 +223,12 @@ impl Tiler {
             && self.containment_mode == ContainmentMode::Covers
         {
             let centroid = self.geom.centroid().expect("centroid");
-            return Either::Left(std::iter::once(
-                LatLng::from_radians(centroid.y(), centroid.x())
+            return Either::Left(std::iter::once(AnnotatedCell {
+                cell: LatLng::from_radians(centroid.y(), centroid.x())
                     .expect("valid coordinate")
                     .to_cell(self.resolution),
-            ));
+                is_fully_contained: false,
+            }));
         }
 
         // Next, compute the outermost layer of inner cells to seed the
@@ -241,7 +285,10 @@ impl Tiler {
             outlines
                 .into_iter()
                 .chain(inward_propagation.flatten())
-                .map(|(cell, _)| cell),
+                .map(|(cell, is_fully_contained)| AnnotatedCell {
+                    cell,
+                    is_fully_contained,
+                }),
         )
     }
 
