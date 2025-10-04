@@ -517,6 +517,27 @@ fn issue_917() {
     assert_hetero_equal_homo(set, Resolution::One, &geom);
 }
 
+// See https://github.com/uber/h3/issues/1046
+#[test]
+fn issue_1046() {
+    let set = [0x8001fffffffffff, 0x8003fffffffffff]
+        .into_iter()
+        .map(|bits| CellIndex::try_from(bits).expect("cell index"))
+        .collect::<Vec<_>>();
+    let solvent = SolventBuilder::new().build();
+    assert!(solvent.dissolve(set.iter().copied()).is_ok(), "polar");
+
+    let set = [0x8037fffffffffff, 0x8051fffffffffff]
+        .into_iter()
+        .map(|bits| CellIndex::try_from(bits).expect("cell index"))
+        .collect::<Vec<_>>();
+    let solvent = SolventBuilder::new().build();
+    assert!(
+        solvent.dissolve(set.iter().copied()).is_ok(),
+        "transmeridian"
+    );
+}
+
 // This was a non-deterministic (due to hashing) bug in RingHierarchy.
 // The antimeredian handling was triggered outside of legit cases.
 #[test]
