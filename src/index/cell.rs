@@ -850,7 +850,7 @@ impl CellIndex {
         let deleted_edge = self.is_pentagon().then_some(1);
 
         Edge::iter()
-            .filter(move |&edge| (Some(u8::from(edge)) != deleted_edge))
+            .filter(move |&edge| Some(u8::from(edge)) != deleted_edge)
             .map(move |edge| {
                 DirectedEdgeIndex::new_unchecked(bits::set_edge(template, edge))
             })
@@ -1948,7 +1948,7 @@ impl TryFrom<u64> for CellIndex {
             // Find the position of the first bit set, if it's a multiple of 3
             // that means we have a K axe as the first non-center direction,
             // which is forbidden.
-            if ((dirs << offset).leading_zeros() + 1) % 3 == 0 {
+            if ((dirs << offset).leading_zeros() + 1).is_multiple_of(3) {
                 return Err(Self::Error::new(
                     Some(value),
                     "pentagonal cell index with a deleted subsequence",

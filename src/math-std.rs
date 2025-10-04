@@ -49,7 +49,7 @@ pub fn sqrt(x: f64) -> f64 {
 }
 
 #[inline]
-pub fn round(x: f64) -> f64 {
+pub const fn round(x: f64) -> f64 {
     x.round()
 }
 
