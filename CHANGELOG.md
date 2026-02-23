@@ -88,7 +88,8 @@ Possible sections are:
 ### Removed
 
 - remove the geometry types wrapper (you can now use `geo` types directly).
-- remove the `ToCells` trait, now you can use:
+- remove the `ToCells` trait (and thus `PolyfillConfig` as well), now you can
+  use:
     - `h3o::LatLng` for `Point` & `MultiPoint`.
     - `h3o::geom::Plotter` for `Line`, `LineString` and `MultiLineString`.
     - `h3o::geom::Tiler` for `Polygon`, `MultiPolygon`, `Rect` and `Triangle`.
