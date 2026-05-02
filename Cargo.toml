@@ -46,8 +46,8 @@ typed_floats = { version = "1.0", optional = true, default-features = false }
 
 [dev-dependencies]
 approx = { version = "0.5", default-features = false }
-criterion = { version = "0.7", default-features = false, features = ["plotters", "cargo_bench_support", "html_reports"] }
-geojson = { version = "0.24", default-features = false, features = ["geo-types"] }
+criterion = { version = "0.8", default-features = false, features = ["plotters", "cargo_bench_support", "html_reports"] }
+geojson = { version = "1.0", default-features = false, features = ["geo-types"] }
 h3ron-h3-sys = { version = "0.17", default-features = false }
 
 [[bin]]

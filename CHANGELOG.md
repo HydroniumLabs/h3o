@@ -17,6 +17,7 @@ Possible sections are:
 ### Changed
 
 - bump `geo` to 0.33
+- bump dev-dependencies
 
 ## [0.9.4] - 2025-12-05
 
