@@ -40,7 +40,7 @@ fn first_axe_some() {
         0x8f2800000000003, // 20-0-0-0-0-0-0-0-0-0-0-0-0-0-0-3
     ];
 
-    for (resolution, value) in resolutions.zip(indexes.into_iter()) {
+    for (resolution, value) in resolutions.zip(indexes) {
         let index = CellIndex::try_from(value).expect("valid cells");
         let expected = index.direction_at(resolution).and_then(Direction::axe);
 

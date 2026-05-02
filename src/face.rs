@@ -149,14 +149,14 @@ impl FaceSet {
 
 impl fmt::Display for FaceSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[",)?;
+        write!(f, "[")?;
         for (i, face) in self.iter().enumerate() {
             if i != 0 {
                 write!(f, "-")?;
             }
             write!(f, "{face}")?;
         }
-        write!(f, "]",)
+        write!(f, "]")
     }
 }
 

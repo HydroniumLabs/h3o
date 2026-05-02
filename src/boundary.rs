@@ -42,14 +42,14 @@ impl Deref for Boundary {
 
 impl fmt::Display for Boundary {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[",)?;
+        write!(f, "[")?;
         for (i, ll) in self.iter().enumerate() {
             if i != 0 {
                 write!(f, "-")?;
             }
             write!(f, "{ll}")?;
         }
-        write!(f, "]",)
+        write!(f, "]")
     }
 }
 
