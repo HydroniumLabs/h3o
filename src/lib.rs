@@ -41,6 +41,7 @@
 //! | `stringToH3`          | [`str::parse`]                   |
 //! | `h3ToString`          | [`ToString::to_string`]          |
 //! | `isValidCell`         | [`CellIndex::try_from`](./struct.CellIndex.html#impl-TryFrom<u64>-for-CellIndex) |
+//! | `isValidIndex`        | [`is_valid_index`]               |
 //! | `isResClassIII`       | [`Resolution::is_class3`]        |
 //! | `isPentagon`          | [`CellIndex::is_pentagon`]       |
 //! | `getIcosahedronFaces` | [`CellIndex::icosahedron_faces`] |
@@ -331,6 +332,7 @@ pub const fn max_grid_disk_size(k: u32) -> u64 {
 
 /// Maximum number of cells that result from the `gridRing` algorithm with
 /// the given `k`.
+///
 /// # Example
 ///
 /// ```
@@ -339,4 +341,19 @@ pub const fn max_grid_disk_size(k: u32) -> u64 {
 #[must_use]
 pub const fn max_grid_ring_size(k: u32) -> u64 {
     if k == 0 { 1 } else { 6 * k as u64 }
+}
+
+/// Returns whether or not an H3 index is valid for any mode (cell, directed
+/// edge, vertex, …).
+///
+/// # Example
+///
+/// ```
+/// let is_valid = h3o::is_valid_index(0x13a194e699ab7fff);
+/// ```
+#[must_use]
+pub fn is_valid_index(value: u64) -> bool {
+    CellIndex::try_from(value).is_ok()
+        || DirectedEdgeIndex::try_from(value).is_ok()
+        || VertexIndex::try_from(value).is_ok()
 }

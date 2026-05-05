@@ -20,3 +20,13 @@ mod vertex_index;
 fn max_grid_disk_size_overflow() {
     assert_eq!(h3o::max_grid_disk_size(4294967295), 569_707_381_193_162);
 }
+
+#[test]
+fn is_valid_index() {
+    assert!(h3o::is_valid_index(0x85754e67fffffff), "CellIndex");
+    assert!(h3o::is_valid_index(0x145754e67fffffff), "DirectedEdgeIndex");
+    assert!(h3o::is_valid_index(0x225754a93fffffff), "VertexIndex");
+
+    assert!(!h3o::is_valid_index(0), "invalid cell");
+    assert!(!h3o::is_valid_index(0x885754e67fffffff), "corrupted cell");
+}
