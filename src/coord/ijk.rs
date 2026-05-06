@@ -20,6 +20,8 @@ use core::{
     ops::{Add, MulAssign, Sub},
 };
 
+const ONE_SEVENTH: f64 = 0.14285714285714285714285714285714285;
+
 // -----------------------------------------------------------------------------
 
 /// IJ hexagon coordinates.
@@ -132,9 +134,15 @@ impl CoordIJK {
         let CoordIJ { i, j } = self.into();
 
         let (i, j) = if CCW {
-            (f64::from(3 * i - j) / 7., f64::from(i + 2 * j) / 7.)
+            (
+                f64::from(3 * i - j) * ONE_SEVENTH,
+                f64::from(i + 2 * j) * ONE_SEVENTH,
+            )
         } else {
-            (f64::from(2 * i + j) / 7., f64::from(3 * j - i) / 7.)
+            (
+                f64::from(2 * i + j) * ONE_SEVENTH,
+                f64::from(3 * j - i) * ONE_SEVENTH,
+            )
         };
 
         Self::new(round(i) as i32, round(j) as i32, 0).normalize()
@@ -148,13 +156,13 @@ impl CoordIJK {
 
         let (i, j) = if CCW {
             (
-                f64::from(i.checked_mul(3)?.checked_sub(j)?) / 7.,
-                f64::from(j.checked_mul(2)?.checked_add(i)?) / 7.,
+                f64::from(i.checked_mul(3)?.checked_sub(j)?) * ONE_SEVENTH,
+                f64::from(j.checked_mul(2)?.checked_add(i)?) * ONE_SEVENTH,
             )
         } else {
             (
-                f64::from(i.checked_mul(2)?.checked_add(j)?) / 7.,
-                f64::from(j.checked_mul(3)?.checked_sub(i)?) / 7.,
+                f64::from(i.checked_mul(2)?.checked_add(j)?) * ONE_SEVENTH,
+                f64::from(j.checked_mul(3)?.checked_sub(i)?) * ONE_SEVENTH,
             )
         };
 

@@ -39,12 +39,12 @@ impl Triangle {
 /// * `b` - length of triangle side `B`, in radians
 /// * `c` - length of triangle side `C`, in radians
 fn area_from_edges(mut a: f64, mut b: f64, mut c: f64) -> f64 {
-    let mut s = (a + b + c) / 2.0;
+    let mut s = (a + b + c) * 0.5;
 
-    a = (s - a) / 2.;
-    b = (s - b) / 2.;
-    c = (s - c) / 2.;
-    s /= 2.;
+    a = (s - a) * 0.5;
+    b = (s - b) * 0.5;
+    c = (s - c) * 0.5;
+    s *= 0.5;
 
     4. * atan(sqrt(tan(s) * tan(a) * tan(b) * tan(c)))
 }

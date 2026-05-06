@@ -1,5 +1,8 @@
 use super::neighbors;
-use crate::{CellIndex, LatLng, Resolution, TWO_PI, error::InvalidGeometry};
+use crate::{
+    CellIndex, LatLng, Resolution, TWO_PI, error::InvalidGeometry,
+    math::mul_add,
+};
 use ahash::{HashSet, HashSetExt};
 use either::Either;
 use float_eq::float_eq;
@@ -606,9 +609,18 @@ fn get_edge_cells(
         (0..count).map(move |i| {
             let i = i as f64;
             let count = count as f64;
+            let inv_count = 1. / count;
 
-            let lat = (start.y * (count - i) / count) + (end.y * i / count);
-            let lng = (start.x * (count - i) / count) + (end.x * i / count);
+            let lat = mul_add(
+                start.y * (count - i),
+                inv_count,
+                end.y * i * inv_count,
+            );
+            let lng = mul_add(
+                start.x * (count - i),
+                inv_count,
+                end.x * i * inv_count,
+            );
 
             LatLng::from_radians(lat, lng)
                 .expect("finite line coordinate")

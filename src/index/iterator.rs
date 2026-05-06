@@ -181,10 +181,11 @@ impl GridPathCells {
         let (i_step, j_step, k_step) = if distance == 0 {
             (0., 0., 0.)
         } else {
+            let inv_distance = 1.0 / f64::from(distance);
             (
-                f64::from(end.i - start.i) / f64::from(distance),
-                f64::from(end.j - start.j) / f64::from(distance),
-                f64::from(end.k - start.k) / f64::from(distance),
+                f64::from(end.i - start.i) * inv_distance,
+                f64::from(end.j - start.j) * inv_distance,
+                f64::from(end.k - start.k) * inv_distance,
             )
         };
 

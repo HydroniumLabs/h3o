@@ -161,8 +161,8 @@ impl LatLng {
     /// ```
     #[must_use]
     pub fn distance_rads(self, other: Self) -> f64 {
-        let sin_lat = sin((other.lat - self.lat) / 2.);
-        let sin_lng = sin((other.lng - self.lng) / 2.);
+        let sin_lat = sin((other.lat - self.lat) * 0.5);
+        let sin_lng = sin((other.lng - self.lng) * 0.5);
 
         let a = mul_add(
             sin_lat,
@@ -240,7 +240,7 @@ impl LatLng {
 
         let r = {
             // cos(r) = 1 - 2 * sin^2(r/2) = 1 - 2 * (sqd / 4) = 1 - sqd/2
-            let r = acos(1. - distance / 2.);
+            let r = acos(mul_add(distance, -0.5, 1.));
 
             if r < EPSILON {
                 return Vec2d::new(0., 0.);
@@ -350,11 +350,12 @@ impl LatLng {
         let mut lng = if is_due_north_south {
             self.lng
         } else {
+            let invcoslat = 1.0 / cos(lat);
             let sinlng =
-                (sin(azimuth) * sin(distance) / cos(lat)).clamp(-1., 1.);
+                (sin(azimuth) * sin(distance) * invcoslat).clamp(-1., 1.);
             let coslng = mul_add(sin(self.lat), sin(-lat), cos(distance))
                 / cos(self.lat)
-                / cos(lat);
+                * invcoslat;
             self.lng + atan2(sinlng, coslng)
         };
 
