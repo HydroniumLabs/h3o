@@ -1,4 +1,4 @@
-use h3o::{CellIndex, Resolution, error};
+use h3o::{BaseCell, CellIndex, Direction, Resolution, error};
 
 #[test]
 fn is_neighbor_with() {
@@ -472,4 +472,158 @@ fn bug_h3_915() {
 
     CellIndex::compact(&mut cells).expect("compact");
     assert_eq!(cells, expected);
+}
+
+#[test]
+fn from_raw_parts_roundtrip() {
+    for resolution in Resolution::range(Resolution::Zero, Resolution::Four) {
+        for base_cell in CellIndex::base_cells() {
+            for expected in base_cell.children(resolution) {
+                let base = expected.base_cell();
+                let directions =
+                    Resolution::range(Resolution::One, expected.resolution())
+                        .map(|res| expected.direction_at(res).unwrap())
+                        .collect::<Vec<_>>();
+                let result = CellIndex::from_raw_parts(base, &directions);
+
+                assert_eq!(
+                    result,
+                    Ok(expected),
+                    "from_raw_parts rountrip for {expected}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn from_raw_parts_valid() {
+    // Resolution 0.
+    let expected = CellIndex::try_from(0x8001fffffffffff).unwrap();
+    let base_cell = BaseCell::try_from(0).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &[]);
+    assert_eq!(result, Ok(expected), "{expected}");
+
+    let expected = CellIndex::try_from(0x8003fffffffffff).unwrap();
+    let base_cell = BaseCell::try_from(1).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &[]);
+    assert_eq!(result, Ok(expected), "{expected}");
+
+    let expected = CellIndex::try_from(0x80f3fffffffffff).unwrap();
+    let base_cell = BaseCell::try_from(121).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &[]);
+    assert_eq!(result, Ok(expected), "{expected}");
+
+    // Resolution 3.
+    let expected = CellIndex::try_from(0x839253fffffffff).unwrap();
+    let base_cell = BaseCell::try_from(73).unwrap();
+    let result = CellIndex::from_raw_parts(
+        base_cell,
+        &[Direction::K, Direction::J, Direction::JK],
+    );
+    assert_eq!(result, Ok(expected), "{expected}");
+
+    // Resolution 2.
+    let expected = CellIndex::try_from(0x821f67fffffffff).unwrap();
+    let base_cell = BaseCell::try_from(15).unwrap();
+    let result =
+        CellIndex::from_raw_parts(base_cell, &[Direction::IK, Direction::I]);
+    assert_eq!(result, Ok(expected), "{expected}");
+
+    // Resolution 1.
+    let expected = CellIndex::try_from(0x8155bffffffffff).unwrap();
+    let base_cell = BaseCell::try_from(42).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &[Direction::IJ]);
+    assert_eq!(result, Ok(expected), "{expected}");
+
+    // Resolution 15.
+    let expected = CellIndex::try_from(0x8f754e64992d6d8).unwrap();
+    let base_cell = BaseCell::try_from(58).unwrap();
+    let result = CellIndex::from_raw_parts(
+        base_cell,
+        &[
+            Direction::IK,
+            Direction::K,
+            Direction::IJ,
+            Direction::JK,
+            Direction::K,
+            Direction::K,
+            Direction::K,
+            Direction::I,
+            Direction::I,
+            Direction::IK,
+            Direction::IK,
+            Direction::JK,
+            Direction::JK,
+            Direction::JK,
+            Direction::Center,
+        ],
+    );
+    assert_eq!(result, Ok(expected), "{expected}");
+}
+
+#[test]
+fn from_raw_parts_invalid_resolution() {
+    let result = CellIndex::from_raw_parts(
+        BaseCell::try_from(58).unwrap(),
+        &[
+            Direction::IK,
+            Direction::K,
+            Direction::IJ,
+            Direction::JK,
+            Direction::K,
+            Direction::K,
+            Direction::K,
+            Direction::I,
+            Direction::I,
+            Direction::IK,
+            Direction::IK,
+            Direction::JK,
+            Direction::JK,
+            Direction::JK,
+            Direction::Center,
+            Direction::JK,
+        ],
+    );
+    assert!(result.is_err(), "too many directions");
+}
+
+#[test]
+fn from_raw_parts_deleted_subsequence() {
+    // 1. Base cell 4 is a pentagon base cell
+    let base_cell = BaseCell::try_from(4).unwrap();
+    let mut directions =
+        vec![Direction::Center, Direction::Center, Direction::Center];
+    // 1A. Before the deleted subsequence: valid!
+    let expected = CellIndex::try_from(0x830800fffffffff).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &directions);
+    assert_eq!(result, Ok(expected), "{expected}");
+    // 1B. The deleted subsequence should fail.
+    directions[2] = Direction::K;
+    let result = CellIndex::from_raw_parts(base_cell, &directions);
+    assert!(result.is_err(), "deleted subsequence");
+    // 1C. After the deleted subsequence: valid!
+    directions[2] = Direction::J;
+    let expected = CellIndex::try_from(0x830802fffffffff).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &directions);
+    assert_eq!(result, Ok(expected), "{expected}");
+
+    // 2. Base cell 5 is NOT a pentagon base cell.
+    let base_cell = BaseCell::try_from(5).unwrap();
+    let mut directions =
+        vec![Direction::Center, Direction::Center, Direction::Center];
+    // 2A. before the deleted subsequence: valid!
+    let expected = CellIndex::try_from(0x830a00fffffffff).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &directions);
+    assert_eq!(result, Ok(expected), "{expected}");
+    // 2B. No deleted subsequence for non-pentagonal cell: valid!
+    directions[2] = Direction::K;
+    let expected = CellIndex::try_from(0x830a01fffffffff).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &directions);
+    assert_eq!(result, Ok(expected), "{expected}");
+    // 2C. After the deleted subsequence: valid!
+    directions[2] = Direction::J;
+    let expected = CellIndex::try_from(0x830a02fffffffff).unwrap();
+    let result = CellIndex::from_raw_parts(base_cell, &directions);
+    assert_eq!(result, Ok(expected), "{expected}");
 }

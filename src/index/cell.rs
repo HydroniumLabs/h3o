@@ -178,6 +178,53 @@ const BASE_CELL: BaseCell = BaseCell::new_unchecked(2);
 pub struct CellIndex(NonZeroU64);
 
 impl CellIndex {
+    /// Create a cell from its components (base cell & directions).
+    ///
+    /// Note that `directions` may be an empty slice if you want to build a
+    /// resolution 0 cell index.
+    ///
+    /// # Errors
+    ///
+    /// This function may fail if you pass too many directions or don't respect
+    /// some invariants such as deleted K-subsequence for pentagons.
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// let index = h3o::CellIndex::from_raw_parts(
+    ///     h3o::BaseCell::try_from(42).unwrap(),
+    ///     &[h3o::Direction::K, h3o::Direction::Center, h3o::Direction::IJ]
+    /// ).expect("valid cell index");
+    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// ```
+    #[expect(clippy::cast_possible_truncation, reason = "upper bound checked")]
+    pub fn from_raw_parts(
+        base: BaseCell,
+        directions: &[Direction],
+    ) -> Result<Self, InvalidCellIndex> {
+        let resolution = u8::try_from(directions.len())
+            .map_err(|_err| InvalidCellIndex::new(None, "too many directions"))
+            .and_then(|value| {
+                Resolution::try_from(value).map_err(|_err| {
+                    InvalidCellIndex::new(None, "invalid resolution")
+                })
+            })?;
+        let mut index = h3o_bit::set_base_cell(
+            bits::set_resolution(DEFAULT_CELL_INDEX, resolution),
+            base.into(),
+        );
+        for (resolution, direction) in directions.iter().enumerate() {
+            // SAFETY : guaranteed to be in range thanks to the checked
+            // conversion of `directions.len()` above.
+            // +1 because resolution 0 is `base`, so start at 1 for directions.
+            let resolution = Resolution::new_unchecked(1 + resolution as u8);
+            index = bits::set_direction(index, (*direction).into(), resolution);
+        }
+
+        Self::try_from(index)
+    }
+
     /// Returns the resolution of the index.
     ///
     /// # Example

@@ -17,6 +17,7 @@ Possible sections are:
 ### Added
 
 - `h3o::is_valid_index` (i.e. `isValidIndex` from H3 4.4.0)
+- `h3o::CellIndex::from_raw_parts` (i.e. `constructCell` from H3 4.4.0)
 
 ## [0.9.5] - 2026-05-02
 

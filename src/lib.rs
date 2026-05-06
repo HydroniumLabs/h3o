@@ -35,6 +35,7 @@
 //!
 //! | H3                    | H3O                              |
 //! | :-------------------- | :------------------------------- |
+//! | `constructCell`       | [`CellIndex::from_raw_parts`]    |
 //! | `getResolution`       | [`CellIndex::resolution`]        |
 //! | `getBaseCellNumber`   | [`CellIndex::base_cell`]         |
 //! | `getIndexDigit`       | [`CellIndex::direction_at`]      |
