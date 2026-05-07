@@ -50,6 +50,7 @@ impl CoordCube {
 }
 
 impl From<CoordCube> for CoordIJK {
+    #[inline]
     fn from(value: CoordCube) -> Self {
         Self::new(-value.i, value.j, 0).normalize()
     }

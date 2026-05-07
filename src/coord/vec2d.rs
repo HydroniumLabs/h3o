@@ -142,6 +142,7 @@ impl Vec2d {
 impl From<Vec2d> for CoordIJK {
     // Returns the containing hex in `IJK` coordinates for a 2D cartesian
     // coordinate vector (from DGGRID).
+    #[inline]
     fn from(value: Vec2d) -> Self {
         // Quantize into the IJ system and then normalize.
         let k = 0;

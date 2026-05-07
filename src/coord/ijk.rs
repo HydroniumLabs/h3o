@@ -48,6 +48,7 @@ impl TryFrom<CoordIJ> for CoordIJK {
     type Error = HexGridError;
 
     // Returns the `IJK` coordinates corresponding to the `IJ` one.
+    #[inline]
     fn try_from(value: CoordIJ) -> Result<Self, Self::Error> {
         Self::new(value.i, value.j, 0)
             .checked_normalize()
@@ -78,6 +79,7 @@ pub struct CoordIJK {
 
 impl CoordIJK {
     /// Initializes a new IJK coordinate with the specified component values.
+    #[inline]
     pub const fn new(i: i32, j: i32, k: i32) -> Self {
         Self { i, j, k }
     }
@@ -98,6 +100,7 @@ impl CoordIJK {
     }
 
     /// Normalizes by setting the components to the smallest possible values.
+    #[inline]
     pub fn normalize(mut self) -> Self {
         let min = cmp::min(self.i, cmp::min(self.j, self.k));
 
@@ -111,6 +114,7 @@ impl CoordIJK {
     /// Normalizes by setting the components to the smallest possible values.
     ///
     /// Guard against overflow (to be used when input comes from user).
+    #[inline]
     fn checked_normalize(mut self) -> Option<Self> {
         let min = cmp::min(self.i, cmp::min(self.j, self.k));
 
@@ -121,6 +125,7 @@ impl CoordIJK {
         Some(self)
     }
 
+    #[inline]
     pub fn distance(&self, other: &Self) -> i32 {
         let diff = (*self - *other).normalize();
 
@@ -130,6 +135,7 @@ impl CoordIJK {
     /// Returns the normalized `IJK` coordinates of the indexing parent of a
     /// cell in an aperture 7 grid.
     #[expect(clippy::cast_possible_truncation, reason = "on purpose")]
+    #[inline]
     pub fn up_aperture7<const CCW: bool>(&self) -> Self {
         let CoordIJ { i, j } = self.into();
 
@@ -151,6 +157,7 @@ impl CoordIJK {
     /// Returns the normalized `IJK` coordinates of the indexing parent of a
     /// cell in an aperture 7 grid.
     #[expect(clippy::cast_possible_truncation, reason = "on purpose")]
+    #[inline]
     pub fn checked_up_aperture7<const CCW: bool>(&self) -> Option<Self> {
         let CoordIJ { i, j } = self.into();
 
@@ -171,6 +178,7 @@ impl CoordIJK {
 
     /// Returns the normalized `IJK` coordinates of the hex centered on the
     /// indicated hex at the next finer aperture 7 resolution.
+    #[inline]
     pub fn down_aperture7<const CCW: bool>(&self) -> Self {
         // Resolution `r` unit vectors in resolution `r+1`.
         let (mut i_vec, mut j_vec, mut k_vec) = if CCW {
@@ -188,6 +196,7 @@ impl CoordIJK {
 
     /// Returns the normalized `IJK` coordinates of the hex centered on the
     /// indicated hex at the next finer aperture 3 resolution.
+    #[inline]
     pub fn down_aperture3<const CCW: bool>(&self) -> Self {
         // Resolution `r` unit vectors in resolution `r+1`.
         let (mut i_vec, mut j_vec, mut k_vec) = if CCW {
@@ -205,11 +214,13 @@ impl CoordIJK {
 
     /// Returns the normalized `IJK` coordinates of the hex in the specified
     /// direction from the current position.
+    #[inline]
     pub fn neighbor(&self, direction: Direction) -> Self {
         (*self + direction.coordinate()).normalize()
     }
 
     /// Returns the `IJK` coordinates after a 60 degrees rotation.
+    #[inline]
     pub fn rotate60<const CCW: bool>(&self) -> Self {
         // Unit vector rotations.
         let (mut i_vec, mut j_vec, mut k_vec) = if CCW {
@@ -263,6 +274,7 @@ impl MulAssign<i32> for CoordIJK {
 
 impl From<CoordIJK> for Vec2d {
     // Returns the center point in 2D cartesian coordinates of a hex.
+    #[inline]
     fn from(value: CoordIJK) -> Self {
         let i = f64::from(value.i - value.k);
         let j = f64::from(value.j - value.k);
@@ -273,12 +285,14 @@ impl From<CoordIJK> for Vec2d {
 
 impl From<&CoordIJK> for CoordIJ {
     // Returns the `IJ` coordinate corresponding to the the `IJK` one.
+    #[inline]
     fn from(value: &CoordIJK) -> Self {
         Self::new(value.i - value.k, value.j - value.k)
     }
 }
 
 impl From<CoordIJK> for CoordCube {
+    #[inline]
     fn from(value: CoordIJK) -> Self {
         let i = -value.i + value.k;
         let j = value.j - value.k;
@@ -293,6 +307,7 @@ impl TryFrom<CoordIJK> for Direction {
 
     // Returns the direction corresponding to a given unit vector in `IJK`
     // coordinates.
+    #[inline]
     fn try_from(value: CoordIJK) -> Result<Self, Self::Error> {
         let value = value.normalize();
 
