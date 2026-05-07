@@ -56,6 +56,7 @@ mod origin_to_directed_edges;
 mod pentagon_count;
 mod rads_to_degs;
 mod res0_cell_count;
+mod reverse_directed_edge;
 mod string_to_h3;
 mod uncompact_cells;
 mod uncompact_cells_size;
@@ -137,6 +138,7 @@ criterion_group!(
     pentagon_count::bench,
     rads_to_degs::bench,
     res0_cell_count::bench,
+    reverse_directed_edge::bench,
     string_to_h3::bench_cell,
     string_to_h3::bench_edge,
     string_to_h3::bench_vertex,

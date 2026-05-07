@@ -1,6 +1,18 @@
 use h3o::DirectedEdgeIndex;
 
 #[test]
+fn reverse() {
+    let edge = DirectedEdgeIndex::try_from(0x115283473fffffff).unwrap();
+    let reversed = edge.reverse();
+
+    assert_eq!(edge.origin(), reversed.destination(), "rev: src == dst");
+    assert_eq!(edge.destination(), reversed.origin(), "rev: dst == src");
+
+    let revrev = reversed.reverse();
+    assert_eq!(revrev, edge, "roundtrip");
+}
+
+#[test]
 fn try_from_str() {
     let result = "13a194e699ab7fff".parse::<DirectedEdgeIndex>();
     let expected = DirectedEdgeIndex::try_from(0x13a194e699ab7fff);

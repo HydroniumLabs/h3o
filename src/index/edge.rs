@@ -100,6 +100,16 @@ impl fmt::Display for Edge {
 pub struct DirectedEdgeIndex(NonZeroU64);
 
 impl DirectedEdgeIndex {
+    /// Returns the directed edge with origin and destination cells reversed.
+    #[must_use]
+    pub fn reverse(self) -> Self {
+        let origin = self.origin();
+        let destination = self.destination();
+        destination
+            .edge(origin)
+            .expect("origin/destination are neighbor")
+    }
+
     /// Returns the cell edge.
     ///
     /// # Example
