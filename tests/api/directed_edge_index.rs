@@ -2,9 +2,11 @@ use h3o::DirectedEdgeIndex;
 
 #[test]
 fn reverse() {
-    let edge = DirectedEdgeIndex::try_from(0x115283473fffffff).unwrap();
+    let edge = DirectedEdgeIndex::try_from(0x149283080dcbffff).unwrap();
+    let expected = DirectedEdgeIndex::try_from(0x139283080ddbffff).unwrap();
     let reversed = edge.reverse();
 
+    assert_eq!(reversed, expected, "reversed edge");
     assert_eq!(edge.origin(), reversed.destination(), "rev: src == dst");
     assert_eq!(edge.destination(), reversed.origin(), "rev: dst == src");
 

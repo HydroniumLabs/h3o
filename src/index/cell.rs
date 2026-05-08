@@ -877,6 +877,8 @@ impl CellIndex {
 
     /// Returns all of the directed edges from the current index.
     ///
+    /// Edges are returned in counter-clockwise order.
+    ///
     /// # Example
     ///
     /// ```
@@ -886,13 +888,10 @@ impl CellIndex {
     /// ```
     pub fn edges(self) -> impl Iterator<Item = DirectedEdgeIndex> {
         let template = bits::set_mode(self.0.get(), IndexMode::DirectedEdge);
-        let deleted_edge = self.is_pentagon().then_some(1);
 
-        Edge::iter()
-            .filter(move |&edge| Some(u8::from(edge)) != deleted_edge)
-            .map(move |edge| {
-                DirectedEdgeIndex::new_unchecked(bits::set_edge(template, edge))
-            })
+        Edge::iter(self.is_pentagon()).map(move |edge| {
+            DirectedEdgeIndex::new_unchecked(bits::set_edge(template, edge))
+        })
     }
 
     /// Get the specified vertex of this cell.

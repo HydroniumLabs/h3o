@@ -1,8 +1,13 @@
-use crate::{
-    LatLng,
-    math::{FloatAdder, atan2, cos, mul_add, sin},
-};
+use super::{FloatAdder, atan2, cos, mul_add, sin};
 use core::f64::consts::PI;
+
+// Not using `geo_traits::CoordTrait` because I want to avoid depending on geo
+// ecosystem outside of the geo feature flag.
+/// Coordinates on a 2-dimensional plane.
+pub trait Coord2d {
+    /// Returns the x & y component of the coordinate, in radians.
+    fn xy(self) -> (f64, f64);
+}
 
 /// Computes the  area in radians² enclosed by the given linear ring.
 ///
@@ -25,11 +30,14 @@ use core::f64::consts::PI;
 /// "Large" ring (e.g., that cannot be contained in a hemisphere) can still be
 /// constructed by using intermediate vertices with arcs less than
 /// 180 degrees, and the area will still be computed correctly.
-pub fn linear_ring_area(ring: &[LatLng]) -> f64 {
+pub fn linear_ring_area<CoordType>(ring: &[CoordType]) -> f64
+where
+    CoordType: Coord2d + Copy,
+{
     let mut adder = FloatAdder::default();
 
     for (a, b) in ring.iter().zip(ring.iter().cycle().skip(1)) {
-        adder += cagnoli(*a, *b);
+        adder += cagnoli(a.xy(), b.xy());
     }
 
     // The Cagnoli sum above yields a signed area, with the sign switching
@@ -47,13 +55,13 @@ pub fn linear_ring_area(ring: &[LatLng]) -> f64 {
 ///
 /// This function is inspired from following
 /// [d3-geo](https://github.com/d3/d3-geo/blob/8c53a90ae70c94bace73ecb02f2c792c649c86ba/src/area.js#L51-L70)
-fn cagnoli(a: LatLng, b: LatLng) -> f64 {
-    let a_lat = mul_add(a.lat_radians(), 0.5, PI * 0.25);
-    let b_lat = mul_add(b.lat_radians(), 0.5, PI * 0.25);
+fn cagnoli((a_x, a_y): (f64, f64), (b_x, b_y): (f64, f64)) -> f64 {
+    let a_lat = mul_add(a_y, 0.5, PI * 0.25);
+    let b_lat = mul_add(b_y, 0.5, PI * 0.25);
     let sin_a = sin(a_lat) * sin(b_lat);
     let cos_a = cos(a_lat) * cos(b_lat);
 
-    let delta = b.lng_radians() - a.lng_radians();
+    let delta = b_x - a_x;
     let sin_d = sin(delta);
     let cos_d = cos(delta);
 

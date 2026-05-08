@@ -1,13 +1,8 @@
 //! Bridge between H3 entities and geometrical shapes.
 
 mod plotter;
-mod ring_hierarchy;
 mod solvent;
 mod tiler;
-mod vertex_graph;
-
-use ring_hierarchy::RingHierarchy;
-use vertex_graph::VertexGraph;
 
 pub use plotter::{Plotter, PlotterBuilder};
 pub use solvent::{Solvent, SolventBuilder};

@@ -25,6 +25,15 @@ Possible sections are:
 - new algorithm `h3o::CellIndex::area_rads2`: faster and more accurate
 - use n-vector instead of lat/lng for coordinate calculations: several functions
   got faster thanks to that (e.g. up to 1.77x speedup for cellToLatLng)
+- `h3o::Edge::iter` now returns edges in CCW order and takes a boolean as input
+  to indicate whether the generated edges are for a hexagon or a pentagon (to
+  reproduce the old behavior, you can pass `false` and sort the returned list).
+- `h3o::CellIndex::edges` now returns edges in CCW order. This should not be a
+  breaking change, as the ordering was neither specified nor guaranteed before,
+  but if you were relying on it and need to restore the old order (e.g. strict
+  compatibility with the H3 C library), you can sort the returned list.
+- `h3o::geom::Solvent` uses a new algorithm for homogeneous input (3-4x time
+  faster and 2-3x less memory)
 
 ## [0.9.5] - 2026-05-02
 

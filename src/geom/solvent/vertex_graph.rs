@@ -1,6 +1,7 @@
-use super::{RingHierarchy, neighbors};
+use super::RingHierarchy;
 use crate::{
     CellIndex, LatLng, Resolution, VertexIndex, error::DissolutionError,
+    geom::neighbors,
 };
 use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use either::Either;
@@ -23,59 +24,6 @@ pub struct VertexGraph {
 }
 
 impl VertexGraph {
-    /// Initializes a new `VertexGraph` from a set of homogeneous cells.
-    ///
-    /// # Notes
-    ///
-    /// If `check_duplicate` is set to true, a duplicates detection is
-    /// performed, which implies an eager consumption of the iterator upfront,
-    /// incurring memory overhead and losing the lazyness of the iterator-based
-    /// approach.
-    pub fn from_homogeneous(
-        cells: impl IntoIterator<Item = CellIndex>,
-        check_duplicate: bool,
-    ) -> Result<Self, DissolutionError> {
-        let mut cells = if check_duplicate {
-            Either::Left(check_duplicates(cells)?.into_iter())
-        } else {
-            Either::Right(cells.into_iter())
-        };
-
-        // Infer the resolution from the first cell (since its homogeneous).
-        let first = cells.next();
-        let resolution = first.map_or(Resolution::Zero, CellIndex::resolution);
-        let cells = first.into_iter().chain(cells);
-
-        let mut graph = Self {
-            nodes: HashMap::new(),
-            distortions: HashMap::new(),
-            is_class3: resolution.is_class3(),
-        };
-
-        // Scratchpad to reuse memory allocations.
-        let mut scratchpad = Scratchpad::new();
-        for cell in cells {
-            if cell.resolution() != resolution {
-                return Err(DissolutionError::UnsupportedResolution);
-            }
-
-            scratchpad.compute_vertexes(cell);
-            for pair in scratchpad.vertexes.windows(2) {
-                graph.insert(&Node {
-                    from: pair[0],
-                    to: pair[1],
-                });
-            }
-
-            // Keep track of distortions vertices when necessary.
-            if graph.is_class3 && cell.icosahedron_faces().len() > 1 {
-                graph.index_distortions(cell, &scratchpad.vertexes);
-            }
-        }
-
-        Ok(graph)
-    }
-
     /// Initializes a new `VertexGraph` from a set of heterogeneous cells.
     ///
     /// # Notes

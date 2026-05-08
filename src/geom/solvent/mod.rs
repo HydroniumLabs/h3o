@@ -1,6 +1,10 @@
-use super::VertexGraph;
-use crate::{CellIndex, Resolution, error::DissolutionError};
-use geo::MultiPolygon;
+mod arc_set;
+mod ring_hierarchy;
+mod vertex_graph;
+
+use arc_set::ArcSet;
+use ring_hierarchy::RingHierarchy;
+use vertex_graph::VertexGraph;
 
 /// A solvent that dissolves a set of H3 cell indexes into a `MultiPolygon`
 /// representing the outlines of the set.
@@ -11,12 +15,13 @@ pub struct Solvent {
 }
 
 impl Solvent {
-    /// Creates a [`MultiPolygon`] describing the outline(s) of a set of cells.
+    /// Creates a [`MultiPolygon`][geo::MultiPolygon] describing the outline(s)
+    /// of a set of cells.
     ///
     /// # Errors
     ///
     /// All cell indexes must be unique and have the expected resolution,
-    /// otherwise [`DissolutionError`] is returned.
+    /// otherwise [`DissolutionError`][crate::error::DissolutionError] is returned.
     ///
     /// # Example
     ///
@@ -31,22 +36,21 @@ impl Solvent {
     /// ```
     pub fn dissolve(
         &self,
-        cells: impl IntoIterator<Item = CellIndex>,
-    ) -> Result<MultiPolygon, DissolutionError> {
-        let graph = match self.input_mode {
+        cells: impl IntoIterator<Item = crate::CellIndex>,
+    ) -> Result<geo::MultiPolygon, crate::error::DissolutionError> {
+        Ok(match self.input_mode {
             InputMode::Homogeneous => {
-                VertexGraph::from_homogeneous(cells, self.check_duplicate)
+                ArcSet::new(cells, self.check_duplicate)?.into()
             }
             InputMode::Heterogeneous(resolution) => {
                 VertexGraph::from_heterogeneous(
                     cells,
                     resolution,
                     self.check_duplicate,
-                )
+                )?
+                .into()
             }
-        }?;
-
-        Ok(graph.into())
+        })
     }
 }
 
@@ -104,7 +108,7 @@ impl SolventBuilder {
     #[must_use]
     pub const fn enable_heterogeneous_support(
         mut self,
-        resolution: Resolution,
+        resolution: crate::Resolution,
     ) -> Self {
         self.input_mode = InputMode::Heterogeneous(resolution);
         self
@@ -125,5 +129,5 @@ enum InputMode {
     /// An homogeneous set of cells.
     Homogeneous,
     /// An heterogeneous set of cells (e.g. compacted) with a max resolution.
-    Heterogeneous(Resolution),
+    Heterogeneous(crate::Resolution),
 }

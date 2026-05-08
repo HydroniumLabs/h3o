@@ -2,7 +2,7 @@ use super::{EPSILON_RAD, Vec3d};
 use crate::{
     CellIndex, EARTH_RADIUS_KM, Resolution,
     error::InvalidLatLng,
-    math::{asin, atan2, cos, mul_add, sin, sqrt},
+    math::{Coord2d, asin, atan2, cos, mul_add, sin, sqrt},
 };
 use core::fmt;
 use float_eq::float_eq;
@@ -271,6 +271,12 @@ impl fmt::Debug for LatLng {
             .field("lng_rad", &self.lng)
             .field("lng_deg", &self.lng())
             .finish()
+    }
+}
+
+impl Coord2d for LatLng {
+    fn xy(self) -> (f64, f64) {
+        (self.lng, self.lat)
     }
 }
 

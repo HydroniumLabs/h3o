@@ -6,9 +6,10 @@ macro_rules! test {
         #[test]
         fn $name() {
             let index = CellIndex::try_from($index).expect("cell index");
-            let result = index.edges().collect::<Vec<_>>();
+            let mut result = index.edges().collect::<Vec<_>>();
             let reference = h3api::origin_to_directed_edges(index);
 
+            result.sort();
             assert_eq!(result, reference);
         }
     };

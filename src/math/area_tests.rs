@@ -1,5 +1,5 @@
 use super::*;
-use crate::{CellIndex, Resolution};
+use crate::{CellIndex, LatLng, Resolution};
 use float_eq::assert_float_eq;
 use std::f64::consts::FRAC_PI_2;
 
@@ -197,7 +197,7 @@ fn invalid_ring_point() {
 
 #[test]
 fn invalid_ring_empty() {
-    let ring = &[];
+    let ring: &[LatLng] = &[];
     let expected = 0.;
     let result = linear_ring_area(ring);
 

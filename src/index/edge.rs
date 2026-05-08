@@ -11,6 +11,9 @@ const MIN: u8 = 1;
 /// Maximum value for a cell edge.
 const MAX: u8 = 6;
 
+const PENTAGON_ORDER: &[u8] = &[2, 3, 5, 4, 6];
+const HEXAGON_ORDER: &[u8] = &[1, 5, 4, 6, 2, 3];
+
 // -----------------------------------------------------------------------------
 
 /// Edge of an H3 cell.
@@ -21,14 +24,21 @@ pub struct Edge(u8);
 impl Edge {
     /// Iterates over the valid directions.
     ///
+    /// Edges are returned in counter-clockwise order.
+    ///
     /// # Example
     ///
     /// ```
-    /// let edges = h3o::Edge::iter().collect::<Vec<_>>();
+    /// let edges = h3o::Edge::iter(true).collect::<Vec<_>>();
     /// ```
-    pub fn iter() -> impl Iterator<Item = Self> {
+    pub fn iter(is_pentagon: bool) -> impl Iterator<Item = Self> {
+        let edges = if is_pentagon {
+            PENTAGON_ORDER
+        } else {
+            HEXAGON_ORDER
+        };
         // SAFETY: values from 0 to MAX are valid directions.
-        (MIN..=MAX).map(Self::new_unchecked)
+        edges.iter().copied().map(Self::new_unchecked)
     }
 
     /// Initializes a new cell edge using a value that may be out of range.
