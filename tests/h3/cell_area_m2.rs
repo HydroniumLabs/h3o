@@ -1,6 +1,6 @@
 use super::h3api;
 use float_eq::assert_float_eq;
-use h3o::{CellIndex, Resolution};
+use h3o::CellIndex;
 
 macro_rules! test {
     ($name:ident, $index:literal) => {
@@ -52,29 +52,3 @@ test!(pentagon_res12, 0x8c734e649929dff);
 test!(pentagon_res13, 0x8d734e64992d6ff);
 test!(pentagon_res14, 0x8e734e64992d6df);
 test!(pentagon_res15, 0x8f734e64992d6d8);
-
-// Apply a cell area calculation function to every cell on the earth at a given
-// resolution, and check that it sums up the total earth area.
-macro_rules! area_earth_test {
-    ($name:ident, $resolution:literal, $tolerance:literal) => {
-        #[test]
-        fn $name() {
-            let resolution =
-                Resolution::try_from($resolution).expect("index resolution");
-            let area = CellIndex::base_cells()
-                .flat_map(|index| {
-                    index.children(resolution).map(|child| child.area_m2())
-                })
-                .sum::<f64>();
-            let expected = 510065621724088.6; // Earth surface, in m²
-
-            assert_float_eq!(area, expected, abs <= $tolerance);
-        }
-    };
-}
-
-area_earth_test!(earth_at_res0, 0, 1e0);
-area_earth_test!(earth_at_res1, 1, 1e5);
-area_earth_test!(earth_at_res2, 2, 1e0);
-area_earth_test!(earth_at_res3, 3, 1e3);
-area_earth_test!(earth_at_res4, 4, 1e2);

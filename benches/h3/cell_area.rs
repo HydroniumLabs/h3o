@@ -6,7 +6,7 @@ use std::hint::black_box;
 pub fn bench_rads2(c: &mut Criterion) {
     bench_cell_area(
         c,
-        "cellAreaRads",
+        "cellAreaRads2",
         |b, &index| {
             let index = CellIndex::try_from(index).expect("cell index");
             b.iter(|| black_box(index).area_rads2())

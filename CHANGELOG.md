@@ -20,6 +20,10 @@ Possible sections are:
 - `h3o::CellIndex::from_raw_parts` (i.e. `constructCell` from H3 4.4.0)
 - `h3o::DirectedEdgeIndex::reverse` (i.e. `reverseDirectedEdge` from H3 4.5.0)
 
+### Changed
+
+- new algorithm `h3o::CellIndex::area_rads2`: faster and more accurate
+
 ## [0.9.5] - 2026-05-02
 
 ### Changed

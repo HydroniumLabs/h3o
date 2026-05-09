@@ -259,14 +259,8 @@ mod face;
 pub mod geom;
 mod grid;
 mod index;
+mod math;
 mod resolution;
-
-#[cfg(not(feature = "std"))]
-#[path = "math-libm.rs"]
-mod math;
-#[cfg(feature = "std")]
-#[path = "math-std.rs"]
-mod math;
 
 pub use base_cell::BaseCell;
 pub use boundary::Boundary;

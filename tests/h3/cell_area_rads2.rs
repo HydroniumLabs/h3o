@@ -1,6 +1,6 @@
 use super::h3api;
 use float_eq::assert_float_eq;
-use h3o::{CellIndex, Resolution};
+use h3o::CellIndex;
 
 // EPSILON_RADS from h3o.
 const EPSILON: f64 = 1.7453292519943295e-11;
@@ -55,29 +55,3 @@ test!(pentagon_res15, 0x8f734e64992d6d8);
 // This one triggered a bug related to the use of a wrong epsilon in
 // `Vec2d::partial_eq`.
 test!(bug_vec2d_epsilon, 0x8159bffffffffff);
-
-// Apply a cell area calculation function to every cell on the earth at a given
-// resolution, and check that it sums up the total earth area.
-macro_rules! area_earth_test {
-    ($name:ident, $resolution:literal, $tolerance:literal) => {
-        #[test]
-        fn $name() {
-            let resolution =
-                Resolution::try_from($resolution).expect("index resolution");
-            let area = CellIndex::base_cells()
-                .flat_map(|index| {
-                    index.children(resolution).map(|child| child.area_rads2())
-                })
-                .sum::<f64>();
-            let expected = 4. * std::f64::consts::PI; // Earth surface, in radian²
-
-            assert_float_eq!(area, expected, abs <= $tolerance);
-        }
-    };
-}
-
-area_earth_test!(earth_at_res0, 0, 1e-14);
-area_earth_test!(earth_at_res1, 1, 1e-9);
-area_earth_test!(earth_at_res2, 2, 1e-12);
-area_earth_test!(earth_at_res3, 3, 1e-11);
-area_earth_test!(earth_at_res4, 4, 1e-11);

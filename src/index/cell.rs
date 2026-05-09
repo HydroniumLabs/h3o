@@ -1,4 +1,4 @@
-use super::{Children, GridPathCells, Triangle};
+use super::{Children, GridPathCells};
 use crate::{
     BaseCell, Boundary, CCW, CW, DEFAULT_CELL_INDEX, DirectedEdgeIndex,
     Direction, EARTH_RADIUS_KM, Edge, ExtendedResolution, FaceSet, LatLng,
@@ -270,15 +270,7 @@ impl CellIndex {
     /// ```
     #[must_use]
     pub fn area_rads2(self) -> f64 {
-        let center = LatLng::from(self);
-        let boundary = self.boundary();
-
-        (0..boundary.len())
-            .map(|i| {
-                let j = (i + 1) % boundary.len();
-                Triangle::new(boundary[i], boundary[j], center).area()
-            })
-            .sum()
+        crate::math::linear_ring_area(&self.boundary())
     }
 
     /// Computes the area of this H3 cell, in km².
