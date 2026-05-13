@@ -59,3 +59,90 @@ impl From<Boundary> for geo::LineString {
         Self::new(value.iter().copied().map(geo::Coord::from).collect())
     }
 }
+
+#[cfg(feature = "geo")]
+impl geo_traits::GeometryTrait for Boundary {
+    type GeometryCollectionType<'b>
+        = geo_traits::UnimplementedGeometryCollection<f64>
+    where
+        Self: 'b;
+    type LineStringType<'b>
+        = Self
+    where
+        Self: 'b;
+    type LineType<'b>
+        = geo_traits::UnimplementedLine<f64>
+    where
+        Self: 'b;
+    type MultiLineStringType<'b>
+        = geo_traits::UnimplementedMultiLineString<f64>
+    where
+        Self: 'b;
+    type MultiPointType<'b>
+        = geo_traits::UnimplementedMultiPoint<f64>
+    where
+        Self: 'b;
+    type MultiPolygonType<'b>
+        = geo_traits::UnimplementedMultiPolygon<f64>
+    where
+        Self: 'b;
+    type PointType<'b>
+        = geo_traits::UnimplementedPoint<f64>
+    where
+        Self: 'b;
+    type PolygonType<'b>
+        = geo_traits::UnimplementedPolygon<f64>
+    where
+        Self: 'b;
+    type RectType<'b>
+        = geo_traits::UnimplementedRect<f64>
+    where
+        Self: 'b;
+    type T = f64;
+    type TriangleType<'b>
+        = geo_traits::UnimplementedTriangle<f64>
+    where
+        Self: 'b;
+
+    fn dim(&self) -> geo_traits::Dimensions {
+        geo_traits::Dimensions::Xy
+    }
+
+    fn as_type(
+        &self,
+    ) -> geo_traits::GeometryType<
+        '_,
+        Self::PointType<'_>,
+        Self::LineStringType<'_>,
+        Self::PolygonType<'_>,
+        Self::MultiPointType<'_>,
+        Self::MultiLineStringType<'_>,
+        Self::MultiPolygonType<'_>,
+        Self::GeometryCollectionType<'_>,
+        Self::RectType<'_>,
+        Self::TriangleType<'_>,
+        Self::LineType<'_>,
+    > {
+        geo_traits::GeometryType::LineString(self)
+    }
+}
+
+#[cfg(feature = "geo")]
+impl geo_traits::LineStringTrait for Boundary {
+    type CoordType<'a> = LatLng;
+
+    fn num_coords(&self) -> usize {
+        self.count.into()
+    }
+
+    /// Access to a specified coordinate in this boundary.
+    ///
+    /// # Safety
+    ///
+    /// Accessing an index out of bounds is UB.
+    #[expect(unsafe_code, reason = "precondition must be held by the caller")]
+    unsafe fn coord_unchecked(&self, i: usize) -> Self::CoordType<'_> {
+        // SAFETY: precondition must be held by the caller.
+        unsafe { *self.get_unchecked(i) }
+    }
+}

@@ -81,6 +81,26 @@ impl LatLng {
         Ok(Self { lat, lng })
     }
 
+    /// Initializes from a geo coordinate (in degrees).
+    ///
+    /// # Errors
+    ///
+    /// [`InvalidLatLng`] when one (or both) components is not a finite number.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let ll = h3o::LatLng::from_coord(&(181.2, 51.79))?;
+    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// ```
+    #[cfg(feature = "geo")]
+    pub fn from_coord<T>(value: &T) -> Result<Self, InvalidLatLng>
+    where
+        T: geo_traits::CoordTrait<T = f64>,
+    {
+        Self::new(value.y(), value.x())
+    }
+
     /// Latitude, in degrees.
     ///
     /// # Example
@@ -484,6 +504,32 @@ impl<'a> arbitrary::Arbitrary<'a> for LatLng {
 
         Self::from_radians(lat, lng)
             .map_err(|_| arbitrary::Error::IncorrectFormat)
+    }
+}
+
+#[cfg(feature = "geo")]
+impl geo_traits::CoordTrait for LatLng {
+    type T = f64;
+
+    #[expect(clippy::panic, reason = "panic by design")]
+    fn nth_or_panic(&self, n: usize) -> Self::T {
+        match n {
+            0 => self.x(),
+            1 => self.y(),
+            _ => panic!("LatLng only supports 2 dimensions"),
+        }
+    }
+
+    fn dim(&self) -> geo_traits::Dimensions {
+        geo_traits::Dimensions::Xy
+    }
+
+    fn x(&self) -> Self::T {
+        self.lng()
+    }
+
+    fn y(&self) -> Self::T {
+        self.lat()
     }
 }
 
