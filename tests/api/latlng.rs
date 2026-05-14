@@ -148,6 +148,7 @@ fn geo_traits_support() {
     let _c = LatLng::from_coord(&coord).unwrap().to_cell(Resolution::One);
 }
 
+#[cfg(feature = "geo")]
 #[test]
 #[should_panic]
 fn geo_traits_support_panic_on_invalid_access() {

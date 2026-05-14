@@ -1,4 +1,4 @@
-use h3o::{CellIndex, DirectedEdgeIndex};
+use h3o::DirectedEdgeIndex;
 
 #[test]
 fn display() {
@@ -43,7 +43,7 @@ fn cell_boundary_geo_traits_support() {
         GeometryTrait as _, LineStringTrait as _, PolygonTrait as _,
     };
 
-    let index = CellIndex::try_from(0x813b7ffffffffff).unwrap();
+    let index = h3o::CellIndex::try_from(0x813b7ffffffffff).unwrap();
     let boundary = index.boundary();
 
     // Boundary implements the LineStringTrait, but return a closed ring.
@@ -68,7 +68,7 @@ fn cell_boundary_geo_traits_support() {
 fn geo_traits_support_polygon_no_interior() {
     use geo_traits::PolygonTrait as _;
 
-    let index = CellIndex::try_from(0x813b7ffffffffff).unwrap();
+    let index = h3o::CellIndex::try_from(0x813b7ffffffffff).unwrap();
     let boundary = index.boundary();
 
     unsafe {
