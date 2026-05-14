@@ -127,3 +127,32 @@ fn latlng_from_typed_floats() {
 
     let _ = LatLng::from((lat, lng));
 }
+
+#[cfg(feature = "geo")]
+#[test]
+fn geo_traits_support() {
+    use geo_traits::CoordTrait as _;
+
+    // LatLng can be built from a type that implements CoordTrait.
+    let coord = (-45., 10.);
+    let ll = LatLng::from_coord(&coord).unwrap();
+
+    // LatLng implements the CoordTrait.
+    assert_eq!(ll.dim(), geo_traits::Dimensions::Xy);
+    assert_eq!(ll.x(), ll.lng());
+    assert_eq!(ll.y(), ll.lat());
+    assert_eq!(ll.nth(0).unwrap(), ll.lng());
+    assert_eq!(ll.nth(1).unwrap(), ll.lat());
+
+    // Example from https://github.com/HydroniumLabs/h3o/issues/45
+    let _c = LatLng::from_coord(&coord).unwrap().to_cell(Resolution::One);
+}
+
+#[test]
+#[should_panic]
+fn geo_traits_support_panic_on_invalid_access() {
+    use geo_traits::CoordTrait as _;
+
+    let ll = LatLng::from_coord(&(-45., 10.)).unwrap();
+    ll.nth_or_panic(42);
+}
