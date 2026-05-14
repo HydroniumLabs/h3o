@@ -659,3 +659,19 @@ fn bbox_transmeridian() {
     result.sort_unstable();
     assert_eq!(result, expected);
 }
+
+// https://github.com/HydroniumLabs/h3o/issues/44
+#[test]
+fn issue_44() {
+    let mut tiler = TilerBuilder::new(Resolution::Two).build();
+    let polygon = polygon!(
+        exterior: [
+            (x: 100.0001, y: 1.1754943508222875e-38),
+            (x: 100000000000000000000., y: 3.4028234663852886e38),
+            (x: 1000.0001, y: 100.0001),
+            (x: 0.0001, y: 100.0001),
+        ],
+        interiors: [],
+    );
+    assert!(tiler.add(polygon).is_err());
+}
