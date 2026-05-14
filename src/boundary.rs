@@ -91,7 +91,7 @@ impl geo_traits::GeometryTrait for Boundary {
     where
         Self: 'b;
     type PolygonType<'b>
-        = geo_traits::UnimplementedPolygon<f64>
+        = Self
     where
         Self: 'b;
     type RectType<'b>
@@ -123,7 +123,11 @@ impl geo_traits::GeometryTrait for Boundary {
         Self::TriangleType<'_>,
         Self::LineType<'_>,
     > {
-        geo_traits::GeometryType::LineString(self)
+        if self.count >= crate::NUM_PENT_VERTS {
+            geo_traits::GeometryType::Polygon(self)
+        } else {
+            geo_traits::GeometryType::LineString(self)
+        }
     }
 }
 
@@ -144,5 +148,42 @@ impl geo_traits::LineStringTrait for Boundary {
     unsafe fn coord_unchecked(&self, i: usize) -> Self::CoordType<'_> {
         // SAFETY: precondition must be held by the caller.
         unsafe { *self.get_unchecked(i) }
+    }
+}
+
+#[cfg(feature = "geo")]
+impl geo_traits::PolygonTrait for Boundary {
+    type RingType<'a>
+        = geo::LineString
+    where
+        Self: 'a;
+
+    /// Returns the exsterior ring for pentagons and hexagons.
+    /// For edges, `None` is returned.
+    fn exterior(&self) -> Option<Self::RingType<'_>> {
+        if self.count >= crate::NUM_PENT_VERTS {
+            let mut coords = self
+                .iter()
+                .copied()
+                .map(geo::Coord::from)
+                .collect::<Vec<_>>();
+            coords.push(coords[0]);
+            Some(geo::LineString::new(coords))
+        } else {
+            None
+        }
+    }
+
+    /// H3 cell have no interrior rings.
+    fn num_interiors(&self) -> usize {
+        0
+    }
+
+    /// # Safety
+    ///
+    /// Accessing an index out of bounds is UB.
+    #[expect(unsafe_code, reason = "precondition must be held by the caller")]
+    unsafe fn interior_unchecked(&self, _i: usize) -> Self::RingType<'_> {
+        unreachable!("Boundary has no interior rings")
     }
 }
