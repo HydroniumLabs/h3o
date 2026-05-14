@@ -13,8 +13,10 @@ fn display() {
 
 #[cfg(feature = "geo")]
 #[test]
-fn geo_traits_support_linestring() {
-    use geo_traits::{GeometryTrait as _, LineStringTrait as _};
+fn edge_boundary_geo_traits_support() {
+    use geo_traits::{
+        GeometryTrait as _, LineStringTrait as _, PolygonTrait as _,
+    };
 
     let edge = DirectedEdgeIndex::try_from(0x13a194e699ab7fff).expect("edge");
     let boundary = edge.boundary();
@@ -22,6 +24,9 @@ fn geo_traits_support_linestring() {
     // Boundary implements the LineStringTrait.
     assert_eq!(boundary.num_coords(), 2);
     assert_eq!(boundary[0], boundary.coord(0).unwrap());
+
+    // But is not a useful PolygonTrait.
+    assert!(boundary.exterior().is_none());
 
     // And GeometryTrait.
     assert!(matches!(
@@ -33,11 +38,17 @@ fn geo_traits_support_linestring() {
 
 #[cfg(feature = "geo")]
 #[test]
-fn geo_traits_support_polygon() {
-    use geo_traits::{GeometryTrait as _, PolygonTrait as _};
+fn cell_boundary_geo_traits_support() {
+    use geo_traits::{
+        GeometryTrait as _, LineStringTrait as _, PolygonTrait as _,
+    };
 
     let index = CellIndex::try_from(0x813b7ffffffffff).unwrap();
     let boundary = index.boundary();
+
+    // Boundary implements the LineStringTrait, but return a closed ring.
+    assert_eq!(boundary.num_coords(), 7);
+    assert_eq!(boundary.coord(0), boundary.coord(6));
 
     // Boundary implements the PolygonTrait.
     assert!(boundary.exterior().is_some());

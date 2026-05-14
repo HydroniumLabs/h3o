@@ -136,7 +136,13 @@ impl geo_traits::LineStringTrait for Boundary {
     type CoordType<'a> = LatLng;
 
     fn num_coords(&self) -> usize {
-        self.count.into()
+        // Add 1 for pentagon/hexagons (we want closed ring in that case).
+        if self.count >= crate::NUM_PENT_VERTS {
+            self.count + 1
+        } else {
+            self.count
+        }
+        .into()
     }
 
     /// Access to a specified coordinate in this boundary.
@@ -146,28 +152,27 @@ impl geo_traits::LineStringTrait for Boundary {
     /// Accessing an index out of bounds is UB.
     #[expect(unsafe_code, reason = "precondition must be held by the caller")]
     unsafe fn coord_unchecked(&self, i: usize) -> Self::CoordType<'_> {
-        // SAFETY: precondition must be held by the caller.
-        unsafe { *self.get_unchecked(i) }
+        if i == usize::from(self.count) {
+            // SAFETY: 0 is always valid.
+            unsafe { *self.get_unchecked(0) }
+        } else {
+            // SAFETY: precondition must be held by the caller.
+            unsafe { *self.get_unchecked(i) }
+        }
     }
 }
 
 #[cfg(feature = "geo")]
 impl geo_traits::PolygonTrait for Boundary {
     type RingType<'a>
-        = geo::LineString
+        = Self
     where
         Self: 'a;
 
     /// Returns the exsterior ring for pentagons and hexagons.
     /// For edges, `None` is returned.
     fn exterior(&self) -> Option<Self::RingType<'_>> {
-        (self.count >= crate::NUM_PENT_VERTS).then(|| {
-            let mut coords = Vec::with_capacity((self.count + 1).into());
-            coords.extend(self.iter().copied().map(geo::Coord::from));
-            coords.push(coords[0]);
-
-            geo::LineString::new(coords)
-        })
+        (self.count >= crate::NUM_PENT_VERTS).then_some(*self)
     }
 
     /// H3 cell have no interrior rings.
