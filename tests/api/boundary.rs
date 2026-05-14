@@ -13,14 +13,14 @@ fn display() {
 
 #[cfg(feature = "geo")]
 #[test]
-fn geo_traits_support() {
+fn geo_traits_support_linestring() {
     use geo_traits::{GeometryTrait as _, LineStringTrait as _};
 
-    let index = CellIndex::try_from(0x813b7ffffffffff).unwrap();
-    let boundary = index.boundary();
+    let edge = DirectedEdgeIndex::try_from(0x13a194e699ab7fff).expect("edge");
+    let boundary = edge.boundary();
 
     // Boundary implements the LineStringTrait.
-    assert_eq!(boundary.num_coords(), 6);
+    assert_eq!(boundary.num_coords(), 2);
     assert_eq!(boundary[0], boundary.coord(0).unwrap());
 
     // And GeometryTrait.
@@ -29,4 +29,38 @@ fn geo_traits_support() {
         geo_traits::GeometryType::LineString(_)
     ));
     assert_eq!(boundary.dim(), geo_traits::Dimensions::Xy);
+}
+
+#[cfg(feature = "geo")]
+#[test]
+fn geo_traits_support_polygon() {
+    use geo_traits::{GeometryTrait as _, PolygonTrait as _};
+
+    let index = CellIndex::try_from(0x813b7ffffffffff).unwrap();
+    let boundary = index.boundary();
+
+    // Boundary implements the PolygonTrait.
+    assert!(boundary.exterior().is_some());
+    assert_eq!(boundary.num_interiors(), 0);
+
+    // And GeometryTrait.
+    assert!(matches!(
+        boundary.as_type(),
+        geo_traits::GeometryType::Polygon(_)
+    ));
+    assert_eq!(boundary.dim(), geo_traits::Dimensions::Xy);
+}
+
+#[cfg(feature = "geo")]
+#[test]
+#[should_panic]
+fn geo_traits_support_polygon_no_interior() {
+    use geo_traits::PolygonTrait as _;
+
+    let index = CellIndex::try_from(0x813b7ffffffffff).unwrap();
+    let boundary = index.boundary();
+
+    unsafe {
+        boundary.interior_unchecked(0);
+    }
 }
