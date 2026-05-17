@@ -398,8 +398,7 @@ impl LatLng {
     /// The values must be finite numbers.
     #[must_use]
     pub(crate) const fn new_unchecked(lat: f64, lng: f64) -> Self {
-        // TODO: wait for `is_finite` to be `const` in stable.
-        // debug_assert!(lat.is_finite() && lng.is_finite());
+        debug_assert!(lat.is_finite() && lng.is_finite());
 
         Self { lat, lng }
     }
