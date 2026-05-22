@@ -1,5 +1,5 @@
 use super::*;
-use crate::{CCW, CW, LatLng, Resolution};
+use crate::{CCW, CW, LatLng, Resolution, coord::Vec3d};
 
 #[test]
 fn from_ij_zero() {
@@ -94,9 +94,10 @@ fn distance() {
 }
 
 #[test]
-fn from_hex2d() {
+fn from_vec2d() {
     let ll = LatLng::new(48.85458622023985, 2.373012457671282).expect("ll");
-    let (face, distance) = ll.closest_face();
+    let nvec = Vec3d::from(ll);
+    let (face, distance) = nvec.closest_face();
     let resolutions = Resolution::range(Resolution::Zero, Resolution::Fifteen);
     let cases = [
         CoordIJK::new(1, 0, 0),
@@ -118,7 +119,8 @@ fn from_hex2d() {
     ];
 
     for (resolution, &expected) in resolutions.zip(cases.iter()) {
-        let result: CoordIJK = ll.to_vec2d(resolution, face, distance).into();
+        let result: CoordIJK =
+            Vec2d::from_vec3d(nvec, resolution, face, distance).into();
 
         assert_eq!(result, expected, "resolution {resolution}");
     }

@@ -9,11 +9,11 @@
 //! R. Buckminster Fuller). The base cells, which make up resolution 0, are
 //! Class II.
 
-use super::{CoordIJK, SQRT3_2, Vec2d};
+use super::{CoordIJK, SQRT3_2, Vec2d, Vec3d};
 use crate::{
     BaseCell, Boundary, CCW, CW, CellIndex, DEFAULT_CELL_INDEX, Direction,
-    ExtendedResolution, Face, LatLng, NUM_HEX_VERTS, NUM_ICOSA_FACES,
-    NUM_PENT_VERTS, Resolution, Vertex,
+    ExtendedResolution, Face, NUM_HEX_VERTS, NUM_ICOSA_FACES, NUM_PENT_VERTS,
+    Resolution, Vertex,
     face::{self, FaceOrientIJK},
     index::bits,
 };
@@ -34,6 +34,26 @@ pub struct FaceIJK {
 impl FaceIJK {
     pub const fn new(face: Face, coord: CoordIJK) -> Self {
         Self { face, coord }
+    }
+
+    /// Encodes a n-vector to the `FaceIJK` address of the containing cell at
+    /// the specified resolution.
+    ///
+    /// # Preconditions
+    ///
+    /// `value` is expected to be on the unit sphere.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The n-vector to encode.
+    /// * `resolution` - The desired H3 resolution for the encoding.
+    pub fn from_vec3d(value: Vec3d, resolution: Resolution) -> Self {
+        float_eq::debug_assert_float_eq!(value.norm(), 1., abs <= f64::EPSILON);
+
+        let (face, distance) = value.closest_face();
+        let coord = Vec2d::from_vec3d(value, resolution, face, distance).into();
+
+        Self::new(face, coord)
     }
 
     /// Returns the number of 60° counterclockwise rotations to rotate into the
@@ -103,17 +123,6 @@ impl FaceIJK {
         }
 
         CellIndex::new_unchecked(bits)
-    }
-
-    /// Determines the center point in spherical coordinates of a cell given by
-    /// a `FaceIJK` address at a specified resolution.
-    ///
-    /// # Arguments
-    ///
-    /// * `fijk` - The `FaceIJK` address of the cell.
-    /// * `resolution` - The H3 resolution of the cell.
-    pub fn to_latlng(self, resolution: Resolution) -> LatLng {
-        Vec2d::from(self.coord).to_latlng(self.face, resolution.into(), false)
     }
 
     /// Returns the `FaceIJK` address that correspond to a given cell index.
@@ -323,24 +332,26 @@ impl FaceIJK {
 
                 // Find the intersection and add the lat/lng point to the
                 // result.
-                let intersection =
-                    Vec2d::intersection((orig2d0, orig2d1), (edge0, edge1));
-                boundary.push(intersection.to_latlng(
+                let nvec = Vec3d::from_vec2d(
+                    Vec2d::intersection((orig2d0, orig2d1), (edge0, edge1)),
                     tmp_fijk.face,
                     adjusted_resolution,
                     true,
-                ));
+                );
+                boundary.push(nvec.into());
             }
 
             // convert vertex to lat/lng and add to the result
             // vert == start + NUM_PENT_VERTS is only used to test for possible
             // intersection on last edge
             if vert < start + NUM_PENT_VERTS {
-                boundary.push(Vec2d::from(fijk.coord).to_latlng(
+                let nvec = Vec3d::from_vec2d(
+                    Vec2d::from(fijk.coord),
                     fijk.face,
                     adjusted_resolution,
                     true,
-                ));
+                );
+                boundary.push(nvec.into());
             }
 
             last_fijk = fijk;
@@ -434,14 +445,14 @@ impl FaceIJK {
                 // If a point of intersection occurs at a hexagon vertex, then
                 // each adjacent hexagon edge will lie completely on a single
                 // icosahedron face, and no additional vertex is required.
-                let is_intersection_at_vertex =
-                    orig2d0 == intersection || orig2d1 == intersection;
-                if !is_intersection_at_vertex {
-                    boundary.push(intersection.to_latlng(
+                if !(orig2d0 == intersection || orig2d1 == intersection) {
+                    let nvec = Vec3d::from_vec2d(
+                        intersection,
                         center.face,
                         adjusted_resolution,
                         true,
-                    ));
+                    );
+                    boundary.push(nvec.into());
                 }
             }
 
@@ -450,11 +461,13 @@ impl FaceIJK {
             // `vert == start + NUM_HEX_VERTS` is only used to test for possible
             // intersection on last edge.
             if vert < start + NUM_HEX_VERTS {
-                boundary.push(Vec2d::from(fijk.coord).to_latlng(
+                let nvec = Vec3d::from_vec2d(
+                    Vec2d::from(fijk.coord),
                     fijk.face,
                     adjusted_resolution,
                     true,
-                ));
+                );
+                boundary.push(nvec.into());
             }
 
             last_face = fijk.face.into();

@@ -26,6 +26,9 @@ use crate::TWO_PI;
 /// Threshold epsilon.
 const EPSILON: f64 = 0.0000000000000001_f64;
 
+/// Epsilon of ~0.1mm.
+const EPSILON_RAD: f64 = 0.000000001_f64.to_radians();
+
 /// Scaling factor from `hex2d` resolution 0 unit length (or distance between
 /// adjacent cell center points on the plane) to gnomonic unit length.
 const RES0_U_GNOMONIC: f64 = 0.381966011250105_f64;

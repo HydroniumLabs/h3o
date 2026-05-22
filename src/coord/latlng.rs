@@ -1,24 +1,11 @@
-use super::{
-    AP7_ROT_RADS, EPSILON, INV_RES0_U_GNOMONIC, SQRT7_POWERS, Vec2d, Vec3d,
-    faceijk::FaceIJK, to_positive_angle,
-};
+use super::{EPSILON_RAD, Vec3d};
 use crate::{
-    CellIndex, EARTH_RADIUS_KM, Face, Resolution, TWO_PI,
+    CellIndex, EARTH_RADIUS_KM, Resolution,
     error::InvalidLatLng,
-    face,
-    math::{acos, asin, atan2, cos, mul_add, sin, sqrt, tan},
+    math::{asin, atan2, cos, mul_add, sin, sqrt},
 };
-use core::{
-    f64::consts::{FRAC_PI_2, PI},
-    fmt,
-};
+use core::fmt;
 use float_eq::float_eq;
-
-/// Epsilon of ~0.1mm in degrees.
-const EPSILON_DEG: f64 = 0.000000001;
-
-/// Same as `EPSILON_DEG`, but in radians.
-const EPSILON_RAD: f64 = EPSILON_DEG * PI / 180.0;
 
 /// Latitude/longitude.
 ///
@@ -238,183 +225,14 @@ impl LatLng {
     /// ```
     #[must_use]
     pub fn to_cell(self, resolution: Resolution) -> CellIndex {
-        self.to_face_ijk(resolution).to_cell(resolution)
+        Vec3d::from(self).to_cell(resolution)
     }
 
-    /// Encodes a coordinate on the sphere to the `FaceIJK` address of the
-    /// containing cell at the specified resolution.
-    ///
-    /// # Arguments
-    ///
-    /// * `ll` - The spherical coordinates to encode.
-    /// * `resolution` -  The desired H3 resolution for the encoding.
-    /// * `face` -  The icosahedral face of the coordinate.
-    /// * `distance` - The squared euclidean distance from the face center.
-    pub(super) fn to_vec2d(
-        self,
-        resolution: Resolution,
-        face: Face,
-        distance: f64,
-    ) -> Vec2d {
-        let face = usize::from(face);
-
-        let r = {
-            // cos(r) = 1 - 2 * sin^2(r/2) = 1 - 2 * (sqd / 4) = 1 - sqd/2
-            let r = acos(mul_add(distance, -0.5, 1.));
-
-            if r < EPSILON {
-                return Vec2d::new(0., 0.);
-            }
-
-            // Perform gnomonic scaling of `r` (`tan(r)`) and scale for current
-            // resolution length `u`.
-            (tan(r) * INV_RES0_U_GNOMONIC)
-                * SQRT7_POWERS[usize::from(resolution)]
-        };
-
-        let theta = {
-            // Compute counter-clockwise `theta` from Class II i-axis.
-            let mut theta = face::AXES_AZ_RADS_CII[face][0]
-                - face::CENTER_GEO[face].azimuth(&self);
-
-            // Adjust `theta` for Class III.
-            if resolution.is_class3() {
-                theta -= AP7_ROT_RADS;
-            }
-            theta
-        };
-
-        // Convert to local x, y.
-        Vec2d::new(r * cos(theta), r * sin(theta))
-    }
-
-    /// Finds the closest icosahedral face from the current coordinate.
-    ///
-    /// Returns both the face and the squared euclidean distance to that face
-    /// center.
-    #[must_use]
-    pub(crate) fn closest_face(self) -> (Face, f64) {
-        // The distance between two farthest points is 2.0, therefore the square
-        // of the distance between two points should always be less or equal
-        // than 4.
-        const MAX_DIST: f64 = 5.0;
-
-        let v3d = Vec3d::from(self);
-
-        face::CENTER_POINT.iter().enumerate().fold(
-            (Face::new_unchecked(0), MAX_DIST),
-            |(face, distance), (i, center)| {
-                let dist = v3d.distance(center);
-
-                if dist < distance {
-                    // SAFETY: `face` is always in range because it's a index of
-                    // `CENTER_POINT`.
-                    (Face::new_unchecked(i), dist)
-                } else {
-                    (face, distance)
-                }
-            },
-        )
-    }
-
-    /// Computes the azimuth to `other` from `self`, in radians.
-    #[must_use]
-    pub(crate) fn azimuth(self, other: &Self) -> f64 {
-        atan2(
-            cos(other.lat) * sin(other.lng - self.lng),
-            mul_add(
-                cos(self.lat),
-                sin(other.lat),
-                -sin(self.lat) * cos(other.lat) * cos(other.lng - self.lng),
-            ),
-        )
-    }
-
-    /// Computes the point on the sphere a specified azimuth and distance from
-    /// `self`.
-    #[must_use]
-    pub(crate) fn coord_at(self, azimuth: f64, distance: f64) -> Self {
-        if distance < EPSILON {
-            return self;
-        }
-        let azimuth = to_positive_angle(azimuth);
-        let is_due_north_south = float_eq!(azimuth, 0.0, abs <= EPSILON)
-            || float_eq!(azimuth, PI, abs <= EPSILON);
-
-        // Compute latitude.
-        let lat = if is_due_north_south {
-            if float_eq!(azimuth, 0.0, abs <= EPSILON) {
-                self.lat + distance // Due North.
-            } else {
-                self.lat - distance // Due South.
-            }
-        } else {
-            asin(
-                mul_add(
-                    sin(self.lat),
-                    cos(distance),
-                    cos(self.lat) * sin(distance) * cos(azimuth),
-                )
-                .clamp(-1., 1.),
-            )
-        };
-
-        // Handle poles.
-        if float_eq!(lat, FRAC_PI_2, abs <= EPSILON) {
-            return Self::new_unchecked(FRAC_PI_2, 0.0); // North pole.
-        } else if float_eq!(lat, -FRAC_PI_2, abs <= EPSILON) {
-            return Self::new_unchecked(-FRAC_PI_2, 0.0); // South pole.
-        }
-
-        // Compute longitude.
-        let mut lng = if is_due_north_south {
-            self.lng
-        } else {
-            let invcoslat = 1.0 / cos(lat);
-            let sinlng =
-                (sin(azimuth) * sin(distance) * invcoslat).clamp(-1., 1.);
-            let coslng = mul_add(sin(self.lat), sin(-lat), cos(distance))
-                / cos(self.lat)
-                * invcoslat;
-            self.lng + atan2(sinlng, coslng)
-        };
-
-        // XXX: make sure longitudes are in the proper bounds.
-        while lng > PI {
-            lng -= TWO_PI;
-        }
-        while lng < -PI {
-            lng += TWO_PI;
-        }
-
-        Self::new_unchecked(lat, lng)
-    }
-
-    /// Initializes a new coordinate with the specified, possibly invalid,
-    /// values.
-    ///
-    /// # Safety
-    ///
-    /// The values must be finite numbers.
-    #[must_use]
+    #[cfg(any(test, feature = "typed_floats"))]
     pub(crate) const fn new_unchecked(lat: f64, lng: f64) -> Self {
         debug_assert!(lat.is_finite() && lng.is_finite());
 
         Self { lat, lng }
-    }
-
-    /// Encodes a coordinate on the sphere to the `FaceIJK` address of the
-    /// containing cell at the specified resolution.
-    ///
-    /// # Arguments
-    ///
-    /// * `ll` - The spherical coordinates to encode.
-    /// * `resolution` - The desired H3 resolution for the encoding.
-    fn to_face_ijk(self, resolution: Resolution) -> FaceIJK {
-        let (face, distance) = self.closest_face();
-        let coord = self.to_vec2d(resolution, face, distance).into();
-
-        FaceIJK::new(face, coord)
     }
 }
 
@@ -427,17 +245,13 @@ impl PartialEq for LatLng {
 
 impl Eq for LatLng {}
 
-impl From<LatLng> for Vec3d {
-    /// Computes the 3D coordinate on unit sphere from the latitude and
-    /// longitude.
-    fn from(value: LatLng) -> Self {
-        let r = cos(value.lat);
-
-        let z = sin(value.lat);
-        let x = cos(value.lng) * r;
-        let y = sin(value.lng) * r;
-
-        Self::new(x, y, z)
+impl From<Vec3d> for LatLng {
+    #[inline]
+    fn from(value: Vec3d) -> Self {
+        Self {
+            lat: asin(value.z),
+            lng: atan2(value.y, value.x),
+        }
     }
 }
 
@@ -531,7 +345,3 @@ impl geo_traits::CoordTrait for LatLng {
         self.lat()
     }
 }
-
-#[cfg(test)]
-#[path = "./latlng_tests.rs"]
-mod tests;

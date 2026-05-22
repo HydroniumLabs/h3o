@@ -11,20 +11,16 @@
 //!   cell centers in the `ijk` coordinate system.
 
 use super::{
-    AP7_ROT_RADS, CoordIJK, EPSILON, INV_SQRT7_POWERS, RES0_U_GNOMONIC,
-    to_positive_angle,
+    AP7_ROT_RADS, CoordIJK, EPSILON, INV_RES0_U_GNOMONIC, SQRT7_POWERS, Vec3d,
 };
 use crate::{
-    Face, LatLng, face,
-    math::{abs, atan, atan2, hypot, mul_add},
-    resolution::ExtendedResolution,
+    Face, Resolution, face,
+    math::{abs, acos, cos, hypot, mul_add, sin, tan},
 };
 use float_eq::float_eq;
 
 /// 1/sin(60')
 const RSIN60: f64 = 1.1547005383792515;
-/// 1/3
-const ONE_THIRD: f64 = 0.3333333333333333;
 
 // -----------------------------------------------------------------------------
 
@@ -50,6 +46,60 @@ impl Vec2d {
     /// Initializes a new 2D vector with the specified component values.
     pub const fn new(x: f64, y: f64) -> Self {
         Self { x, y }
+    }
+
+    /// Encodes n-vector to the corresponding icosahedral 2D hex coordinates
+    /// relative to the given face center.
+    ///
+    ///
+    /// # Preconditions
+    ///
+    /// `value` is expected to be on the unit sphere.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The n-vector to encode.
+    /// * `resolution` -  The desired H3 resolution for the encoding.
+    /// * `face` -  The icosahedral face of the coordinate.
+    /// * `distance` - The squared euclidean distance from the face center.
+    pub fn from_vec3d(
+        value: Vec3d,
+        resolution: Resolution,
+        face: Face,
+        distance: f64,
+    ) -> Self {
+        float_eq::debug_assert_float_eq!(value.norm(), 1., abs <= f64::EPSILON);
+
+        let face = usize::from(face);
+
+        let r = {
+            // cos(r) = 1 - 2 * sin^2(r/2) = 1 - 2 * (sqd / 4) = 1 - sqd/2
+            let r = acos(mul_add(distance, -0.5, 1.));
+
+            if r < EPSILON {
+                return Self::new(0., 0.);
+            }
+
+            // Perform gnomonic scaling of `r` (`tan(r)`) and scale for current
+            // resolution length `u`.
+            (tan(r) * INV_RES0_U_GNOMONIC)
+                * SQRT7_POWERS[usize::from(resolution)]
+        };
+
+        let theta = {
+            // Compute counter-clockwise `theta` from Class II i-axis.
+            let mut theta = face::AXES_AZ_RADS_CII[face]
+                - face::CENTER_POINT[face].azimuth(&value);
+
+            // Adjust `theta` for Class III.
+            if resolution.is_class3() {
+                theta -= AP7_ROT_RADS;
+            }
+            theta
+        };
+
+        // Convert to local x, y.
+        Self::new(r * cos(theta), r * sin(theta))
     }
 
     /// Calculates the magnitude.
@@ -81,61 +131,6 @@ impl Vec2d {
             x: mul_add(t, s1.x, line1.0.x),
             y: mul_add(t, s1.y, line1.0.y),
         }
-    }
-
-    /// Computes the spherical coordinates of the cell center point.
-    ///
-    /// # Arguments
-    ///
-    /// * `vec2d` - The 2D hex coordinates of the cell.
-    /// * `face` -  The icosahedral face upon which the 2D hex coordinate system
-    ///   is centered.
-    /// * `resolution` - The H3 resolution of the cell.
-    /// * `is_substrate` - Indicates whether or not this grid is actually a
-    ///   substrate grid relative to the specified resolution.
-    pub fn to_latlng(
-        self,
-        face: Face,
-        resolution: ExtendedResolution,
-        is_substrate: bool,
-    ) -> LatLng {
-        let face = usize::from(face);
-
-        let r = {
-            let mut r = self.magnitude();
-            if r < EPSILON {
-                return face::CENTER_GEO[face];
-            }
-
-            // Scale for current resolution length `u`.
-            r *= INV_SQRT7_POWERS[usize::from(resolution)];
-
-            // Scale accordingly if this is a substrate grid.
-            if is_substrate {
-                r *= ONE_THIRD;
-                // Substrate grid are always adjusted to the next class II.
-                debug_assert!(!resolution.is_class3());
-            }
-
-            // Perform inverse gnomonic scaling of `r`.
-            atan(r * RES0_U_GNOMONIC)
-        };
-
-        let theta = {
-            let mut theta = atan2(self.y, self.x);
-
-            // Adjust theta for Class III.
-            // If a substrate grid, then it's already adjusted for Class III.
-            if !is_substrate && resolution.is_class3() {
-                theta = to_positive_angle(theta + AP7_ROT_RADS);
-            }
-
-            // Find `theta` as an azimuth.
-            to_positive_angle(face::AXES_AZ_RADS_CII[face][0] - theta)
-        };
-
-        // Now find the point at `(r,theta)` from the face center
-        face::CENTER_GEO[face].coord_at(theta, r)
     }
 }
 

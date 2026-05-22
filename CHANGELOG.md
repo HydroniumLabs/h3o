@@ -23,6 +23,8 @@ Possible sections are:
 ### Changed
 
 - new algorithm `h3o::CellIndex::area_rads2`: faster and more accurate
+- use n-vector instead of lat/lng for coordinate calculations: several functions
+  got faster thanks to that (e.g. up to 1.77x speedup for cellToLatLng)
 
 ## [0.9.5] - 2026-05-02
 

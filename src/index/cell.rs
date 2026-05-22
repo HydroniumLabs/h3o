@@ -3,7 +3,7 @@ use crate::{
     BaseCell, Boundary, CCW, CW, DEFAULT_CELL_INDEX, DirectedEdgeIndex,
     Direction, EARTH_RADIUS_KM, Edge, ExtendedResolution, FaceSet, LatLng,
     LocalIJ, NUM_HEX_VERTS, NUM_PENT_VERTS, Resolution, Vertex, VertexIndex,
-    coord::{CoordIJ, CoordIJK, FaceIJK, LocalIJK, Overage},
+    coord::{CoordIJ, CoordIJK, FaceIJK, LocalIJK, Overage, Vec3d},
     error::{
         CompactionError, HexGridError, InvalidCellIndex, LocalIjError,
         ResolutionMismatch,
@@ -1864,7 +1864,7 @@ impl From<CellIndex> for u64 {
 impl From<CellIndex> for LatLng {
     /// Determines the spherical coordinates of the center point of an H3 index.
     fn from(value: CellIndex) -> Self {
-        FaceIJK::from(value).to_latlng(value.resolution())
+        Vec3d::from(value).into()
     }
 }
 

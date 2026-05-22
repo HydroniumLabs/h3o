@@ -174,7 +174,7 @@ pub fn rotate60<const CCW: bool>(mut bits: u64, count: usize) -> u64 {
     bits
 }
 
-/// Returns a pentagonal cell rotated `count` time, by 60 degrees step.
+/// Returns a pentagonal cell rotated by 60 degrees.
 pub fn pentagon_rotate60<const CCW: bool>(mut bits: u64) -> u64 {
     let res = get_resolution(bits);
     if res == Resolution::Zero {
