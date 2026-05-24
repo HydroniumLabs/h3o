@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.10.0] - 2026-05-24
+
 ### Added
 
 - `h3o::is_valid_index` (i.e. `isValidIndex` from H3 4.4.0)
