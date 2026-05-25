@@ -12,4 +12,4 @@ pub use edge::{DirectedEdgeIndex, Edge};
 pub use mode::IndexMode;
 pub use vertex::{Vertex, VertexIndex};
 
-pub use iterator::{Children, GridPathCells};
+pub use iterator::{Children, Gosper, GridPathCells};

@@ -69,6 +69,14 @@ impl From<Edge> for u8 {
     }
 }
 
+impl From<Direction> for Edge {
+    fn from(value: Direction) -> Self {
+        // SAFETY: Edge are numbered from 1 to 6, according to which direction
+        // they face so every direction map to a valid edge.
+        Self::new_unchecked(value.into())
+    }
+}
+
 impl From<Edge> for u64 {
     fn from(value: Edge) -> Self {
         Self::from(value.0)

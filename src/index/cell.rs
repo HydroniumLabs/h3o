@@ -1,4 +1,4 @@
-use super::{Children, GridPathCells};
+use super::{Children, Gosper, GridPathCells};
 use crate::{
     BaseCell, Boundary, CCW, CW, DEFAULT_CELL_INDEX, DirectedEdgeIndex,
     Direction, EARTH_RADIUS_KM, Edge, ExtendedResolution, FaceSet, LatLng,
@@ -1621,6 +1621,19 @@ impl CellIndex {
     pub(crate) fn new_unchecked(value: u64) -> Self {
         debug_assert!(Self::try_from(value).is_ok(), "invalid cell index");
         Self(NonZeroU64::new(value).expect("valid cell index"))
+    }
+
+    /// Returns the edges making the outline of the cell at the given
+    /// resolution.
+    ///
+    /// If `resolution` is smaller than the cell resolution, an empty iterator
+    /// is returned.
+    #[expect(unused, reason = "need to be plugged into the solvent")]
+    pub(crate) fn outline(
+        self,
+        resolution: Resolution,
+    ) -> impl Iterator<Item = DirectedEdgeIndex> {
+        Gosper::new(self, resolution)
     }
 
     /// Get the number of CCW rotations of the cell's vertex numbers compared to
