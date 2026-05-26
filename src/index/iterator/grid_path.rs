@@ -3,7 +3,7 @@ use crate::{
     coord::{CoordCube, CoordIJK, LocalIJK},
     error::LocalIjError,
 };
-use core::cmp::max;
+use core::{cmp::max, iter::FusedIterator};
 
 /// Iterator over a children cell index at a given resolution.
 #[derive(Debug, Clone)]
@@ -92,3 +92,8 @@ impl Iterator for GridPathCells {
 }
 
 impl ExactSizeIterator for GridPathCells {}
+impl FusedIterator for GridPathCells {}
+
+#[cfg(test)]
+#[path = "./grid_path_tests.rs"]
+mod tests;

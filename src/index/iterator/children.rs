@@ -1,4 +1,5 @@
 use crate::{CellIndex, Direction, Resolution, index::bits};
+use core::iter::FusedIterator;
 
 /// Iterator over a children cell index at a given resolution.
 pub struct Children {
@@ -102,6 +103,7 @@ impl Iterator for Children {
 }
 
 impl ExactSizeIterator for Children {}
+impl FusedIterator for Children {}
 
 // -----------------------------------------------------------------------------
 
@@ -133,3 +135,7 @@ fn get_starting_state(index: CellIndex, resolution: Resolution) -> u64 {
 
     scratchpad
 }
+
+#[cfg(test)]
+#[path = "./children_tests.rs"]
+mod tests;
