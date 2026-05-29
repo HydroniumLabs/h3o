@@ -82,15 +82,9 @@ pub fn bench_solvent(c: &mut Criterion) {
         let hetero_checked = SolventBuilder::new()
             .enable_heterogeneous_support(resolution)
             .build();
-        let homo_unchecked =
-            SolventBuilder::new().disable_duplicate_detection().build();
-        let hetero_unchecked = SolventBuilder::new()
-            .disable_duplicate_detection()
-            .enable_heterogeneous_support(resolution)
-            .build();
 
         group.bench_with_input(
-            BenchmarkId::new("Homogeneous/Checked", res),
+            BenchmarkId::new("Homogeneous", res),
             &cells,
             |b, cells| {
                 b.iter(|| {
@@ -99,30 +93,11 @@ pub fn bench_solvent(c: &mut Criterion) {
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("Homogeneous/Unchecked", res),
-            &cells,
-            |b, cells| {
-                b.iter(|| {
-                    homo_unchecked.dissolve(black_box(cells.iter().copied()))
-                })
-            },
-        );
-        group.bench_with_input(
-            BenchmarkId::new("Heterogeneous/Checked", res),
+            BenchmarkId::new("Heterogeneous", res),
             &compacted,
             |b, compacted| {
                 b.iter(|| {
                     hetero_checked
-                        .dissolve(black_box(compacted.iter().copied()))
-                })
-            },
-        );
-        group.bench_with_input(
-            BenchmarkId::new("Heterogeneous/Unchecked", res),
-            &compacted,
-            |b, compacted| {
-                b.iter(|| {
-                    hetero_unchecked
                         .dissolve(black_box(compacted.iter().copied()))
                 })
             },

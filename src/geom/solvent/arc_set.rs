@@ -1,16 +1,15 @@
 use crate::{
-    CellIndex, DirectedEdgeIndex,
+    CellIndex, DirectedEdgeIndex, Resolution,
     error::DissolutionError,
     math::{Coord2d, linear_ring_area},
 };
 use ahash::{HashMap, HashMapExt as _, HashSet};
 use core::f64::consts::{FRAC_PI_2, PI};
-use either::Either;
 use geo::{Coord, LineString, MultiPolygon, Polygon, ToDegrees as _, polygon};
 use ordered_float::OrderedFloat;
 use std::cell::Cell;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ArcSet {
     arcs: Option<Vec<Arc>>,
     partitions: UnionFind,
@@ -18,59 +17,42 @@ pub struct ArcSet {
 
 impl ArcSet {
     /// Initializes a new `ArcSet` from a set of homogeneous cells.
-    ///
-    /// # Notes
-    ///
-    /// If `check_duplicate` is set to true, a duplicates detection is
-    /// performed, which implies an eager consumption of the iterator upfront,
-    /// incurring memory overhead and losing the lazyness of the iterator-based
-    /// approach.
     pub fn new(
         cells: impl IntoIterator<Item = CellIndex>,
-        check_duplicate: bool,
     ) -> Result<Self, DissolutionError> {
-        let mut cells = if check_duplicate {
-            let mut cells = cells.into_iter().collect::<Vec<_>>();
-
-            let old_len = cells.len();
-            cells.sort_unstable();
-            cells.dedup();
-            if cells.len() < old_len {
-                return Err(DissolutionError::DuplicateInput);
-            }
-
-            Either::Left(cells)
-        } else {
-            Either::Right(cells)
+        let cells = validate_homogeneous(cells)?;
+        if cells.is_empty() {
+            return Ok(Self::default());
         }
-        .into_iter();
 
-        // Infer the resolution from the first cell (since its homogeneous).
-        let first = cells.next();
-        let Some(resolution) = first.map(CellIndex::resolution) else {
-            return Ok(Self {
-                arcs: None,
-                partitions: UnionFind::default(),
-            });
-        };
-        let cells = first.into_iter().chain(cells);
-
-        let (lo, hi) = cells.size_hint();
-        // We have at least one cell, or we would have returned above.
-        let size_hint = std::cmp::max(1, hi.unwrap_or(lo));
-        let mut solvent = ArcSolvent::new(size_hint);
+        let mut solvent = ArcSolvent::new(cells.len(), 6);
         for cell in cells {
-            if cell.resolution() != resolution {
-                return Err(DissolutionError::UnsupportedResolution);
-            }
-            solvent.add_cell(cell);
+            let count = if cell.is_pentagon() { 5 } else { 6 };
+            solvent.add_edges(cell.edges(), count);
         }
 
-        solvent.finalize();
-        Ok(Self {
-            arcs: Some(solvent.arcs),
-            partitions: solvent.partitions,
-        })
+        Ok(solvent.into())
+    }
+
+    /// Initializes a new `ArcSet` from a set of heterogeneous cells.
+    pub fn new_heterogeneous(
+        cells: impl IntoIterator<Item = CellIndex>,
+        resolution: Resolution,
+    ) -> Result<Self, DissolutionError> {
+        let (cells, batch_size) = validate_heterogeneous(cells, resolution)?;
+        if cells.is_empty() {
+            return Ok(Self::default());
+        }
+
+        let mut solvent = ArcSolvent::new(cells.len(), batch_size);
+        for cell in cells {
+            let gosper = cell.outline(resolution);
+            let count = gosper.len();
+
+            solvent.add_edges(gosper, count);
+        }
+
+        Ok(solvent.into())
     }
 
     // Extract all linear ring and sort them by:
@@ -102,6 +84,17 @@ impl ArcSet {
     }
 }
 
+impl From<ArcSolvent> for ArcSet {
+    fn from(mut value: ArcSolvent) -> Self {
+        value.finalize();
+
+        Self {
+            arcs: Some(value.arcs),
+            partitions: value.partitions,
+        }
+    }
+}
+
 impl From<ArcSet> for MultiPolygon {
     fn from(mut value: ArcSet) -> Self {
         let Some(rings) = value.build_rings() else {
@@ -109,6 +102,71 @@ impl From<ArcSet> for MultiPolygon {
         };
         build_multipolygon(rings)
     }
+}
+
+// Check for duplicate and heterogeneous cell resolution.
+fn validate_homogeneous(
+    cells: impl IntoIterator<Item = CellIndex>,
+) -> Result<Vec<CellIndex>, DissolutionError> {
+    let mut cells = cells.into_iter().collect::<Vec<_>>();
+
+    let old_len = cells.len();
+    cells.sort_unstable();
+    cells.dedup();
+    if cells.len() < old_len {
+        return Err(DissolutionError::DuplicateInput);
+    }
+
+    // Infer the resolution from the first cell (since its homogeneous).
+    let Some(resolution) = cells.first().copied().map(CellIndex::resolution)
+    else {
+        return Ok(Vec::new());
+    };
+
+    if cells.iter().any(|cell| cell.resolution() != resolution) {
+        return Err(DissolutionError::UnsupportedResolution);
+    }
+
+    Ok(cells)
+}
+
+// Check for duplicate (including ancestors) and unsupported cell resolution.
+fn validate_heterogeneous(
+    cells: impl IntoIterator<Item = CellIndex>,
+    resolution: Resolution,
+) -> Result<(Vec<CellIndex>, usize), DissolutionError> {
+    let cells = cells.into_iter().collect::<Vec<_>>();
+    let all = cells.iter().copied().collect::<HashSet<_>>();
+    if all.len() != cells.len() {
+        return Err(DissolutionError::DuplicateInput);
+    }
+
+    let mut max_batch_size = 6;
+    for &cell in &all {
+        if cell.resolution() > resolution {
+            return Err(DissolutionError::UnsupportedResolution);
+        }
+
+        for res in Resolution::range(Resolution::Zero, cell.resolution())
+            .rev()
+            .skip(1)
+        {
+            let ancestor =
+                cell.parent(res).expect("loop range makes it infaillible");
+            if all.contains(&ancestor) {
+                return Err(DissolutionError::DuplicateInput);
+            }
+        }
+
+        let nb_sides = 6 - usize::from(cell.is_pentagon());
+        let delta = u8::from(resolution) - u8::from(cell.resolution());
+        let batch_size = nb_sides * 3_usize.pow(delta.into());
+        if batch_size > max_batch_size {
+            max_batch_size = batch_size;
+        }
+    }
+
+    Ok((cells, max_batch_size))
 }
 
 // -----------------------------------------------------------------------------
@@ -154,23 +212,38 @@ struct ArcSolvent {
 }
 
 impl ArcSolvent {
-    fn new(size_hint: usize) -> Self {
-        let factor = size_hint.checked_next_power_of_two().unwrap_or(4096);
-        let arcs = (factor * 2).clamp(32, 4096);
-        let freelist = std::cmp::min(factor / 2, 128);
+    fn new(cell_count: usize, max_batch_size: usize) -> Self {
+        // If max_batch_size is 6 it means we're processing homogeneous input.
+        if max_batch_size == 6 {
+            let factor = cell_count.checked_next_power_of_two().unwrap_or(4096);
+            let arcs = (factor * 2).clamp(32, 4096);
 
-        Self {
-            arcs: Vec::with_capacity(arcs),
-            index: HashMap::with_capacity(arcs),
-            freelist: Vec::with_capacity(freelist),
-            slots: Vec::with_capacity(6),
-            partitions: UnionFind::default(),
+            Self {
+                arcs: Vec::with_capacity(arcs),
+                index: HashMap::with_capacity(arcs),
+                freelist: Vec::with_capacity(128),
+                slots: Vec::with_capacity(6),
+                partitions: UnionFind::new(cell_count),
+            }
+        } else {
+            // Empirical factor derived from experimentations.
+            // Not set in stone.
+            Self {
+                arcs: Vec::with_capacity(cell_count * 3),
+                index: HashMap::with_capacity(cell_count * 6),
+                freelist: Vec::with_capacity(max_batch_size * 2),
+                slots: Vec::with_capacity(max_batch_size),
+                partitions: UnionFind::new(cell_count),
+            }
         }
     }
 
-    fn add_cell(&mut self, cell: CellIndex) {
+    fn add_edges(
+        &mut self,
+        edges: impl IntoIterator<Item = DirectedEdgeIndex>,
+        nb_slots: usize,
+    ) {
         // Pre-compute slots so that we can set {prev,next}_idx ahead of time.
-        let nb_slots = if cell.is_pentagon() { 5 } else { 6 };
         let to_reuse = std::cmp::min(nb_slots, self.freelist.len());
         let leftover = self.freelist.len() - to_reuse;
         let to_alloc = nb_slots - to_reuse;
@@ -183,7 +256,7 @@ impl ArcSolvent {
         let polygon_id = self.partitions.add();
         let len = self.slots.len();
         for ((idx, slot), edge) in
-            self.slots.iter().copied().enumerate().zip(cell.edges())
+            self.slots.iter().copied().enumerate().zip(edges)
         {
             let prev = if idx == 0 { len - 1 } else { idx - 1 };
             let next = if idx == len - 1 { 0 } else { idx + 1 };
@@ -265,6 +338,13 @@ struct UnionFind {
 }
 
 impl UnionFind {
+    fn new(capacity: usize) -> Self {
+        Self {
+            parent: Vec::with_capacity(capacity),
+            rank: Vec::with_capacity(capacity),
+        }
+    }
+
     fn add(&mut self) -> usize {
         let id = self.parent.len();
         self.parent.push(id);

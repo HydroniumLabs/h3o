@@ -14,6 +14,18 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- `h3o::geom::Solvent` uses a new algorithm for heterogeneous input (up to 133x
+  less RAM and 82x faster compared to the homogeneous version, 55x less RAM and
+  50x faster compared to the previous heterogeneous implementation)
+
+### Removed
+
+- Remove `SolventBuilder::disable_duplicate_detection`: the new dup detection
+  implementation more efficient, the CPU/memory overhead is minimal and no
+  longer significant enough to justify an "unsafe" API.
+
 ## [0.10.0] - 2026-05-24
 
 ### Added

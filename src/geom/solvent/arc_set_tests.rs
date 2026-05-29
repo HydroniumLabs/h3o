@@ -343,7 +343,7 @@ fn duplicate_cells() {
         CellIndex::try_from(0x81efbffffffffff).unwrap(),
         CellIndex::try_from(0x81efbffffffffff).unwrap(),
     ];
-    let result = ArcSet::new(cells, true).unwrap_err();
+    let result = ArcSet::new(cells).unwrap_err();
     assert_eq!(result, DissolutionError::DuplicateInput);
 }
 
@@ -353,7 +353,7 @@ fn heterogenous_resolution() {
         CellIndex::try_from(0x8027fffffffffff).unwrap(),
         CellIndex::try_from(0x81efbffffffffff).unwrap(),
     ];
-    let result = ArcSet::new(cells, true).unwrap_err();
+    let result = ArcSet::new(cells).unwrap_err();
     assert_eq!(result, DissolutionError::UnsupportedResolution);
 }
 
@@ -401,7 +401,7 @@ fn dissolve(cells: Vec<CellIndex>) -> MultiPolygon {
         })
         .into();
 
-    let mut mpoly = MultiPolygon::from(ArcSet::new(cells, true).unwrap());
+    let mut mpoly = MultiPolygon::from(ArcSet::new(cells).unwrap());
     mpoly.to_radians_in_place();
 
     let area = multipolygon_area(&mpoly);

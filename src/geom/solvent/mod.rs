@@ -1,17 +1,12 @@
 mod arc_set;
-mod ring_hierarchy;
-mod vertex_graph;
 
 use arc_set::ArcSet;
-use ring_hierarchy::RingHierarchy;
-use vertex_graph::VertexGraph;
 
 /// A solvent that dissolves a set of H3 cell indexes into a `MultiPolygon`
 /// representing the outlines of the set.
 #[derive(Debug, Clone, Copy)]
 pub struct Solvent {
     input_mode: InputMode,
-    check_duplicate: bool,
 }
 
 impl Solvent {
@@ -39,16 +34,9 @@ impl Solvent {
         cells: impl IntoIterator<Item = crate::CellIndex>,
     ) -> Result<geo::MultiPolygon, crate::error::DissolutionError> {
         Ok(match self.input_mode {
-            InputMode::Homogeneous => {
-                ArcSet::new(cells, self.check_duplicate)?.into()
-            }
+            InputMode::Homogeneous => ArcSet::new(cells)?.into(),
             InputMode::Heterogeneous(resolution) => {
-                VertexGraph::from_heterogeneous(
-                    cells,
-                    resolution,
-                    self.check_duplicate,
-                )?
-                .into()
+                ArcSet::new_heterogeneous(cells, resolution)?.into()
             }
         })
     }
@@ -60,7 +48,6 @@ impl Solvent {
 #[derive(Debug, Clone, Copy)]
 pub struct SolventBuilder {
     input_mode: InputMode,
-    check_duplicate: bool,
 }
 
 impl Default for SolventBuilder {
@@ -75,26 +62,7 @@ impl SolventBuilder {
     pub const fn new() -> Self {
         Self {
             input_mode: InputMode::Homogeneous,
-            check_duplicate: true,
         }
-    }
-
-    /// Disable duplicate detection.
-    ///
-    /// If the input set contains duplicate cells, the resulting geometry will
-    /// be incorrect.
-    ///
-    /// By default the solvent will ensure that the input set doesn't contains
-    /// any duplicate but this may be costly (especially for heterogeneous
-    /// input) and implies a memory overhead.
-    ///
-    /// Thus, in case where unicity is already guaranteed (e.g. coming from a
-    /// hashset, already checked beforehand, ...) it is possible to disable this
-    /// check.
-    #[must_use]
-    pub const fn disable_duplicate_detection(mut self) -> Self {
-        self.check_duplicate = false;
-        self
     }
 
     /// Enable support for heterogeneous (e.g. compacted) cell set.
@@ -119,7 +87,6 @@ impl SolventBuilder {
     pub const fn build(self) -> Solvent {
         Solvent {
             input_mode: self.input_mode,
-            check_duplicate: self.check_duplicate,
         }
     }
 }
