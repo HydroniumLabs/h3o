@@ -827,7 +827,7 @@ fn shift_transmeridian_ring(ring: &mut LineString) {
 /// Unshift the coordinates of a shifted ring.
 fn unshift_transmeridian_ring(ring: &mut LineString) {
     for coord in ring.coords_mut() {
-        coord.x -= f64::from(coord.x >= PI) * TWO_PI;
+        coord.x = mul_add(f64::from(coord.x >= PI), -TWO_PI, coord.x);
     }
 }
 
