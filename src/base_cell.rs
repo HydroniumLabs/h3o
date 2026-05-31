@@ -8,8 +8,9 @@ use core::fmt;
 /// Maximum value for a base cell.
 pub const MAX: u8 = 121;
 
-// Bitmap where a bit's position represents a base cell value.
-const BASE_PENTAGONS: u128 = 0x0020_0802_0008_0100_8402_0040_0100_4010;
+// Split into two u64 so each half loads concurrently.
+const BASE_PENTAGONS_LO: u64 = 0x8402_0040_0100_4010; // cells 0-63
+const BASE_PENTAGONS_HI: u64 = 0x0020_0802_0008_0100; // cells 64-127
 
 // -----------------------------------------------------------------------------
 
@@ -43,7 +44,11 @@ impl BaseCell {
     /// ```
     #[must_use]
     pub const fn is_pentagon(self) -> bool {
-        BASE_PENTAGONS & (1 << self.0) != 0
+        if self.0 < 64 {
+            BASE_PENTAGONS_LO & (1 << self.0) != 0
+        } else {
+            BASE_PENTAGONS_HI & (1 << (self.0 - 64)) != 0
+        }
     }
 
     /// Returns the total number of base cells.
@@ -109,7 +114,9 @@ impl BaseCell {
         debug_assert!(self.is_pentagon(), "not a pentagon");
 
         let mask = (1_u128 << self.0) - 1;
-        let index = (BASE_PENTAGONS & mask).count_ones();
+        let base_pentagons =
+            BASE_PENTAGONS_LO as u128 | ((BASE_PENTAGONS_HI as u128) << 64);
+        let index = (base_pentagons & mask).count_ones();
         PENTAGON_DIRECTION_FACES[index as usize]
     }
 
