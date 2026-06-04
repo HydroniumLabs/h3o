@@ -68,6 +68,13 @@ fn finer_resolution() {
 }
 
 #[test]
+fn child_smaller_than_parent() {
+    let cell = CellIndex::try_from(0x820887fffffffff).unwrap();
+
+    assert!(Gosper::new(cell, Resolution::One).next().is_none());
+}
+
+#[test]
 fn hexagon_2_to_2() {
     let cell = CellIndex::try_from(0x820887fffffffff).unwrap();
     let expected = [
