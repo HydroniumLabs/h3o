@@ -14,6 +14,11 @@ pub fn cos(x: f64) -> f64 {
 }
 
 #[inline]
+pub fn sin_cos(x: f64) -> (f64, f64) {
+    x.sin_cos()
+}
+
+#[inline]
 pub fn tan(x: f64) -> f64 {
     x.tan()
 }

@@ -1,4 +1,4 @@
-use super::{FloatAdder, atan2, cos, mul_add, sin};
+use super::{FloatAdder, atan2, mul_add, sin_cos};
 use core::f64::consts::PI;
 
 // Not using `geo_traits::CoordTrait` because I want to avoid depending on geo
@@ -34,11 +34,37 @@ pub fn linear_ring_area<CoordType>(ring: &[CoordType]) -> f64
 where
     CoordType: Coord2d + Copy,
 {
-    let mut adder = FloatAdder::default();
-
-    for (a, b) in ring.iter().zip(ring.iter().cycle().skip(1)) {
-        adder += cagnoli(a.xy(), b.xy());
+    if ring.is_empty() {
+        return 0.;
     }
+
+    // Compute sincos for the first vertex.
+    //
+    // Used as the "a" side of the first edge/the "b" side of the last edge.
+    let (fst_x, fst_y) = ring[0].xy();
+    let fst_lat = mul_add(fst_y, 0.5, PI * 0.25);
+    let sincos_fst = sin_cos(fst_lat);
+
+    // Interior edges: (0,1), (1,2), …, (n-2, n-1).
+    //
+    // Each sincos is computed only once: the "b" side is forwarded to the next
+    // iteration to be reused for the "a" side.
+    let mut adder = FloatAdder::default();
+    let mut sincos_a = sincos_fst;
+    let mut a_x = fst_x;
+    for b in &ring[1..] {
+        let (b_x, b_y) = b.xy();
+        let b_lat = mul_add(b_y, 0.5, PI * 0.25);
+        let sincos_b = sin_cos(b_lat);
+
+        adder += cagnoli(sincos_a, sincos_b, b_x - a_x);
+
+        sincos_a = sincos_b;
+        a_x = b_x;
+    }
+
+    // For the closing edge (n-1, 0), reuse the first vertex sincos.
+    adder += cagnoli(sincos_a, sincos_fst, fst_x - a_x);
 
     // The Cagnoli sum above yields a signed area, with the sign switching
     // with the orientation of the vertices.
@@ -53,19 +79,18 @@ where
 
 /// Computes the Cagnoli contribution for an arc from `a` to `b`.
 ///
-/// This function is inspired from following
-/// [d3-geo](https://github.com/d3/d3-geo/blob/8c53a90ae70c94bace73ecb02f2c792c649c86ba/src/area.js#L51-L70)
-fn cagnoli((a_x, a_y): (f64, f64), (b_x, b_y): (f64, f64)) -> f64 {
-    let a_lat = mul_add(a_y, 0.5, PI * 0.25);
-    let b_lat = mul_add(b_y, 0.5, PI * 0.25);
-    let sin_a = sin(a_lat) * sin(b_lat);
-    let cos_a = cos(a_lat) * cos(b_lat);
+/// Uses pre-computed sincos(latitude) and longitude delta.
+#[inline]
+fn cagnoli(
+    (sin_lat_a, cos_lat_a): (f64, f64),
+    (sin_lat_b, cos_lat_b): (f64, f64),
+    delta: f64,
+) -> f64 {
+    let sin_a = sin_lat_a * sin_lat_b;
+    let cos_a = cos_lat_a * cos_lat_b;
+    let (sin_d, cos_d) = sin_cos(delta);
 
-    let delta = b_x - a_x;
-    let sin_d = sin(delta);
-    let cos_d = cos(delta);
-
-    -2. * atan2(sin_a * sin_d, sin_a * cos_d + cos_a)
+    -2. * atan2(sin_a * sin_d, mul_add(sin_a, cos_d, cos_a))
 }
 
 #[cfg(test)]
