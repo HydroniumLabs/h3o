@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     CellIndex, Face, LatLng, Resolution, face,
-    math::{atan2, cos, mul_add, sin, sqrt},
+    math::{atan2, mul_add, sin_cos, sqrt},
     resolution::ExtendedResolution,
 };
 
@@ -100,7 +100,8 @@ impl Vec3d {
 
         // Now find the point at `(r,theta)` from the face center
         let (north, east) = center.tangent_basis();
-        let dir = linear_combination(cos(theta), &north, sin(theta), &east);
+        let (sin_t, cos_t) = sin_cos(theta);
+        let dir = linear_combination(cos_t, &north, sin_t, &east);
         let mut res = linear_combination(cos_r, &center, sin_r, &dir);
         res.normalize();
 
@@ -236,12 +237,13 @@ impl Vec3d {
 impl From<LatLng> for Vec3d {
     #[inline]
     fn from(value: LatLng) -> Self {
-        let r = cos(value.lat_radians());
+        let (sin_lat, cos_lat) = sin_cos(value.lat_radians());
+        let (sin_lng, cos_lng) = sin_cos(value.lng_radians());
 
         Self {
-            x: cos(value.lng_radians()) * r,
-            y: sin(value.lng_radians()) * r,
-            z: sin(value.lat_radians()),
+            x: cos_lng * cos_lat,
+            y: sin_lng * cos_lat,
+            z: sin_lat,
         }
     }
 }

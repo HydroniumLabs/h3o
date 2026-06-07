@@ -15,7 +15,7 @@ use super::{
 };
 use crate::{
     Face, Resolution, face,
-    math::{abs, acos, cos, mul_add, sin, sqrt, tan},
+    math::{abs, acos, mul_add, sin_cos, sqrt, tan},
 };
 use float_eq::float_eq;
 
@@ -99,7 +99,8 @@ impl Vec2d {
         };
 
         // Convert to local x, y.
-        Self::new(r * cos(theta), r * sin(theta))
+        let (sin_t, cos_t) = sin_cos(theta);
+        Self::new(r * cos_t, r * sin_t)
     }
 
     /// Calculates the magnitude.
