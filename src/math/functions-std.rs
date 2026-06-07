@@ -39,11 +39,6 @@ pub fn atan2(y: f64, x: f64) -> f64 {
 }
 
 #[inline]
-pub fn hypot(x: f64, y: f64) -> f64 {
-    x.hypot(y)
-}
-
-#[inline]
 pub fn sqrt(x: f64) -> f64 {
     x.sqrt()
 }

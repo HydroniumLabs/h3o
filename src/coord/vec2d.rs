@@ -15,7 +15,7 @@ use super::{
 };
 use crate::{
     Face, Resolution, face,
-    math::{abs, acos, cos, hypot, mul_add, sin, tan},
+    math::{abs, acos, cos, mul_add, sin, sqrt, tan},
 };
 use float_eq::float_eq;
 
@@ -104,7 +104,7 @@ impl Vec2d {
 
     /// Calculates the magnitude.
     pub fn magnitude(self) -> f64 {
-        hypot(self.x, self.y)
+        sqrt(mul_add(self.x, self.x, self.y * self.y))
     }
 
     /// Finds the intersection between two lines.
