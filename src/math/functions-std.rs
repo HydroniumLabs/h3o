@@ -29,11 +29,6 @@ pub fn acos(x: f64) -> f64 {
 }
 
 #[inline]
-pub fn atan(x: f64) -> f64 {
-    x.atan()
-}
-
-#[inline]
 pub fn atan2(y: f64, x: f64) -> f64 {
     y.atan2(x)
 }
