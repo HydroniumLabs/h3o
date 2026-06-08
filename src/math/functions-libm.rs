@@ -50,5 +50,5 @@ pub fn round(x: f64) -> f64 {
 
 #[inline]
 pub fn mul_add(a: f64, b: f64, c: f64) -> f64 {
-    (a * b) + c
+    libm::fma(a, b, c)
 }
