@@ -84,7 +84,7 @@ impl Iterator for Children {
                 }
 
                 // If we have exhausted this resolution, move to the lower one.
-                if Direction::try_from(direction).is_err() {
+                if direction > crate::direction::MAX {
                     self.scratchpad =
                         bits::clr_direction(self.scratchpad, resolution);
                     continue;

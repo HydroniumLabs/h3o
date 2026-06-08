@@ -1503,7 +1503,7 @@ impl CellIndex {
         const IJ_MASK: u64 = 0o666666666666666;
 
         let resolution = self.resolution();
-        let res_offset = self.resolution().direction_offset();
+        let res_offset = resolution.direction_offset();
         // Shift to get rid of unused directions.
         let mut bits = u64::from(self) >> res_offset;
 
@@ -1553,7 +1553,7 @@ impl CellIndex {
     /// ```
     pub fn pred(self) -> Option<Self> {
         let resolution = self.resolution();
-        let res_offset = self.resolution().direction_offset();
+        let res_offset = resolution.direction_offset();
         // Shift to get rid of unused directions.
         let mut bits = u64::from(self) >> res_offset;
 

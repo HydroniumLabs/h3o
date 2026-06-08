@@ -5,7 +5,7 @@ use crate::{
 use core::{fmt, num::NonZeroU8};
 
 /// Maximum value for a direction.
-const MAX: u8 = 6;
+pub const MAX: u8 = 6;
 
 /// Hexagon direction to vertex relationships (same face).
 const TO_VERTEX_HEXAGON: [Vertex; NUM_HEX_VERTS as usize] = [

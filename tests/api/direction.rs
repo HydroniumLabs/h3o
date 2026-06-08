@@ -2,9 +2,9 @@ use h3o::Direction;
 
 #[test]
 fn try_from_u8() {
-    assert!(Direction::try_from(0).is_ok(), "lower bound");
-    assert!(Direction::try_from(3).is_ok(), "valid value");
-    assert!(Direction::try_from(6).is_ok(), "upper bound");
+    for i in 0..=6 {
+        assert!(Direction::try_from(i).is_ok(), "valid value");
+    }
 
     assert!(Direction::try_from(7).is_err(), "out of range");
 }
