@@ -14,6 +14,11 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- `Tiler::into_coverage` and `Tiler::into_annotated_coverage` no longer panic on
+  an empty tiler when the containment mode is `Covers`
+
 ### Changed
 
 - `h3o::geom::Solvent` uses a new algorithm for heterogeneous input (up to 133x

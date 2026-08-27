@@ -7,6 +7,45 @@ use h3o::{
 use std::{collections::BTreeSet, f64::consts::PI};
 
 #[test]
+fn coverage_of_an_empty_tiler() {
+    // Covers used to panic here while the other modes returned nothing.
+    for mode in [
+        ContainmentMode::ContainsCentroid,
+        ContainmentMode::ContainsBoundary,
+        ContainmentMode::IntersectsBoundary,
+        ContainmentMode::Covers,
+    ] {
+        let tiler = TilerBuilder::new(Resolution::Six)
+            .containment_mode(mode)
+            .build();
+
+        assert_eq!(tiler.into_coverage().count(), 0, "{mode:?}");
+    }
+}
+
+#[test]
+fn coverage_when_add_kept_nothing() {
+    // The polygon spans the antimeridian and is clipped away, so `add`
+    // succeeds but leaves the tiler empty.
+    let polygon = Polygon::new(
+        LineString::from(vec![
+            (-180.0, 0.0),
+            (180.0, 0.0),
+            (180.0, 1.0),
+            (-180.0, 0.0),
+        ]),
+        vec![],
+    );
+    let mut tiler = TilerBuilder::new(Resolution::Six)
+        .containment_mode(ContainmentMode::Covers)
+        .build();
+    tiler.add(polygon).expect("add");
+
+    assert_eq!(tiler.coverage_size_hint(), 0);
+    assert_eq!(tiler.into_coverage().count(), 0);
+}
+
+#[test]
 fn add_rads() {
     let mut tiler = TilerBuilder::new(Resolution::Two)
         .disable_radians_conversion()
