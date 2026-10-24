@@ -24,6 +24,92 @@ const RSIN60: f64 = 1.1547005383792515;
 
 // -----------------------------------------------------------------------------
 
+/// Resolution-independent part of the gnomonic projection of an n-vector onto
+/// a face.
+///
+/// Encoding at a given resolution only scales the radius and selects the Class
+/// II or Class III axes, so the trigonometry can be shared between
+/// resolutions.
+#[derive(Debug, Clone, Copy)]
+pub struct FaceProjection {
+    /// Gnomonic radius scaled to resolution 0 unit length, and the
+    /// counter-clockwise angle from the Class II i-axis; `None` at the face
+    /// center.
+    polar: Option<(f64, f64)>,
+}
+
+impl FaceProjection {
+    /// Projects n-vector onto the given face.
+    ///
+    /// # Preconditions
+    ///
+    /// `value` is expected to be on the unit sphere.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The n-vector to encode.
+    /// * `face` -  The icosahedral face of the coordinate.
+    /// * `distance` - The squared euclidean distance from the face center.
+    pub fn new(value: Vec3d, face: Face, distance: f64) -> Self {
+        float_eq::debug_assert_float_eq!(value.norm(), 1., abs <= f64::EPSILON);
+
+        let face = usize::from(face);
+
+        // cos(r) = 1 - 2 * sin^2(r/2) = 1 - 2 * (sqd / 4) = 1 - sqd/2
+        let r = acos(mul_add(distance, -0.5, 1.));
+
+        if r < EPSILON {
+            return Self { polar: None };
+        }
+
+        // Perform gnomonic scaling of `r` (`tan(r)`) and scale for resolution
+        // 0 length `u`.
+        let r0 = tan(r) * INV_RES0_U_GNOMONIC;
+
+        // Compute counter-clockwise `theta` from Class II i-axis.
+        let theta = face::AXES_AZ_RADS_CII[face]
+            - face::CENTER_POINT[face].azimuth(&value);
+
+        Self {
+            polar: Some((r0, theta)),
+        }
+    }
+
+    /// Returns the 2D hex coordinates at the given resolution.
+    pub fn to_vec2d(self, resolution: Resolution) -> Vec2d {
+        self.to_vec2d_with(resolution, sin_cos)
+    }
+
+    /// Returns the 2D hex coordinates at the given resolution, using
+    /// `sin_cos` to evaluate the resolution's projection angle (which only
+    /// depends on the resolution class).
+    pub fn to_vec2d_with(
+        self,
+        resolution: Resolution,
+        sin_cos: impl FnOnce(f64) -> (f64, f64),
+    ) -> Vec2d {
+        let Some((r0, theta)) = self.polar else {
+            return Vec2d::new(0., 0.);
+        };
+
+        // Scale for current resolution length `u`.
+        let r = r0 * SQRT7_POWERS[usize::from(resolution)];
+
+        // Adjust `theta` for Class III.
+        let theta = if resolution.is_class3() {
+            theta - AP7_ROT_RADS
+        } else {
+            theta
+        };
+
+        // Convert to local x, y.
+        let (sin_t, cos_t) = sin_cos(theta);
+        Vec2d::new(r * cos_t, r * sin_t)
+    }
+}
+
+// -----------------------------------------------------------------------------
+
 /// 2D floating-point vector.
 #[derive(Debug, Clone, Copy)]
 pub struct Vec2d {
@@ -68,39 +154,7 @@ impl Vec2d {
         face: Face,
         distance: f64,
     ) -> Self {
-        float_eq::debug_assert_float_eq!(value.norm(), 1., abs <= f64::EPSILON);
-
-        let face = usize::from(face);
-
-        let r = {
-            // cos(r) = 1 - 2 * sin^2(r/2) = 1 - 2 * (sqd / 4) = 1 - sqd/2
-            let r = acos(mul_add(distance, -0.5, 1.));
-
-            if r < EPSILON {
-                return Self::new(0., 0.);
-            }
-
-            // Perform gnomonic scaling of `r` (`tan(r)`) and scale for current
-            // resolution length `u`.
-            (tan(r) * INV_RES0_U_GNOMONIC)
-                * SQRT7_POWERS[usize::from(resolution)]
-        };
-
-        let theta = {
-            // Compute counter-clockwise `theta` from Class II i-axis.
-            let mut theta = face::AXES_AZ_RADS_CII[face]
-                - face::CENTER_POINT[face].azimuth(&value);
-
-            // Adjust `theta` for Class III.
-            if resolution.is_class3() {
-                theta -= AP7_ROT_RADS;
-            }
-            theta
-        };
-
-        // Convert to local x, y.
-        let (sin_t, cos_t) = sin_cos(theta);
-        Self::new(r * cos_t, r * sin_t)
+        FaceProjection::new(value, face, distance).to_vec2d(resolution)
     }
 
     /// Calculates the magnitude.

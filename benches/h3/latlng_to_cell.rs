@@ -1,5 +1,5 @@
 use criterion::{Bencher, BenchmarkId, Criterion};
-use h3o::{LatLng, Resolution};
+use h3o::{LatLng, LatLngIndexer, Resolution};
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
@@ -34,6 +34,45 @@ pub fn bench(c: &mut Criterion) {
     }
 
     group.finish();
+
+    // Several resolutions per point: repeated `to_cell` vs a fresh indexer,
+    // which only shares work between resolutions.
+    let mut group = c.benchmark_group("latLngToCells");
+    let ll = LatLng::new(48.85458622023985, 2.373012457671282).expect("hex");
+    for resolutions in [&[9][..], &[6, 8, 10], &[3, 5, 7, 9, 11, 13, 15]] {
+        let resolutions = resolutions
+            .iter()
+            .map(|&res| Resolution::try_from(res).expect("resolution"))
+            .collect::<Vec<_>>();
+        let id = resolutions.len();
+        group.bench_with_input(
+            BenchmarkId::new("h3o/to_cell", id),
+            &resolutions,
+            |b, resolutions| {
+                b.iter(|| {
+                    let ll = black_box(ll);
+                    for &res in resolutions {
+                        black_box(ll.to_cell(res));
+                    }
+                });
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("h3o/LatLngIndexer", id),
+            &resolutions,
+            |b, resolutions| {
+                b.iter(|| {
+                    let mut indexer = LatLngIndexer::new();
+                    for cell in indexer
+                        .to_cells(black_box(ll), resolutions.iter().copied())
+                    {
+                        black_box(cell);
+                    }
+                });
+            },
+        );
+    }
+    group.finish();
 }
 
 // -----------------------------------------------------------------------------
@@ -56,4 +95,52 @@ fn bench_h3(b: &mut Bencher<'_>, ll: LatLng, resolution: u8) {
             &mut out,
         )
     })
+}
+
+pub fn bench_scanline(c: &mut Criterion) {
+    // One 30 m raster scanline of 1000 points, indexed with one indexer.
+    let row = (0..1000)
+        .map(|col| {
+            LatLng::new(39.7, -105.0 + f64::from(col) * 3.5e-4).expect("ll")
+        })
+        .collect::<Vec<_>>();
+    let mut group = c.benchmark_group("latLngScanline");
+    for resolutions in [&[9][..], &[6, 8, 10]] {
+        let resolutions = resolutions
+            .iter()
+            .map(|&res| Resolution::try_from(res).expect("resolution"))
+            .collect::<Vec<_>>();
+        let id = format!("{resolutions:?}");
+        group.bench_with_input(
+            BenchmarkId::new("h3o/to_cell", &id),
+            &resolutions,
+            |b, resolutions| {
+                b.iter(|| {
+                    for &ll in &row {
+                        for &res in resolutions {
+                            black_box(black_box(ll).to_cell(res));
+                        }
+                    }
+                });
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("h3o/LatLngIndexer", &id),
+            &resolutions,
+            |b, resolutions| {
+                b.iter(|| {
+                    let mut indexer = LatLngIndexer::new();
+                    for &ll in &row {
+                        for cell in indexer.to_cells(
+                            black_box(ll),
+                            resolutions.iter().copied(),
+                        ) {
+                            black_box(cell);
+                        }
+                    }
+                });
+            },
+        );
+    }
+    group.finish();
 }
