@@ -131,6 +131,7 @@ criterion_group!(
     is_valid_directed_edge::bench,
     is_valid_vertex::bench,
     latlng_to_cell::bench,
+    latlng_to_cell::bench_scanline,
     local_ij_to_cell::bench,
     max_face_count::bench,
     max_grid_disk_size::bench,

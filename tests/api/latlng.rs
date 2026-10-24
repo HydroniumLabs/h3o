@@ -1,5 +1,5 @@
 use float_eq::assert_float_eq;
-use h3o::{CellIndex, LatLng, Resolution};
+use h3o::{CellIndex, LatLng, LatLngIndexer, Resolution};
 use std::f64::consts::{FRAC_PI_2, PI};
 
 const EPSILON: f64 = 1e-9 * PI / 180.0;
@@ -155,4 +155,119 @@ fn geo_traits_support_panic_on_invalid_access() {
 
     let ll = LatLng::from_coord(&(-45., 10.)).unwrap();
     ll.nth_or_panic(42);
+}
+
+#[test]
+fn indexer_to_cells_matches_to_cell() {
+    // Icosahedron face centers (projection origin), pentagon centers, poles
+    // and the antimeridian, followed by a deterministic scatter.
+    let mut points = vec![
+        LatLng::from_radians(0.803_582_649_718_99, 1.248_397_419_617_396_1),
+        LatLng::from_radians(-0.803_582_649_718_99, -1.893_195_233_972_397),
+        LatLng::from_radians(FRAC_PI_2, 0.),
+        LatLng::from_radians(-FRAC_PI_2, 0.),
+        LatLng::new(0., 180.),
+        LatLng::new(0., -180.),
+    ];
+    points.extend(
+        CellIndex::base_cells()
+            .filter(|cell| cell.is_pentagon())
+            .map(|cell| Ok(LatLng::from(cell))),
+    );
+    let mut state = 0x9e37_79b9_7f4a_7c15_u64;
+    let mut next = || {
+        state = state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        (state >> 11) as f64 / (1_u64 << 53) as f64
+    };
+    for _ in 0..20_000 {
+        let lat = (2.0 * next() - 1.0).asin().to_degrees();
+        let lng = 360.0 * next() - 180.0;
+        points.push(LatLng::new(lat, lng));
+    }
+
+    let ascending = Resolution::range(Resolution::Zero, Resolution::Fifteen)
+        .collect::<Vec<_>>();
+    let mixed = [
+        Resolution::Ten,
+        Resolution::Three,
+        Resolution::Ten,
+        Resolution::Nine,
+        Resolution::Zero,
+        Resolution::Fifteen,
+    ];
+    for ll in points {
+        let ll = ll.expect("valid coordinate");
+        for resolutions in [&ascending[..], &mixed[..], &[]] {
+            let expected = resolutions
+                .iter()
+                .map(|&res| ll.to_cell(res))
+                .collect::<Vec<_>>();
+            // A fresh indexer only shares work between resolutions.
+            let result = LatLngIndexer::new()
+                .to_cells(ll, resolutions.iter().copied())
+                .collect::<Vec<_>>();
+            assert_eq!(result, expected, "{ll}");
+        }
+    }
+}
+
+#[test]
+fn indexer_scanline_matches_to_cell() {
+    // Scanlines of ~30 m steps crossing many cells, with jumps between rows
+    // (including across faces, near a pentagon and over the antimeridian).
+    let origins = [
+        (39.7, -105.0),
+        (64.7, 10.536),
+        (0.0, 179.9),
+        (-45.0, 0.0),
+        (89.99, 30.0),
+        (46.0425, 71.52),
+    ];
+    let resolutions = [
+        Resolution::Six,
+        Resolution::Nine,
+        Resolution::Ten,
+        Resolution::Fifteen,
+    ];
+    let mut indexer = LatLngIndexer::new();
+    // Per resolution: consecutive locations in the same / a different cell.
+    let mut same = [0; 4];
+    let mut changed = [0; 4];
+    for (row, &(lat0, lng0)) in origins.iter().cycle().take(24).enumerate() {
+        let lat = lat0 + row as f64 * 2.7e-4;
+        let mut previous = None;
+        for col in 0..3000 {
+            let ll = LatLng::new(lat, lng0 + f64::from(col) * 3.5e-4)
+                .expect("valid coordinate");
+            let expected = resolutions
+                .iter()
+                .map(|&res| ll.to_cell(res))
+                .collect::<Vec<_>>();
+            let result = if col % 2 == 0 {
+                indexer.to_cells(ll, resolutions).collect::<Vec<_>>()
+            } else {
+                resolutions
+                    .iter()
+                    .map(|&res| indexer.to_cell(ll, res))
+                    .collect()
+            };
+            assert_eq!(result, expected, "{ll}");
+            if let Some(previous) = &previous {
+                for (i, (cell, last)) in
+                    expected.iter().zip(previous).enumerate()
+                {
+                    if cell == last {
+                        same[i] += 1;
+                    } else {
+                        changed[i] += 1;
+                    }
+                }
+            }
+            previous = Some(expected);
+        }
+    }
+    // Make sure both the remembered and the encoding paths ran.
+    assert!(same.iter().chain(&changed).all(|&count| count > 0));
 }
