@@ -126,7 +126,6 @@ impl Resolution {
     /// assert_eq!(res, vec![Resolution::Two, Resolution::One, Resolution::Zero]);
     /// ```
     #[expect(unsafe_code, reason = "safe because of the iterator")]
-    #[must_use]
     pub fn range(
         start: Self,
         end: Self,

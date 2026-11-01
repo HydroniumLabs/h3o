@@ -826,7 +826,7 @@ pub fn ring_is_valid(ring: &LineString) -> Result<(), InvalidGeometry> {
 /// Shift the coordinates of a ring to the right of the 180th meridian.
 fn shift_transmeridian_ring(ring: &mut LineString) {
     for coord in ring.coords_mut() {
-        coord.x += f64::from(coord.x < 0.) * TWO_PI;
+        coord.x = f64::mul_add(f64::from(coord.x < 0.), TWO_PI, coord.x);
     }
 }
 

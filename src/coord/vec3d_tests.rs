@@ -44,7 +44,6 @@ fn distance() {
 }
 
 #[test]
-#[expect(clippy::float_cmp, reason = "we want exact equality")]
 fn normalize_small_nonzero() {
     // 1e-163 squared underflows to 0, so norm == 0.
     // vec3Normalize should produce the zero vector.
@@ -129,7 +128,6 @@ fn from_latlng() {
 }
 
 #[test]
-#[expect(clippy::float_cmp, reason = "we want exact equality")]
 fn dot_product() {
     let a = Vec3d::new(1., 0., 0.);
     let b = Vec3d::new(-1., 0., 0.);

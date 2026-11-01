@@ -319,7 +319,6 @@ fn empty() {
 }
 
 #[test]
-#[expect(clippy::float_cmp, reason = "on purpose")]
 fn world() {
     let cells = CellIndex::base_cells().collect::<Vec<_>>();
     let mpoly = dissolve(cells);

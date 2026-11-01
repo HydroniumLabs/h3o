@@ -130,7 +130,7 @@ fn percentage_slice() {
         let ring = &[
             LatLng::from_radians(FRAC_PI_2, 0.).unwrap(),
             LatLng::from_radians(0., -FRAC_PI_2).unwrap(),
-            LatLng::from_radians(0., t * PI - FRAC_PI_2).unwrap(),
+            LatLng::from_radians(0., f64::mul_add(t, PI, -FRAC_PI_2)).unwrap(),
         ];
         let result = linear_ring_area(ring);
 
@@ -166,7 +166,7 @@ fn percentage_slice_large() {
         LatLng::from_radians(FRAC_PI_2, 0.).unwrap(),
         LatLng::from_radians(0., -FRAC_PI_2).unwrap(),
         LatLng::from_radians(0., 0.).unwrap(),
-        LatLng::from_radians(0., t * PI - FRAC_PI_2).unwrap(),
+        LatLng::from_radians(0., f64::mul_add(t, PI, -FRAC_PI_2)).unwrap(),
     ];
     let expected = t * PI;
     let result = linear_ring_area(ring);
