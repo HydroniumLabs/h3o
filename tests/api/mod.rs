@@ -11,6 +11,7 @@ mod face_set;
 mod geom;
 mod index_mode;
 mod latlng;
+mod latlng_indexer;
 mod localij;
 mod resolution;
 mod vertex;

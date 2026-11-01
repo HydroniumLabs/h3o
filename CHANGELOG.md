@@ -16,12 +16,7 @@ Possible sections are:
 
 ### Added
 
-- `LatLngIndexer` indexes locations at one or several resolutions, sharing the
-  resolution-independent work (face selection and gnomonic projection) between
-  resolutions and reusing the last cell at each resolution while nearby
-  locations (e.g. raster scanlines) keep the same `IJK` coordinates. Results
-  are identical to `LatLng::to_cell`; ~1.5x faster for 3 resolutions of one
-  location, ~1.6x for a 30 m scanline at resolution 9 and ~4x at 3
+- `LatLngIndexer` to speedup scanline indexing and/or indexing across multiple
   resolutions.
 
 ## [0.11.0] - 2026-08-29

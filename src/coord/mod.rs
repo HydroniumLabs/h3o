@@ -3,9 +3,11 @@
 //! See [Coordinate systems](https://h3geo.org/docs/next/core-library/coordsystems)
 
 mod cube;
+mod face_projection;
 mod faceijk;
 mod ijk;
 mod latlng;
+mod latlng_indexer;
 mod localij;
 mod vec2d;
 mod vec3d;
@@ -13,11 +15,13 @@ mod vec3d;
 pub use cube::CoordCube;
 pub use faceijk::{FaceIJK, Overage};
 pub use ijk::{CoordIJ, CoordIJK};
-pub use latlng::{LatLng, LatLngIndexer};
+pub use latlng::LatLng;
+pub use latlng_indexer::LatLngIndexer;
 pub use localij::{LocalIJ, LocalIJK};
 pub use vec3d::Vec3d;
 
-use vec2d::{FaceProjection, Vec2d};
+use face_projection::FaceProjection;
+use vec2d::Vec2d;
 
 use crate::TWO_PI;
 
