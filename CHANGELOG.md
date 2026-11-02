@@ -14,6 +14,8 @@ Possible sections are:
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.11.1] - 2026-11-02
+
 ### Added
 
 - `LatLngIndexer` to speedup scanline indexing and/or indexing across multiple
